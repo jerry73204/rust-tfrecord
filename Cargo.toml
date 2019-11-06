@@ -8,6 +8,8 @@ build = "build.rs"
 [dependencies]
 log = "~0"
 failure = "~0"
+prost = "~0"
+bytes = "~0"
 
 [dev-dependencies]
 
