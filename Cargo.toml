@@ -1,0 +1,17 @@
+[package]
+name = "tfrecord-rs"
+version = "0.1.0"
+authors = ["jerry73204 <jerry73204@gmail.com>"]
+edition = "2018"
+build = "build.rs"
+
+[dependencies]
+log = "~0"
+failure = "!0"
+
+[dev-dependencies]
+
+[build-dependencies]
+glob = "~0"
+failure = "~0"
+prost-build = "~0"
