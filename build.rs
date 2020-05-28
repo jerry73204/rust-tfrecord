@@ -1,9 +1,13 @@
 use failure::Fallible;
 use std::path::PathBuf;
 
+lazy_static::lazy_static! {
+    static ref CARGO_MANIFEST_DIR: PathBuf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+}
+
 fn main() -> Fallible<()> {
     // Generate .rs files from protobuf
-    let include_dir = PathBuf::from("third_party/tensorflow");
+    let include_dir = PathBuf::from("tensorflow");
     let proto_paths = glob::glob(
         include_dir
             .join("tensorflow/core/example/*.proto")
@@ -12,7 +16,13 @@ fn main() -> Fallible<()> {
     )?
     .into_iter()
     .collect::<Result<Vec<_>, _>>()?;
-    prost_build::compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
+
+    let out_dir = CARGO_MANIFEST_DIR.join("src").join("protos");
+
+    prost_build::Config::new()
+        .out_dir(&out_dir)
+        .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
+        .compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
 
     Ok(())
 }
