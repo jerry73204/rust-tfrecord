@@ -341,7 +341,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.record_reader.next() {
-            Some(Ok(record)) => match Example::decode(record) {
+            Some(Ok(record)) => match Example::decode(record.as_ref()) {
                 Ok(example) => Some(Ok(example)),
                 Err(error) => Some(Err(error.into())),
             },
