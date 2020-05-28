@@ -1,6 +1,9 @@
+# rust
 /target
 /Cargo.lock
 **/*.rs.bk
+
+# editor
 *~
 .*~
 *.swp
