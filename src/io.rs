@@ -1,5 +1,4 @@
 use crate::{error::Error, reader::RecordIndex};
-use byteorder::{LittleEndian, ReadBytesExt};
 use futures::io::{AsyncReadExt, AsyncSeekExt};
 use std::io::{prelude::*, SeekFrom};
 
@@ -38,12 +37,12 @@ pub mod async_ {
             };
             len_buf
         };
-        let len = (&len_buf[..]).read_u64::<LittleEndian>()?;
+        let len = u64::from_le_bytes(len_buf);
 
         let expect_cksum = {
             let mut buf = [0; std::mem::size_of::<u32>()];
             reader.read_exact(&mut buf).await?;
-            (&buf[..]).read_u32::<LittleEndian>()?
+            u32::from_le_bytes(buf)
         };
 
         if check_integrity {
@@ -69,7 +68,7 @@ pub mod async_ {
         let expect_cksum = {
             let mut buf = [0u8; std::mem::size_of::<u32>()];
             reader.read_exact(&mut buf).await?;
-            (&buf[..]).read_u32::<LittleEndian>()?
+            u32::from_le_bytes(buf)
         };
 
         if check_integrity {
@@ -130,8 +129,12 @@ pub mod blocking {
             }
             len_buf
         };
-        let len = (&len_buf[..]).read_u64::<LittleEndian>()?;
-        let expect_cksum = reader.read_u32::<LittleEndian>()?;
+        let len = u64::from_le_bytes(len_buf);
+        let expect_cksum = {
+            let mut buf = [0; std::mem::size_of::<u32>()];
+            reader.read_exact(&mut buf)?;
+            u32::from_le_bytes(buf)
+        };
 
         if check_integrity {
             crate::utils::verify_checksum(&len_buf, expect_cksum)?;
@@ -153,7 +156,11 @@ pub mod blocking {
             reader.read_exact(&mut buf)?;
             buf
         };
-        let expect_cksum = reader.read_u32::<LittleEndian>()?;
+        let expect_cksum = {
+            let mut buf = [0; std::mem::size_of::<u32>()];
+            reader.read_exact(&mut buf)?;
+            u32::from_le_bytes(buf)
+        };
 
         if check_integrity {
             crate::utils::verify_checksum(&buf, expect_cksum)?;
