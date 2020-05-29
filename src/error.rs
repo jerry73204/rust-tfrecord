@@ -1,5 +1,5 @@
 use failure::Fail;
-use prost::DecodeError;
+use prost::{DecodeError, EncodeError};
 
 #[derive(Debug, Fail)]
 pub enum Error {
@@ -14,6 +14,8 @@ pub enum Error {
     InvalidOptionsError { desc: String },
     #[fail(display = "failed to decode example: {:?}", error)]
     ExampleDecodeError { error: DecodeError },
+    #[fail(display = "failed to encode example: {:?}", error)]
+    ExampleEncodeError { error: EncodeError },
     #[fail(display = "I/O error: {:?}", error)]
     IoError { error: std::io::Error },
 }
@@ -21,6 +23,12 @@ pub enum Error {
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {
         Self::IoError { error }
+    }
+}
+
+impl From<EncodeError> for Error {
+    fn from(error: EncodeError) -> Self {
+        Self::ExampleEncodeError { error }
     }
 }
 
