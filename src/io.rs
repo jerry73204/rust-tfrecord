@@ -1,5 +1,5 @@
 use crate::{error::Error, reader::RecordIndex};
-use futures::io::{AsyncReadExt, AsyncSeekExt};
+use futures::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use std::io::{prelude::*, SeekFrom};
 
 pub mod async_ {
@@ -95,6 +95,32 @@ pub mod async_ {
 
         Ok(indexes)
     }
+
+    pub async fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<(), Error>
+    where
+        W: AsyncWriteExt + Unpin,
+    {
+        // write data size
+        {
+            let len = bytes.len();
+            let len_buf = len.to_le_bytes();
+            let cksum = crate::utils::checksum(&len_buf);
+            let cksum_buf = cksum.to_le_bytes();
+
+            writer.write_all(&len_buf).await?;
+            writer.write_all(&cksum_buf).await?;
+        }
+
+        // write data
+        {
+            let cksum = crate::utils::checksum(&bytes);
+            let cksum_buf = cksum.to_le_bytes();
+
+            writer.write_all(bytes.as_slice()).await?;
+            writer.write_all(&cksum_buf).await?;
+        }
+        Ok(())
+    }
 }
 
 pub mod blocking {
@@ -185,5 +211,31 @@ pub mod blocking {
         }
 
         Ok(indexes)
+    }
+
+    pub fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<(), Error>
+    where
+        W: Write,
+    {
+        // write data size
+        {
+            let len = bytes.len();
+            let len_buf = len.to_le_bytes();
+            let cksum = crate::utils::checksum(&len_buf);
+            let cksum_buf = cksum.to_le_bytes();
+
+            writer.write_all(&len_buf)?;
+            writer.write_all(&cksum_buf)?;
+        }
+
+        // write data
+        {
+            let cksum = crate::utils::checksum(&bytes);
+            let cksum_buf = cksum.to_le_bytes();
+
+            writer.write_all(bytes.as_slice())?;
+            writer.write_all(&cksum_buf)?;
+        }
+        Ok(())
     }
 }
