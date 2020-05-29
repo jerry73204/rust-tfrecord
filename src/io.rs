@@ -47,7 +47,7 @@ pub mod async_ {
         R: AsyncReadExt + Unpin,
     {
         let len_buf = {
-            let mut len_buf = [0u8; 8];
+            let mut len_buf = [0u8; std::mem::size_of::<u64>()];
             match reader.read(&mut len_buf).await {
                 Ok(0) => return Ok(None),
                 Ok(n) if n == len_buf.len() => (),
@@ -59,9 +59,9 @@ pub mod async_ {
         let len = (&len_buf[..]).read_u64::<LittleEndian>()?;
 
         let expect_cksum = {
-            let mut buf = vec![0; std::mem::size_of::<u32>()];
+            let mut buf = [0; std::mem::size_of::<u32>()];
             reader.read_exact(&mut buf).await?;
-            buf.as_slice().read_u32::<LittleEndian>()?
+            (&buf[..]).read_u32::<LittleEndian>()?
         };
 
         if check_integrity {
@@ -85,9 +85,9 @@ pub mod async_ {
             buf
         };
         let expect_cksum = {
-            let mut buf = vec![0u8; std::mem::size_of::<u32>()];
+            let mut buf = [0u8; std::mem::size_of::<u32>()];
             reader.read_exact(&mut buf).await?;
-            buf.as_slice().read_u32::<LittleEndian>()?
+            (&buf[..]).read_u32::<LittleEndian>()?
         };
 
         if check_integrity {
@@ -139,7 +139,7 @@ pub mod blocking {
         R: Read,
     {
         let len_buf = {
-            let mut len_buf = [0u8; 8];
+            let mut len_buf = [0u8; std::mem::size_of::<u64>()];
             match reader.read(&mut len_buf) {
                 Ok(0) => return Ok(None),
                 Ok(n) if n == len_buf.len() => (),
@@ -186,30 +186,15 @@ pub mod blocking {
     where
         R: Read + Seek,
     {
-        let mut fused = false;
+        let mut indexes = vec![];
 
-        let mut try_read_index = || -> Result<Option<RecordIndex>, Error> {
-            if fused {
-                return Ok(None);
-            }
-
-            let len = match try_read_len(reader, check_integrity) {
-                Ok(Some(len)) => len,
-                Ok(None) => return Ok(None),
-                Err(err) => {
-                    fused = true;
-                    return Err(err);
-                }
-            };
-
+        while let Some(len) = try_read_len(reader, check_integrity)? {
             let offset = reader.seek(SeekFrom::Current(0))?;
             try_read_record_data(reader, len, check_integrity)?;
+            let record_index = RecordIndex { offset, len };
+            indexes.push(record_index);
+        }
 
-            Ok(Some(RecordIndex { offset, len }))
-        };
-
-        std::iter::from_fn(|| try_read_index().transpose())
-            .fuse()
-            .collect::<Result<Vec<_>, Error>>()
+        Ok(indexes)
     }
 }
