@@ -1,7 +1,7 @@
 use crate::{error::Error, markers::GenericRecord, protos::Example};
 use futures::{
     io::{AsyncRead, AsyncSeek, AsyncSeekExt},
-    stream::TryStreamExt,
+    stream::Stream,
 };
 use std::{
     io::{prelude::*, SeekFrom},
@@ -101,7 +101,7 @@ impl RecordStreamInit {
     pub async fn from_reader<T, R>(
         self,
         reader: R,
-    ) -> Result<impl TryStreamExt<Ok = T, Error = Error>, Error>
+    ) -> Result<impl Stream<Item = Result<T, Error>>, Error>
     where
         T: GenericRecord,
         R: 'static + AsyncRead + Unpin + Send,
@@ -129,10 +129,20 @@ impl RecordStreamInit {
         Ok(stream)
     }
 
+    pub async fn open<T, P>(self, path: P) -> Result<impl Stream<Item = Result<T, Error>>, Error>
+    where
+        T: GenericRecord,
+        P: AsRef<async_std::path::Path>,
+    {
+        use async_std::{fs::File, io::BufReader};
+        let reader = BufReader::new(File::open(path).await?);
+        Self::from_reader(self, reader).await
+    }
+
     pub async fn bytes_from_reader<R>(
         self,
         reader: R,
-    ) -> Result<impl TryStreamExt<Ok = Vec<u8>, Error = Error>, Error>
+    ) -> Result<impl Stream<Item = Result<Vec<u8>, Error>>, Error>
     where
         R: 'static + AsyncRead + Unpin + Send,
     {
@@ -142,11 +152,31 @@ impl RecordStreamInit {
     pub async fn examples_from_reader<R>(
         self,
         reader: R,
-    ) -> Result<impl TryStreamExt<Ok = Example, Error = Error>, Error>
+    ) -> Result<impl Stream<Item = Result<Example, Error>>, Error>
     where
         R: 'static + AsyncRead + Unpin + Send,
     {
         self.from_reader::<Example, _>(reader).await
+    }
+
+    pub async fn bytes_open<P>(
+        self,
+        path: P,
+    ) -> Result<impl Stream<Item = Result<Vec<u8>, Error>>, Error>
+    where
+        P: AsRef<async_std::path::Path>,
+    {
+        Self::open::<Vec<u8>, _>(self, path).await
+    }
+
+    pub async fn examples_open<P>(
+        self,
+        path: P,
+    ) -> Result<impl Stream<Item = Result<Example, Error>>, Error>
+    where
+        P: AsRef<async_std::path::Path>,
+    {
+        Self::open::<Example, _>(self, path).await
     }
 }
 
@@ -200,6 +230,20 @@ impl IndexedReaderInit {
             reader,
             _phantom: PhantomData,
         };
+        Ok(indexed_reader)
+    }
+
+    pub async fn open_async<T, P>(
+        self,
+        path: P,
+    ) -> Result<IndexedReader<T, async_std::io::BufReader<async_std::fs::File>>, Error>
+    where
+        T: GenericRecord,
+        P: AsRef<async_std::path::Path>,
+    {
+        use async_std::{fs::File, io::BufReader};
+        let reader = BufReader::new(File::open(path.as_ref()).await?);
+        let indexed_reader = self.from_async_reader(reader).await?;
         Ok(indexed_reader)
     }
 }

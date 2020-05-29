@@ -41,6 +41,17 @@ impl RecordWriterInit {
             _phantom: PhantomData,
         })
     }
+
+    pub async fn create_async<T, P>(
+        path: P,
+    ) -> Result<RecordWriter<T, async_std::io::BufWriter<async_std::fs::File>>, Error>
+    where
+        T: GenericRecord,
+        P: AsRef<async_std::path::Path>,
+    {
+        let writer = async_std::io::BufWriter::new(async_std::fs::File::create(path).await?);
+        Self::from_async_writer(writer)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

@@ -7,6 +7,7 @@ use tffile::{
         BytesIndexedReader, BytesReader, ExampleIndexedReader, ExampleReader, IndexedReaderInit,
         RecordReaderInit, RecordStreamInit,
     },
+    writer::{BytesWriter, ExampleWriter, RecordWriterInit},
     Example,
 };
 
@@ -26,10 +27,10 @@ lazy_static::lazy_static! {
 
         out_path
     };
-    static ref OUTPUT_TFRECORD_PATH: PathBuf = {
+    static ref DATA_DIR: PathBuf = {
         let data_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_data");
         std::fs::create_dir_all(&data_dir).unwrap();
-        data_dir.join("output.tfrecord")
+        data_dir
     };
 }
 
@@ -56,26 +57,106 @@ fn blocking_reader_test() -> Fallible<()> {
 
 #[async_std::test]
 async fn async_stream_test() -> Fallible<()> {
-    use async_std::{fs::File, io::BufReader};
-
     {
-        let reader = BufReader::new(File::open(&*INPUT_TFRECORD_PATH).await?);
         let stream = RecordStreamInit {
             check_integrity: true,
         }
-        .bytes_from_reader(reader)
+        .bytes_open(&*INPUT_TFRECORD_PATH)
         .await?;
         stream.try_collect::<Vec<Vec<u8>>>().await?;
     }
 
     {
-        let reader = BufReader::new(File::open(&*INPUT_TFRECORD_PATH).await?);
         let stream = RecordStreamInit {
             check_integrity: true,
         }
-        .examples_from_reader(reader)
+        .examples_open(&*INPUT_TFRECORD_PATH)
         .await?;
         stream.try_collect::<Vec<Example>>().await?;
+    }
+
+    Ok(())
+}
+
+#[test]
+fn blocking_writer_test() -> Fallible<()> {
+    let output_path = DATA_DIR.join("blocking_writer_output.tfrecord");
+
+    {
+        let reader: BytesReader<_> = RecordReaderInit {
+            check_integrity: true,
+        }
+        .open(&*INPUT_TFRECORD_PATH)?;
+        let mut writer: BytesWriter<_> = RecordWriterInit::create(&output_path)?;
+
+        for result in reader {
+            let bytes = result?;
+            writer.send(bytes)?;
+        }
+
+        std::fs::remove_file(&output_path)?;
+    }
+
+    {
+        let reader: ExampleReader<_> = RecordReaderInit {
+            check_integrity: true,
+        }
+        .open(&*INPUT_TFRECORD_PATH)?;
+        let mut writer: ExampleWriter<_> = RecordWriterInit::create(&output_path)?;
+
+        for result in reader {
+            let example = result?;
+            writer.send(example)?;
+        }
+
+        std::fs::remove_file(&output_path)?;
+    }
+
+    Ok(())
+}
+
+#[async_std::test]
+async fn async_writer_test() -> Fallible<()> {
+    let output_path = DATA_DIR.join("async_writer_output.tfrecord");
+
+    {
+        let stream = RecordStreamInit {
+            check_integrity: true,
+        }
+        .bytes_open(&*INPUT_TFRECORD_PATH)
+        .await?;
+        let writer: BytesWriter<_> = RecordWriterInit::create_async(&output_path).await?;
+
+        stream
+            .try_fold(writer, |mut writer, bytes| {
+                async {
+                    writer.send_async(bytes).await?;
+                    Ok(writer)
+                }
+            })
+            .await?;
+
+        async_std::fs::remove_file(&output_path).await?;
+    }
+
+    {
+        let stream = RecordStreamInit {
+            check_integrity: true,
+        }
+        .examples_open(&*INPUT_TFRECORD_PATH)
+        .await?;
+        let writer: ExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
+
+        stream
+            .try_fold(writer, |mut writer, example| {
+                async {
+                    writer.send_async(example).await?;
+                    Ok(writer)
+                }
+            })
+            .await?;
+
+        async_std::fs::remove_file(&output_path).await?;
     }
 
     Ok(())
@@ -120,15 +201,13 @@ fn blocking_indexed_reader_test() -> Fallible<()> {
 
 #[async_std::test]
 async fn async_indexed_reader_test() -> Fallible<()> {
-    use async_std::{fs::File, io::BufReader};
     let mut rng = rand::thread_rng();
 
     {
-        let rd = BufReader::new(File::open(&*INPUT_TFRECORD_PATH).await?);
         let mut reader: BytesIndexedReader<_> = IndexedReaderInit {
             check_integrity: true,
         }
-        .from_async_reader(rd)
+        .open_async(&*INPUT_TFRECORD_PATH)
         .await?;
 
         let num_records = reader.num_records();
@@ -140,11 +219,10 @@ async fn async_indexed_reader_test() -> Fallible<()> {
     }
 
     {
-        let rd = BufReader::new(File::open(&*INPUT_TFRECORD_PATH).await?);
         let mut reader: ExampleIndexedReader<_> = IndexedReaderInit {
             check_integrity: true,
         }
-        .from_async_reader(rd)
+        .open_async(&*INPUT_TFRECORD_PATH)
         .await?;
 
         let num_records = reader.num_records();
