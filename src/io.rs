@@ -1,25 +1,7 @@
 use crate::{error::Error, reader::RecordIndex};
 use byteorder::{LittleEndian, ReadBytesExt};
-use crc::crc32;
 use futures::io::{AsyncReadExt, AsyncSeekExt};
 use std::io::{prelude::*, SeekFrom};
-
-fn checksum(buf: &[u8]) -> u32 {
-    let cksum = crc32::checksum_castagnoli(buf);
-    ((cksum >> 15) | (cksum << 17)).wrapping_add(0xa282ead8u32)
-}
-
-fn verify_checksum(buf: &[u8], expect: u32) -> Result<(), Error> {
-    let found = checksum(&buf);
-    if expect == found {
-        Ok(())
-    } else {
-        Err(Error::ChecksumMismatchError {
-            expect: format!("{:#010x}", expect),
-            found: format!("{:#010x}", found),
-        })
-    }
-}
 
 pub mod async_ {
     use super::*;
@@ -65,7 +47,7 @@ pub mod async_ {
         };
 
         if check_integrity {
-            verify_checksum(&len_buf, expect_cksum)?;
+            crate::utils::verify_checksum(&len_buf, expect_cksum)?;
         }
 
         Ok(Some(len as usize))
@@ -91,7 +73,7 @@ pub mod async_ {
         };
 
         if check_integrity {
-            verify_checksum(&buf, expect_cksum)?;
+            crate::utils::verify_checksum(&buf, expect_cksum)?;
         }
         Ok(buf)
     }
@@ -152,7 +134,7 @@ pub mod blocking {
         let expect_cksum = reader.read_u32::<LittleEndian>()?;
 
         if check_integrity {
-            verify_checksum(&len_buf, expect_cksum)?;
+            crate::utils::verify_checksum(&len_buf, expect_cksum)?;
         }
 
         Ok(Some(len as usize))
@@ -174,7 +156,7 @@ pub mod blocking {
         let expect_cksum = reader.read_u32::<LittleEndian>()?;
 
         if check_integrity {
-            verify_checksum(&buf, expect_cksum)?;
+            crate::utils::verify_checksum(&buf, expect_cksum)?;
         }
         Ok(buf)
     }
