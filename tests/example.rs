@@ -1,72 +1,114 @@
 use failure::Fallible;
+use futures::stream::TryStreamExt;
+use rand::Rng;
 use std::path::PathBuf;
-use tffile::reader::{DoCheck, NoCheck, ReaderOptions, RuntimeCheck};
+use tffile::{
+    reader::{
+        BytesIndexedReader, BytesReader, ExampleIndexedReader, ExampleReader, IndexedReaderInit,
+        RecordReaderInit, RecordStreamInit,
+    },
+    Example,
+};
+
+lazy_static::lazy_static! {
+    static ref TFRECORD_PATH: PathBuf = {
+        use std::{fs::File, io::BufWriter};
+
+        let url = "https://storage.googleapis.com/download.tensorflow.org/data/fsns-20160927/testdata/fsns-00000-of-00001";
+        let file_name = "test.tfrecord";
+
+        let data_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_data");
+        let out_path = data_dir.join(file_name);
+
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let mut out_file = BufWriter::new(File::create(&out_path).unwrap());
+        reqwest::blocking::get(url).unwrap().copy_to(&mut out_file).unwrap();
+
+        out_path
+    };
+}
 
 #[test]
-fn record_reader_test() -> Fallible<()> {
-    let path = PathBuf::from("/mnt/wd/home/aeon/gqn-dataset/rooms_free_camera_with_object_rotations/train/0001-of-2034.tfrecord");
+fn blocking_reader_test() -> Fallible<()> {
+    {
+        let reader: BytesReader<_> = RecordReaderInit {
+            check_integrity: true,
+        }
+        .from_path(&*TFRECORD_PATH)?;
+        reader.collect::<Result<Vec<Vec<u8>>, _>>()?;
+    }
 
-    // static checked
-    ReaderOptions::new()
-        .record_reader_open::<DoCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
+    {
+        let reader: ExampleReader<_> = RecordReaderInit {
+            check_integrity: true,
+        }
+        .from_path(&*TFRECORD_PATH)?;
+        reader.collect::<Result<Vec<Example>, _>>()?;
+    }
 
-    // static unchecked
-    ReaderOptions::new()
-        .record_reader_open::<NoCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
+    Ok(())
+}
 
-    // dynamic
-    ReaderOptions::new()
-        .check_integrity(true)
-        .record_reader_open::<RuntimeCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
+#[async_std::test]
+async fn async_stream_test() -> Fallible<()> {
+    use async_std::{fs::File, io::BufReader};
+
+    {
+        let reader = BufReader::new(File::open(&*TFRECORD_PATH).await?);
+        let stream = RecordStreamInit {
+            check_integrity: true,
+        }
+        .bytes_from_reader(reader)
+        .await?;
+        stream.try_collect::<Vec<Vec<u8>>>().await?;
+    }
+
+    {
+        let reader = BufReader::new(File::open(&*TFRECORD_PATH).await?);
+        let stream = RecordStreamInit {
+            check_integrity: true,
+        }
+        .examples_from_reader(reader)
+        .await?;
+        stream.try_collect::<Vec<Example>>().await?;
+    }
 
     Ok(())
 }
 
 #[test]
-fn example_reader_test() -> Fallible<()> {
-    let path = PathBuf::from("/mnt/wd/home/aeon/gqn-dataset/rooms_free_camera_with_object_rotations/train/0001-of-2034.tfrecord");
+fn indexed_reader_test() -> Fallible<()> {
+    let mut rng = rand::thread_rng();
 
-    // static checked
-    ReaderOptions::new()
-        .example_reader_open::<DoCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
+    {
+        let mut reader: BytesIndexedReader<_> = IndexedReaderInit {
+            check_integrity: true,
+        }
+        .from_path(&*TFRECORD_PATH)?;
 
-    // static unchecked
-    ReaderOptions::new()
-        .example_reader_open::<NoCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
+        let num_records = reader.num_records();
 
-    // dynamic
-    ReaderOptions::new()
-        .check_integrity(true)
-        .example_reader_open::<RuntimeCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
+        for _ in 0..(num_records * 10) {
+            let index = rng.gen_range(0, num_records);
+            let _: Vec<u8> = reader.get(index)?.unwrap();
+        }
+    }
 
-    Ok(())
-}
+    let mut rng = rand::thread_rng();
 
-#[test]
-fn record_indexer_test() -> Fallible<()> {
-    let path = PathBuf::from("/mnt/wd/home/aeon/gqn-dataset/rooms_free_camera_with_object_rotations/train/0001-of-2034.tfrecord");
+    {
+        let mut reader: ExampleIndexedReader<_> = IndexedReaderInit {
+            check_integrity: true,
+        }
+        .from_path(&*TFRECORD_PATH)?;
 
-    // static checked
-    ReaderOptions::new()
-        .record_indexer_open::<DoCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
+        let num_records = reader.num_records();
 
-    // static unchecked
-    ReaderOptions::new()
-        .record_indexer_open::<NoCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
-
-    // dynamic
-    ReaderOptions::new()
-        .check_integrity(true)
-        .record_indexer_open::<RuntimeCheck, _>(&path)?
-        .collect::<Result<Vec<_>, _>>()?;
+        for _ in 0..(num_records * 10) {
+            let index = rng.gen_range(0, num_records);
+            let _: Example = reader.get(index)?.unwrap();
+        }
+    }
 
     Ok(())
 }
