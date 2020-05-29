@@ -41,7 +41,7 @@ impl RecordReaderInit {
         Ok(record_reader)
     }
 
-    pub fn from_path<T, P>(
+    pub fn open<T, P>(
         self,
         path: P,
     ) -> Result<RecordReader<T, std::io::BufReader<std::fs::File>>, Error>
@@ -172,7 +172,7 @@ impl IndexedReaderInit {
         Ok(indexed_reader)
     }
 
-    pub fn from_path<T, P>(
+    pub fn open<T, P>(
         self,
         path: P,
     ) -> Result<IndexedReader<T, std::io::BufReader<std::fs::File>>, Error>

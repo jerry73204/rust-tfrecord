@@ -34,7 +34,7 @@ fn blocking_reader_test() -> Fallible<()> {
         let reader: BytesReader<_> = RecordReaderInit {
             check_integrity: true,
         }
-        .from_path(&*TFRECORD_PATH)?;
+        .open(&*TFRECORD_PATH)?;
         reader.collect::<Result<Vec<Vec<u8>>, _>>()?;
     }
 
@@ -42,7 +42,7 @@ fn blocking_reader_test() -> Fallible<()> {
         let reader: ExampleReader<_> = RecordReaderInit {
             check_integrity: true,
         }
-        .from_path(&*TFRECORD_PATH)?;
+        .open(&*TFRECORD_PATH)?;
         reader.collect::<Result<Vec<Example>, _>>()?;
     }
 
@@ -84,7 +84,7 @@ fn blocking_indexed_reader_test() -> Fallible<()> {
         let mut reader: BytesIndexedReader<_> = IndexedReaderInit {
             check_integrity: true,
         }
-        .from_path(&*TFRECORD_PATH)?;
+        .open(&*TFRECORD_PATH)?;
 
         let num_records = reader.num_records();
 
@@ -100,7 +100,7 @@ fn blocking_indexed_reader_test() -> Fallible<()> {
         let mut reader: ExampleIndexedReader<_> = IndexedReaderInit {
             check_integrity: true,
         }
-        .from_path(&*TFRECORD_PATH)?;
+        .open(&*TFRECORD_PATH)?;
 
         let num_records = reader.num_records();
 
