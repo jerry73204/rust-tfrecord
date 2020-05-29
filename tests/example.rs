@@ -77,7 +77,7 @@ async fn async_stream_test() -> Fallible<()> {
 }
 
 #[test]
-fn indexed_reader_test() -> Fallible<()> {
+fn blocking_indexed_reader_test() -> Fallible<()> {
     let mut rng = rand::thread_rng();
 
     {
@@ -88,7 +88,7 @@ fn indexed_reader_test() -> Fallible<()> {
 
         let num_records = reader.num_records();
 
-        for _ in 0..(num_records * 10) {
+        for _ in 0..(num_records * 100) {
             let index = rng.gen_range(0, num_records);
             let _: Vec<u8> = reader.get(index)?.unwrap();
         }
@@ -104,9 +104,49 @@ fn indexed_reader_test() -> Fallible<()> {
 
         let num_records = reader.num_records();
 
-        for _ in 0..(num_records * 10) {
+        for _ in 0..(num_records * 100) {
             let index = rng.gen_range(0, num_records);
             let _: Example = reader.get(index)?.unwrap();
+        }
+    }
+
+    Ok(())
+}
+
+#[async_std::test]
+async fn async_indexed_reader_test() -> Fallible<()> {
+    use async_std::{fs::File, io::BufReader};
+    let mut rng = rand::thread_rng();
+
+    {
+        let rd = BufReader::new(File::open(&*TFRECORD_PATH).await?);
+        let mut reader: BytesIndexedReader<_> = IndexedReaderInit {
+            check_integrity: true,
+        }
+        .from_reader_async(rd)
+        .await?;
+
+        let num_records = reader.num_records();
+
+        for _ in 0..(num_records * 100) {
+            let index = rng.gen_range(0, num_records);
+            let _: Vec<u8> = reader.get_async(index).await?.unwrap();
+        }
+    }
+
+    {
+        let rd = BufReader::new(File::open(&*TFRECORD_PATH).await?);
+        let mut reader: ExampleIndexedReader<_> = IndexedReaderInit {
+            check_integrity: true,
+        }
+        .from_reader_async(rd)
+        .await?;
+
+        let num_records = reader.num_records();
+
+        for _ in 0..(num_records * 100) {
+            let index = rng.gen_range(0, num_records);
+            let _: Example = reader.get_async(index).await?.unwrap();
         }
     }
 
