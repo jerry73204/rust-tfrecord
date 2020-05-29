@@ -123,7 +123,7 @@ async fn async_indexed_reader_test() -> Fallible<()> {
         let mut reader: BytesIndexedReader<_> = IndexedReaderInit {
             check_integrity: true,
         }
-        .from_reader_async(rd)
+        .from_async_reader(rd)
         .await?;
 
         let num_records = reader.num_records();
@@ -139,7 +139,7 @@ async fn async_indexed_reader_test() -> Fallible<()> {
         let mut reader: ExampleIndexedReader<_> = IndexedReaderInit {
             check_integrity: true,
         }
-        .from_reader_async(rd)
+        .from_async_reader(rd)
         .await?;
 
         let num_records = reader.num_records();

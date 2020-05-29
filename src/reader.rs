@@ -186,7 +186,7 @@ impl IndexedReaderInit {
         Ok(indexed_reader)
     }
 
-    pub async fn from_reader_async<T, R>(self, mut reader: R) -> Result<IndexedReader<T, R>, Error>
+    pub async fn from_async_reader<T, R>(self, mut reader: R) -> Result<IndexedReader<T, R>, Error>
     where
         T: GenericRecord,
         R: AsyncRead + AsyncSeek + Unpin,
