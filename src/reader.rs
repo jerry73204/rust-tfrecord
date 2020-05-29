@@ -85,7 +85,7 @@ where
 
         let bytes_result = bytes_opt?;
         let record_result = match bytes_result {
-            Ok(bytes) => T::transform(bytes),
+            Ok(bytes) => T::from_bytes(bytes),
             Err(err) => Err(err),
         };
         Some(record_result)
@@ -115,7 +115,7 @@ impl RecordStreamInit {
                     .await
                     .transpose()?;
                 let result = match result {
-                    Ok(bytes) => T::transform(bytes),
+                    Ok(bytes) => T::from_bytes(bytes),
                     Err(err) => Err(err),
                 };
 
@@ -239,7 +239,7 @@ where
         };
         self.reader.seek(SeekFrom::Start(offset))?;
         let bytes = crate::io::blocking::try_read_record_data(&mut self.reader, len, false)?;
-        let record = T::transform(bytes)?;
+        let record = T::from_bytes(bytes)?;
         Ok(Some(record))
     }
 }
@@ -256,7 +256,7 @@ where
         };
         self.reader.seek(SeekFrom::Start(offset)).await?;
         let bytes = crate::io::async_::try_read_record_data(&mut self.reader, len, false).await?;
-        let record = T::transform(bytes)?;
+        let record = T::from_bytes(bytes)?;
         Ok(Some(record))
     }
 }

@@ -4,7 +4,7 @@ use prost::DecodeError;
 #[derive(Debug, Fail)]
 pub enum Error {
     #[fail(
-        display = "checksum mismatch error: expect {}, but foudn {}",
+        display = "checksum mismatch error: expect {}, but found {}",
         expect, found
     )]
     ChecksumMismatchError { expect: String, found: String },
