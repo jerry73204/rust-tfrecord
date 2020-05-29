@@ -13,8 +13,13 @@ bytes = "0.5.4"
 crc = "1.8.1"
 byteorder = "1.3.4"
 serde = { version = "1.0.110", features = ["derive"] }
+futures = "0.3.5"
 
 [dev-dependencies]
+lazy_static = "1.4.0"
+reqwest = { version = "0.10.4", features = ["blocking"] }
+async-std = { version = "1.6.0", features = ["attributes"] }
+rand = "0.7.3"
 
 [build-dependencies]
 glob = "0.3.0"

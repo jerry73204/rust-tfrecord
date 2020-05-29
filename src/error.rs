@@ -1,8 +1,6 @@
 use failure::Fail;
 use prost::DecodeError;
 
-pub type Result<T> = std::result::Result<T, Error>;
-
 #[derive(Debug, Fail)]
 pub enum Error {
     #[fail(
