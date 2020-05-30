@@ -1,4 +1,4 @@
-use crate::{error::Error, reader::RecordIndex};
+use crate::error::Error;
 use futures::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use std::io::{prelude::*, SeekFrom};
 
@@ -80,7 +80,7 @@ pub mod async_ {
     pub async fn try_build_record_index<R>(
         reader: &mut R,
         check_integrity: bool,
-    ) -> Result<Vec<RecordIndex>, Error>
+    ) -> Result<Vec<(u64, usize)>, Error>
     where
         R: AsyncReadExt + AsyncSeekExt + Unpin,
     {
@@ -89,8 +89,7 @@ pub mod async_ {
         while let Some(len) = try_read_len(reader, check_integrity).await? {
             let offset = reader.seek(SeekFrom::Current(0)).await?;
             try_read_record_data(reader, len, check_integrity).await?;
-            let index = RecordIndex { offset, len };
-            indexes.push(index);
+            indexes.push((offset, len));
         }
 
         Ok(indexes)
@@ -197,7 +196,7 @@ pub mod blocking {
     pub fn try_build_record_index<R>(
         reader: &mut R,
         check_integrity: bool,
-    ) -> Result<Vec<RecordIndex>, Error>
+    ) -> Result<Vec<(u64, usize)>, Error>
     where
         R: Read + Seek,
     {
@@ -206,8 +205,7 @@ pub mod blocking {
         while let Some(len) = try_read_len(reader, check_integrity)? {
             let offset = reader.seek(SeekFrom::Current(0))?;
             try_read_record_data(reader, len, check_integrity)?;
-            let record_index = RecordIndex { offset, len };
-            indexes.push(record_index);
+            indexes.push((offset, len));
         }
 
         Ok(indexes)

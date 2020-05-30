@@ -1,12 +1,8 @@
 use failure::Fallible;
 use futures::stream::TryStreamExt;
-use rand::Rng;
 use std::path::PathBuf;
 use tffile::{
-    reader::{
-        BytesIndexedReader, BytesReader, ExampleIndexedReader, ExampleReader, IndexedReaderInit,
-        RecordReaderInit, RecordStreamInit,
-    },
+    reader::{BytesReader, ExampleReader, RecordReaderInit, RecordStreamInit},
     writer::{BytesWriter, ExampleWriter, RecordWriterInit},
     Example,
 };
@@ -157,80 +153,6 @@ async fn async_writer_test() -> Fallible<()> {
             .await?;
 
         async_std::fs::remove_file(&output_path).await?;
-    }
-
-    Ok(())
-}
-
-#[test]
-fn blocking_indexed_reader_test() -> Fallible<()> {
-    let mut rng = rand::thread_rng();
-
-    {
-        let mut reader: BytesIndexedReader<_> = IndexedReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
-
-        let num_records = reader.num_records();
-
-        for _ in 0..(num_records * 100) {
-            let index = rng.gen_range(0, num_records);
-            let _: Vec<u8> = reader.get(index)?.unwrap();
-        }
-    }
-
-    let mut rng = rand::thread_rng();
-
-    {
-        let mut reader: ExampleIndexedReader<_> = IndexedReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
-
-        let num_records = reader.num_records();
-
-        for _ in 0..(num_records * 100) {
-            let index = rng.gen_range(0, num_records);
-            let _: Example = reader.get(index)?.unwrap();
-        }
-    }
-
-    Ok(())
-}
-
-#[async_std::test]
-async fn async_indexed_reader_test() -> Fallible<()> {
-    let mut rng = rand::thread_rng();
-
-    {
-        let mut reader: BytesIndexedReader<_> = IndexedReaderInit {
-            check_integrity: true,
-        }
-        .open_async(&*INPUT_TFRECORD_PATH)
-        .await?;
-
-        let num_records = reader.num_records();
-
-        for _ in 0..(num_records * 100) {
-            let index = rng.gen_range(0, num_records);
-            let _: Vec<u8> = reader.get_async(index).await?.unwrap();
-        }
-    }
-
-    {
-        let mut reader: ExampleIndexedReader<_> = IndexedReaderInit {
-            check_integrity: true,
-        }
-        .open_async(&*INPUT_TFRECORD_PATH)
-        .await?;
-
-        let num_records = reader.num_records();
-
-        for _ in 0..(num_records * 100) {
-            let index = rng.gen_range(0, num_records);
-            let _: Example = reader.get_async(index).await?.unwrap();
-        }
     }
 
     Ok(())

@@ -1,24 +1,9 @@
 use crate::{error::Error, markers::GenericRecord, protos::Example};
-use futures::{
-    io::{AsyncRead, AsyncSeek, AsyncSeekExt},
-    stream::Stream,
-};
-use std::{
-    io::{prelude::*, SeekFrom},
-    marker::PhantomData,
-    path::Path,
-};
+use futures::{io::AsyncRead, stream::Stream};
+use std::{io::prelude::*, marker::PhantomData, path::Path};
 
 pub type BytesReader<R> = RecordReader<Vec<u8>, R>;
 pub type ExampleReader<R> = RecordReader<Example, R>;
-pub type BytesIndexedReader<R> = IndexedReader<Vec<u8>, R>;
-pub type ExampleIndexedReader<R> = IndexedReader<Example, R>;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RecordIndex {
-    pub offset: u64,
-    pub len: usize,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecordReaderInit {
@@ -177,130 +162,5 @@ impl RecordStreamInit {
         P: AsRef<async_std::path::Path>,
     {
         Self::open::<Example, _>(self, path).await
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IndexedReaderInit {
-    pub check_integrity: bool,
-}
-
-impl IndexedReaderInit {
-    pub fn from_reader<T, R>(self, mut reader: R) -> Result<IndexedReader<T, R>, Error>
-    where
-        T: GenericRecord,
-        R: Read + Seek,
-    {
-        let IndexedReaderInit { check_integrity } = self;
-        let indexes = crate::io::blocking::try_build_record_index(&mut reader, check_integrity)?;
-
-        let indexed_reader = IndexedReader {
-            indexes,
-            reader,
-            _phantom: PhantomData,
-        };
-        Ok(indexed_reader)
-    }
-
-    pub fn open<T, P>(
-        self,
-        path: P,
-    ) -> Result<IndexedReader<T, std::io::BufReader<std::fs::File>>, Error>
-    where
-        T: GenericRecord,
-        P: AsRef<Path>,
-    {
-        use std::{fs::File, io::BufReader};
-        let reader = BufReader::new(File::open(path.as_ref())?);
-        let indexed_reader = self.from_reader(reader)?;
-        Ok(indexed_reader)
-    }
-
-    pub async fn from_async_reader<T, R>(self, mut reader: R) -> Result<IndexedReader<T, R>, Error>
-    where
-        T: GenericRecord,
-        R: AsyncRead + AsyncSeek + Unpin,
-    {
-        let IndexedReaderInit { check_integrity } = self;
-        let indexes =
-            crate::io::async_::try_build_record_index(&mut reader, check_integrity).await?;
-
-        let indexed_reader = IndexedReader {
-            indexes,
-            reader,
-            _phantom: PhantomData,
-        };
-        Ok(indexed_reader)
-    }
-
-    pub async fn open_async<T, P>(
-        self,
-        path: P,
-    ) -> Result<IndexedReader<T, async_std::io::BufReader<async_std::fs::File>>, Error>
-    where
-        T: GenericRecord,
-        P: AsRef<async_std::path::Path>,
-    {
-        use async_std::{fs::File, io::BufReader};
-        let reader = BufReader::new(File::open(path.as_ref()).await?);
-        let indexed_reader = self.from_async_reader(reader).await?;
-        Ok(indexed_reader)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IndexedReader<T, R>
-where
-    T: GenericRecord,
-{
-    indexes: Vec<RecordIndex>,
-    reader: R,
-    _phantom: PhantomData<T>,
-}
-
-impl<T, R> IndexedReader<T, R>
-where
-    T: GenericRecord,
-{
-    pub fn num_records(&self) -> usize {
-        self.indexes.len()
-    }
-
-    pub fn indexes(&self) -> &[RecordIndex] {
-        self.indexes.as_slice()
-    }
-}
-
-impl<T, R> IndexedReader<T, R>
-where
-    T: GenericRecord,
-    R: Read + Seek,
-{
-    pub fn get(&mut self, index: usize) -> Result<Option<T>, Error> {
-        let RecordIndex { offset, len } = *match self.indexes.get(index) {
-            Some(record_index) => record_index,
-            None => return Ok(None),
-        };
-        self.reader.seek(SeekFrom::Start(offset))?;
-        let bytes = crate::io::blocking::try_read_record_data(&mut self.reader, len, false)?;
-        let record = T::from_bytes(bytes)?;
-        Ok(Some(record))
-    }
-}
-
-impl<T, R> IndexedReader<T, R>
-where
-    T: GenericRecord,
-    R: AsyncRead + AsyncSeekExt + Unpin,
-{
-    pub async fn get_async(&mut self, index: usize) -> Result<Option<T>, Error> {
-        let RecordIndex { offset, len } = *match self.indexes.get(index) {
-            Some(record_index) => record_index,
-            None => return Ok(None),
-        };
-        self.reader.seek(SeekFrom::Start(offset)).await?;
-        let bytes = crate::io::async_::try_read_record_data(&mut self.reader, len, false).await?;
-        let record = T::from_bytes(bytes)?;
-        Ok(Some(record))
     }
 }
