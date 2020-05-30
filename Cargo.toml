@@ -30,6 +30,11 @@ glob = "0.3.0"
 prost-build = "0.6.1"
 failure = "0.1.8"
 lazy_static = "1.4.0"
+reqwest = { version = "0.10.4", features = ["blocking"] }
+tar = "0.4.28"
+flate2 = "1.0.14"
+blake3 = "0.3.4"
+hex = "0.4.2"
 
 [features]
 full = ["async_", "serde"]
