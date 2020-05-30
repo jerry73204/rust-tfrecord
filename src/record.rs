@@ -1,9 +1,12 @@
 use crate::protos::{feature::Kind, BytesList, Example, Feature, Features, FloatList, Int64List};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub type EasyExample = HashMap<String, EasyFeature>;
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum EasyFeature {
     BytesList(Vec<Vec<u8>>),
     FloatList(Vec<f32>),
