@@ -1,7 +1,7 @@
 use crate::error::Error;
 #[cfg(feature = "async_")]
-use futures::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
-use std::io::{prelude::*, SeekFrom};
+use futures::io::{AsyncReadExt, AsyncWriteExt};
+use std::io::prelude::*;
 
 #[cfg(feature = "async_")]
 pub mod async_ {
@@ -77,24 +77,6 @@ pub mod async_ {
             crate::utils::verify_checksum(&buf, expect_cksum)?;
         }
         Ok(buf)
-    }
-
-    pub async fn try_build_record_index<R>(
-        reader: &mut R,
-        check_integrity: bool,
-    ) -> Result<Vec<(u64, usize)>, Error>
-    where
-        R: AsyncReadExt + AsyncSeekExt + Unpin,
-    {
-        let mut indexes = vec![];
-
-        while let Some(len) = try_read_len(reader, check_integrity).await? {
-            let offset = reader.seek(SeekFrom::Current(0)).await?;
-            try_read_record_data(reader, len, check_integrity).await?;
-            indexes.push((offset, len));
-        }
-
-        Ok(indexes)
     }
 
     pub async fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<(), Error>
@@ -193,24 +175,6 @@ pub mod blocking {
             crate::utils::verify_checksum(&buf, expect_cksum)?;
         }
         Ok(buf)
-    }
-
-    pub fn try_build_record_index<R>(
-        reader: &mut R,
-        check_integrity: bool,
-    ) -> Result<Vec<(u64, usize)>, Error>
-    where
-        R: Read + Seek,
-    {
-        let mut indexes = vec![];
-
-        while let Some(len) = try_read_len(reader, check_integrity)? {
-            let offset = reader.seek(SeekFrom::Current(0))?;
-            try_read_record_data(reader, len, check_integrity)?;
-            indexes.push((offset, len));
-        }
-
-        Ok(indexes)
     }
 
     pub fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<(), Error>
