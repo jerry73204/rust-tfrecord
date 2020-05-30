@@ -1,11 +1,10 @@
 use crate::protos::{
-    feature::Kind, BytesList, Feature as RawFeature, Features, FloatList, Int64List,
+    feature::Kind, BytesList, Example as RawExample, Feature as RawFeature, Features, FloatList,
+    Int64List,
 };
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-pub use crate::protos::Example as RawExample;
 
 pub type Example = HashMap<String, Feature>;
 
