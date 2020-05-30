@@ -3,7 +3,7 @@ use failure::Fallible;
 use futures::stream::TryStreamExt;
 #[cfg(feature = "serde")]
 use prost::Message;
-use std::path::PathBuf;
+use std::{fs::File, io::BufWriter, path::PathBuf};
 #[cfg(feature = "async_")]
 use tffile::RecordStreamInit;
 use tffile::{
@@ -13,7 +13,6 @@ use tffile::{
 
 lazy_static::lazy_static! {
     static ref INPUT_TFRECORD_PATH: PathBuf = {
-        use std::{fs::File, io::BufWriter};
 
         let url = "https://storage.googleapis.com/download.tensorflow.org/data/fsns-20160927/testdata/fsns-00000-of-00001";
         let file_name = "input.tfrecord";
