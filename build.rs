@@ -19,10 +19,12 @@ fn main() -> Fallible<()> {
 
     let out_dir = CARGO_MANIFEST_DIR.join("src").join("protos");
 
-    prost_build::Config::new()
-        .out_dir(&out_dir)
-        .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
-        .compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
+    let mut config = prost_build::Config::new();
+    config.out_dir(&out_dir);
+    if cfg!(feature = "serde") {
+        config.type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]");
+    }
+    config.compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
 
     Ok(())
 }

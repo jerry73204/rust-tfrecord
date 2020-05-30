@@ -1,7 +1,9 @@
 use crate::error::Error;
+#[cfg(feature = "async_")]
 use futures::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use std::io::{prelude::*, SeekFrom};
 
+#[cfg(feature = "async_")]
 pub mod async_ {
     use super::*;
 

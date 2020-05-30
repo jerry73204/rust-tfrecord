@@ -1,4 +1,5 @@
 use crate::{error::Error, markers::GenericRecord, protos::Example, record::EasyExample};
+#[cfg(feature = "async_")]
 use futures::io::AsyncWrite;
 use std::{io::Write, marker::PhantomData, path::Path};
 
@@ -32,6 +33,7 @@ impl RecordWriterInit {
         Self::from_writer(writer)
     }
 
+    #[cfg(feature = "async_")]
     pub fn from_async_writer<T, W>(writer: W) -> Result<RecordWriter<T, W>, Error>
     where
         T: GenericRecord,
@@ -43,6 +45,7 @@ impl RecordWriterInit {
         })
     }
 
+    #[cfg(feature = "async_")]
     pub async fn create_async<T, P>(
         path: P,
     ) -> Result<RecordWriter<T, async_std::io::BufWriter<async_std::fs::File>>, Error>
@@ -76,6 +79,7 @@ where
     }
 }
 
+#[cfg(feature = "async_")]
 impl<T, W> RecordWriter<T, W>
 where
     T: GenericRecord,

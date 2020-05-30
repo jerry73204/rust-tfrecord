@@ -1,9 +1,12 @@
 use failure::Fallible;
+#[cfg(feature = "async_")]
 use futures::stream::TryStreamExt;
 use std::path::PathBuf;
+#[cfg(feature = "async_")]
+use tffile::RecordStreamInit;
 use tffile::{
     BytesReader, BytesWriter, EasyExample, EasyExampleReader, EasyExampleWriter, Example,
-    ExampleReader, ExampleWriter, RecordReaderInit, RecordStreamInit, RecordWriterInit,
+    ExampleReader, ExampleWriter, RecordReaderInit, RecordWriterInit,
 };
 
 lazy_static::lazy_static! {
@@ -61,6 +64,7 @@ fn blocking_reader_test() -> Fallible<()> {
     Ok(())
 }
 
+#[cfg(feature = "async_")]
 #[async_std::test]
 async fn async_stream_test() -> Fallible<()> {
     // bytes
@@ -151,6 +155,7 @@ fn blocking_writer_test() -> Fallible<()> {
     Ok(())
 }
 
+#[cfg(feature = "async_")]
 #[async_std::test]
 async fn async_writer_test() -> Fallible<()> {
     let output_path = DATA_DIR.join("async_writer_output.tfrecord");
