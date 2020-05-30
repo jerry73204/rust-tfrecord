@@ -34,3 +34,7 @@ lazy_static = "1.4.0"
 [features]
 full = ["async_", "serde"]
 async_ = ["futures", "async-std"]
+
+[package.metadata.docs.rs]
+features = ["full"]
+no-default-features = true
