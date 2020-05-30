@@ -1,6 +1,12 @@
+//! Error types and error handling utilities.
+
 use failure::Fail;
 use prost::{DecodeError, EncodeError};
 
+/// The error type for this crate.
+///
+/// It implements [failure::Fail] that it can be directly converted to
+/// [failure::Error].
 #[derive(Debug, Fail)]
 pub enum Error {
     #[fail(

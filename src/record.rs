@@ -1,3 +1,5 @@
+//! High level example and feature types.
+
 use crate::protos::{
     feature::Kind, BytesList, Example as RawExample, Feature as RawFeature, Features, FloatList,
     Int64List,
@@ -6,8 +8,10 @@ use crate::protos::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// The high level example, which is a collections of named features.
 pub type Example = HashMap<String, Feature>;
 
+/// The high level feature type that stores actual data.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Feature {

@@ -1,12 +1,19 @@
+//! Low level synchronous and asynchronous I/O functions.
+//!
+//! The functions are used internally to work with generic readers and writers.
+//! It is not intended for common users, while we encourage using high level API.
+
 use crate::error::Error;
 #[cfg(feature = "async_")]
 use futures::io::{AsyncReadExt, AsyncWriteExt};
 use std::io::prelude::*;
 
+/// Low level I/O functions with async/await.
 #[cfg(feature = "async_")]
 pub mod async_ {
     use super::*;
 
+    /// async/await version analogous to blocking [try_read_record](super::blocking::try_read_record).
     pub async fn try_read_record<R>(
         reader: &mut R,
         check_integrity: bool,
@@ -22,6 +29,7 @@ pub mod async_ {
         Ok(Some(data))
     }
 
+    /// async/await version analogous to blocking [try_read_len](super::blocking::try_read_len).
     pub async fn try_read_len<R>(
         reader: &mut R,
         check_integrity: bool,
@@ -54,6 +62,7 @@ pub mod async_ {
         Ok(Some(len as usize))
     }
 
+    /// async/await version analogous to blocking [try_read_record_data](super::blocking::try_read_record_data).
     pub async fn try_read_record_data<R>(
         reader: &mut R,
         len: usize,
@@ -79,6 +88,7 @@ pub mod async_ {
         Ok(buf)
     }
 
+    /// async/await version analogous to blocking [try_write_record](super::blocking::try_write_record).
     pub async fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<(), Error>
     where
         W: AsyncWriteExt + Unpin,
@@ -106,9 +116,15 @@ pub mod async_ {
     }
 }
 
+/// Low level blocking I/O functions.
 pub mod blocking {
     use super::*;
 
+    /// Try to extract raw bytes of a record from a generic reader.
+    ///
+    /// It reads the record length and data from a generic reader,
+    /// and verifies the checksum if requested.
+    /// If the end of file is reached, it returns `Ok(None)`.
     pub fn try_read_record<R>(
         reader: &mut R,
         check_integrity: bool,
@@ -124,6 +140,9 @@ pub mod blocking {
         Ok(Some(data))
     }
 
+    /// Try to read the record length from a generic reader.
+    ///
+    /// It is internally called by [try_read_record]. It returns `Ok(None)` if reaching the end of file.
     pub fn try_read_len<R>(reader: &mut R, check_integrity: bool) -> Result<Option<usize>, Error>
     where
         R: Read,
@@ -152,6 +171,9 @@ pub mod blocking {
         Ok(Some(len as usize))
     }
 
+    /// Read the record raw bytes with given length from a generic reader.
+    ///
+    /// It is internally called by [try_read_record].
     pub fn try_read_record_data<R>(
         reader: &mut R,
         len: usize,
@@ -177,6 +199,7 @@ pub mod blocking {
         Ok(buf)
     }
 
+    /// Write the raw record bytes to a generic writer.
     pub fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<(), Error>
     where
         W: Write,
