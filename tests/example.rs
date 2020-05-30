@@ -1,6 +1,8 @@
 use failure::Fallible;
 #[cfg(feature = "async_")]
 use futures::stream::TryStreamExt;
+#[cfg(feature = "serde")]
+use prost::Message;
 use std::path::PathBuf;
 #[cfg(feature = "async_")]
 use tffile::RecordStreamInit;
@@ -221,6 +223,45 @@ async fn async_writer_test() -> Fallible<()> {
             .await?;
 
         async_std::fs::remove_file(&output_path).await?;
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_test() -> Fallible<()> {
+    {
+        let reader: BytesReader<_> = RecordReaderInit {
+            check_integrity: true,
+        }
+        .open(&*INPUT_TFRECORD_PATH)?;
+        reader
+            .map(|result| {
+                let bytes = result?;
+                let example = Example::decode(bytes.as_slice())?;
+                let easy_example = EasyExample::from(&example);
+
+                // assert for Example
+                {
+                    let mut buf = vec![];
+                    let reconstructed_example: Example =
+                        serde_json::from_str(&serde_json::to_string(&example)?)?;
+                    Example::encode(&reconstructed_example, &mut buf)?;
+                }
+
+                // assert for EasyExample
+                {
+                    let mut buf = vec![];
+                    let reconstructed_easy_example: EasyExample =
+                        serde_json::from_str(&serde_json::to_string(&easy_example)?)?;
+                    let reconstructed_example = Example::from(reconstructed_easy_example);
+                    Example::encode(&reconstructed_example, &mut buf)?;
+                }
+
+                Fallible::Ok(())
+            })
+            .collect::<Fallible<Vec<_>>>()?;
     }
 
     Ok(())
