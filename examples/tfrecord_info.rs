@@ -1,7 +1,7 @@
 mod common;
 
 use common::INPUT_TFRECORD_PATH;
-use tffile::{EasyExampleReader, EasyFeature, Error, RecordReaderInit};
+use tfrecord::{EasyExampleReader, EasyFeature, Error, RecordReaderInit};
 
 fn main() -> Result<(), Error> {
     // use init pattern to construct the tfrecord reader

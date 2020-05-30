@@ -5,8 +5,8 @@ use futures::stream::TryStreamExt;
 use prost::Message;
 use std::{fs::File, io::BufWriter, path::PathBuf};
 #[cfg(feature = "async_")]
-use tffile::RecordStreamInit;
-use tffile::{
+use tfrecord::RecordStreamInit;
+use tfrecord::{
     BytesReader, BytesWriter, EasyExample, EasyExampleReader, EasyExampleWriter, Example,
     ExampleReader, ExampleWriter, RecordReaderInit, RecordWriterInit,
 };
