@@ -22,6 +22,10 @@ The crate provides several cargo features that you can conditionally compile mod
 - `async_`: Enable async/awat API.
 - `full`: Enable all features above.
 
+## Documentation
+
+See [docs.rs](https://docs.rs/tfrecord/) for the API.
+
 ## Example
 
 ### File reading example
