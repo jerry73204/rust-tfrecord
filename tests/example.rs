@@ -123,15 +123,15 @@ fn blocking_writer_test() -> Fallible<()> {
 
     // raw examples
     {
-        let reader: ExampleReader<_> = RecordReaderInit {
+        let reader: RawExampleReader<_> = RecordReaderInit {
             check_integrity: true,
         }
         .open(&*INPUT_TFRECORD_PATH)?;
-        let mut writer: ExampleWriter<_> = RecordWriterInit::create(&output_path)?;
+        let mut writer: RawExampleWriter<_> = RecordWriterInit::create(&output_path)?;
 
         for result in reader {
-            let example = result?;
-            writer.send(example)?;
+            let raw_example = result?;
+            writer.send(raw_example)?;
         }
 
         std::fs::remove_file(&output_path)?;
