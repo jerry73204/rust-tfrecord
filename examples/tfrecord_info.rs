@@ -24,10 +24,7 @@ lazy_static::lazy_static! {
 
 fn main() -> Result<(), Error> {
     // use init pattern to construct the tfrecord reader
-    let reader: ExampleReader<_> = RecordReaderInit {
-        check_integrity: true,
-    }
-    .open(&*INPUT_TFRECORD_PATH)?;
+    let reader: ExampleReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
 
     // print header
     println!("example_no\tfeature_no\tname\ttype\tsize");

@@ -37,28 +37,20 @@ lazy_static::lazy_static! {
 fn blocking_reader_test() -> Fallible<()> {
     // bytes
     {
-        let reader: BytesReader<_> = RecordReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
+        let reader: BytesReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
         reader.collect::<Result<Vec<Vec<u8>>, _>>()?;
     }
 
     // raw examples
     {
-        let reader: RawExampleReader<_> = RecordReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
+        let reader: RawExampleReader<_> =
+            RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
         reader.collect::<Result<Vec<RawExample>, _>>()?;
     }
 
     // examples
     {
-        let reader: ExampleReader<_> = RecordReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
+        let reader: ExampleReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
         reader.collect::<Result<Vec<Example>, _>>()?;
     }
 
@@ -70,31 +62,25 @@ fn blocking_reader_test() -> Fallible<()> {
 async fn async_stream_test() -> Fallible<()> {
     // bytes
     {
-        let stream = RecordStreamInit {
-            check_integrity: true,
-        }
-        .bytes_open(&*INPUT_TFRECORD_PATH)
-        .await?;
+        let stream = RecordStreamInit::default()
+            .bytes_open(&*INPUT_TFRECORD_PATH)
+            .await?;
         stream.try_collect::<Vec<Vec<u8>>>().await?;
     }
 
     // raw examples
     {
-        let stream = RecordStreamInit {
-            check_integrity: true,
-        }
-        .raw_examples_open(&*INPUT_TFRECORD_PATH)
-        .await?;
+        let stream = RecordStreamInit::default()
+            .raw_examples_open(&*INPUT_TFRECORD_PATH)
+            .await?;
         stream.try_collect::<Vec<RawExample>>().await?;
     }
 
     // examples
     {
-        let stream = RecordStreamInit {
-            check_integrity: true,
-        }
-        .examples_open(&*INPUT_TFRECORD_PATH)
-        .await?;
+        let stream = RecordStreamInit::default()
+            .examples_open(&*INPUT_TFRECORD_PATH)
+            .await?;
         stream.try_collect::<Vec<Example>>().await?;
     }
 
@@ -107,10 +93,7 @@ fn blocking_writer_test() -> Fallible<()> {
 
     // bytes
     {
-        let reader: BytesReader<_> = RecordReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
+        let reader: BytesReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
         let mut writer: BytesWriter<_> = RecordWriterInit::create(&output_path)?;
 
         for result in reader {
@@ -123,10 +106,8 @@ fn blocking_writer_test() -> Fallible<()> {
 
     // raw examples
     {
-        let reader: RawExampleReader<_> = RecordReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
+        let reader: RawExampleReader<_> =
+            RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
         let mut writer: RawExampleWriter<_> = RecordWriterInit::create(&output_path)?;
 
         for result in reader {
@@ -139,10 +120,7 @@ fn blocking_writer_test() -> Fallible<()> {
 
     // examples
     {
-        let reader: ExampleReader<_> = RecordReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
+        let reader: ExampleReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
         let mut writer: ExampleWriter<_> = RecordWriterInit::create(&output_path)?;
 
         for result in reader {
@@ -163,11 +141,9 @@ async fn async_writer_test() -> Fallible<()> {
 
     // bytes
     {
-        let stream = RecordStreamInit {
-            check_integrity: true,
-        }
-        .bytes_open(&*INPUT_TFRECORD_PATH)
-        .await?;
+        let stream = RecordStreamInit::default()
+            .bytes_open(&*INPUT_TFRECORD_PATH)
+            .await?;
         let writer: BytesWriter<_> = RecordWriterInit::create_async(&output_path).await?;
 
         stream
@@ -184,11 +160,9 @@ async fn async_writer_test() -> Fallible<()> {
 
     // raw examples
     {
-        let stream = RecordStreamInit {
-            check_integrity: true,
-        }
-        .raw_examples_open(&*INPUT_TFRECORD_PATH)
-        .await?;
+        let stream = RecordStreamInit::default()
+            .raw_examples_open(&*INPUT_TFRECORD_PATH)
+            .await?;
         let writer: RawExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
 
         stream
@@ -205,11 +179,9 @@ async fn async_writer_test() -> Fallible<()> {
 
     // examples
     {
-        let stream = RecordStreamInit {
-            check_integrity: true,
-        }
-        .examples_open(&*INPUT_TFRECORD_PATH)
-        .await?;
+        let stream = RecordStreamInit::default()
+            .examples_open(&*INPUT_TFRECORD_PATH)
+            .await?;
         let writer: ExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
 
         stream
@@ -231,10 +203,7 @@ async fn async_writer_test() -> Fallible<()> {
 #[test]
 fn serde_test() -> Fallible<()> {
     {
-        let reader: BytesReader<_> = RecordReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
+        let reader: BytesReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
         reader
             .map(|result| {
                 let bytes = result?;

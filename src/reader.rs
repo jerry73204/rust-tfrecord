@@ -19,6 +19,14 @@ mod blocking {
         pub check_integrity: bool,
     }
 
+    impl Default for RecordReaderInit {
+        fn default() -> Self {
+            Self {
+                check_integrity: true,
+            }
+        }
+    }
+
     impl RecordReaderInit {
         pub fn from_reader<T, R>(self, reader: R) -> Result<RecordReader<T, R>, Error>
         where

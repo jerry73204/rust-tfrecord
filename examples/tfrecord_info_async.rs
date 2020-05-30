@@ -28,11 +28,9 @@ lazy_static::lazy_static! {
 #[async_std::main]
 async fn main() -> Result<(), Error> {
     // use init pattern to construct the tfrecord stream
-    let stream = RecordStreamInit {
-        check_integrity: true,
-    }
-    .examples_open(&*INPUT_TFRECORD_PATH)
-    .await?;
+    let stream = RecordStreamInit::default()
+        .examples_open(&*INPUT_TFRECORD_PATH)
+        .await?;
 
     // print header
     println!("example_no\tfeature_no\tname\ttype\tsize");
