@@ -1,9 +1,10 @@
-use crate::{error::Error, markers::GenericRecord, protos::Example};
+use crate::{error::Error, markers::GenericRecord, protos::Example, record::EasyExample};
 use futures::io::AsyncWrite;
 use std::{io::Write, marker::PhantomData, path::Path};
 
 pub type BytesWriter<W> = RecordWriter<Vec<u8>, W>;
 pub type ExampleWriter<W> = RecordWriter<Example, W>;
+pub type EasyExampleWriter<W> = RecordWriter<EasyExample, W>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecordWriterInit;

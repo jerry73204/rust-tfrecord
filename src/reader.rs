@@ -1,9 +1,10 @@
-use crate::{error::Error, markers::GenericRecord, protos::Example};
+use crate::{error::Error, markers::GenericRecord, protos::Example, record::EasyExample};
 use futures::{io::AsyncRead, stream::Stream};
 use std::{io::prelude::*, marker::PhantomData, path::Path};
 
 pub type BytesReader<R> = RecordReader<Vec<u8>, R>;
 pub type ExampleReader<R> = RecordReader<Example, R>;
+pub type EasyExampleReader<R> = RecordReader<EasyExample, R>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecordReaderInit {
@@ -144,6 +145,16 @@ impl RecordStreamInit {
         self.from_reader::<Example, _>(reader).await
     }
 
+    pub async fn easy_examples_from_reader<R>(
+        self,
+        reader: R,
+    ) -> Result<impl Stream<Item = Result<EasyExample, Error>>, Error>
+    where
+        R: 'static + AsyncRead + Unpin + Send,
+    {
+        self.from_reader::<EasyExample, _>(reader).await
+    }
+
     pub async fn bytes_open<P>(
         self,
         path: P,
@@ -162,5 +173,15 @@ impl RecordStreamInit {
         P: AsRef<async_std::path::Path>,
     {
         Self::open::<Example, _>(self, path).await
+    }
+
+    pub async fn easy_examples_open<P>(
+        self,
+        path: P,
+    ) -> Result<impl Stream<Item = Result<EasyExample, Error>>, Error>
+    where
+        P: AsRef<async_std::path::Path>,
+    {
+        Self::open::<EasyExample, _>(self, path).await
     }
 }
