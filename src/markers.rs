@@ -1,4 +1,4 @@
-use crate::{error::Error, protos::Example, record::EasyExample};
+use crate::{error::Error, protos::Example as RawExample, record::Example};
 use prost::Message;
 
 pub trait GenericRecord
@@ -19,30 +19,30 @@ impl GenericRecord for Vec<u8> {
     }
 }
 
-impl GenericRecord for Example {
+impl GenericRecord for RawExample {
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
-        let example = Example::decode(bytes.as_ref())?;
+        let example = RawExample::decode(bytes.as_ref())?;
         Ok(example)
     }
 
     fn to_bytes(record: Self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
-        Example::encode(&record, &mut bytes)?;
+        RawExample::encode(&record, &mut bytes)?;
         Ok(bytes)
     }
 }
 
-impl GenericRecord for EasyExample {
+impl GenericRecord for Example {
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
-        let example = Example::decode(bytes.as_ref())?;
-        let easy_example = EasyExample::from(example);
-        Ok(easy_example)
+        let raw_example = RawExample::decode(bytes.as_ref())?;
+        let example = Example::from(raw_example);
+        Ok(example)
     }
 
-    fn to_bytes(easy_example: Self) -> Result<Vec<u8>, Error> {
+    fn to_bytes(example: Self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
-        let example = Example::from(easy_example);
-        Example::encode(&example, &mut bytes)?;
+        let raw_example = RawExample::from(example);
+        RawExample::encode(&raw_example, &mut bytes)?;
         Ok(bytes)
     }
 }

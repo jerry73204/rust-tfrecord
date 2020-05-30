@@ -7,8 +7,8 @@ use std::{fs::File, io::BufWriter, path::PathBuf};
 #[cfg(feature = "async_")]
 use tfrecord::RecordStreamInit;
 use tfrecord::{
-    BytesReader, BytesWriter, EasyExample, EasyExampleReader, EasyExampleWriter, Example,
-    ExampleReader, ExampleWriter, RecordReaderInit, RecordWriterInit,
+    BytesReader, BytesWriter, Example, ExampleReader, ExampleWriter, RawExample, RawExampleReader,
+    RawExampleWriter, RecordReaderInit, RecordWriterInit,
 };
 
 lazy_static::lazy_static! {
@@ -46,20 +46,20 @@ fn blocking_reader_test() -> Fallible<()> {
 
     // raw examples
     {
+        let reader: RawExampleReader<_> = RecordReaderInit {
+            check_integrity: true,
+        }
+        .open(&*INPUT_TFRECORD_PATH)?;
+        reader.collect::<Result<Vec<RawExample>, _>>()?;
+    }
+
+    // examples
+    {
         let reader: ExampleReader<_> = RecordReaderInit {
             check_integrity: true,
         }
         .open(&*INPUT_TFRECORD_PATH)?;
         reader.collect::<Result<Vec<Example>, _>>()?;
-    }
-
-    // easy examples
-    {
-        let reader: EasyExampleReader<_> = RecordReaderInit {
-            check_integrity: true,
-        }
-        .open(&*INPUT_TFRECORD_PATH)?;
-        reader.collect::<Result<Vec<EasyExample>, _>>()?;
     }
 
     Ok(())
@@ -83,19 +83,19 @@ async fn async_stream_test() -> Fallible<()> {
         let stream = RecordStreamInit {
             check_integrity: true,
         }
-        .examples_open(&*INPUT_TFRECORD_PATH)
+        .raw_examples_open(&*INPUT_TFRECORD_PATH)
         .await?;
-        stream.try_collect::<Vec<Example>>().await?;
+        stream.try_collect::<Vec<RawExample>>().await?;
     }
 
-    // easy examples
+    // examples
     {
         let stream = RecordStreamInit {
             check_integrity: true,
         }
-        .easy_examples_open(&*INPUT_TFRECORD_PATH)
+        .examples_open(&*INPUT_TFRECORD_PATH)
         .await?;
-        stream.try_collect::<Vec<EasyExample>>().await?;
+        stream.try_collect::<Vec<Example>>().await?;
     }
 
     Ok(())
@@ -137,13 +137,13 @@ fn blocking_writer_test() -> Fallible<()> {
         std::fs::remove_file(&output_path)?;
     }
 
-    // easy examples
+    // examples
     {
-        let reader: EasyExampleReader<_> = RecordReaderInit {
+        let reader: ExampleReader<_> = RecordReaderInit {
             check_integrity: true,
         }
         .open(&*INPUT_TFRECORD_PATH)?;
-        let mut writer: EasyExampleWriter<_> = RecordWriterInit::create(&output_path)?;
+        let mut writer: ExampleWriter<_> = RecordWriterInit::create(&output_path)?;
 
         for result in reader {
             let example = result?;
@@ -187,9 +187,9 @@ async fn async_writer_test() -> Fallible<()> {
         let stream = RecordStreamInit {
             check_integrity: true,
         }
-        .examples_open(&*INPUT_TFRECORD_PATH)
+        .raw_examples_open(&*INPUT_TFRECORD_PATH)
         .await?;
-        let writer: ExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
+        let writer: RawExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
 
         stream
             .try_fold(writer, |mut writer, example| {
@@ -203,14 +203,14 @@ async fn async_writer_test() -> Fallible<()> {
         async_std::fs::remove_file(&output_path).await?;
     }
 
-    // easy examples
+    // examples
     {
         let stream = RecordStreamInit {
             check_integrity: true,
         }
-        .easy_examples_open(&*INPUT_TFRECORD_PATH)
+        .examples_open(&*INPUT_TFRECORD_PATH)
         .await?;
-        let writer: EasyExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
+        let writer: ExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
 
         stream
             .try_fold(writer, |mut writer, example| {
@@ -238,25 +238,14 @@ fn serde_test() -> Fallible<()> {
         reader
             .map(|result| {
                 let bytes = result?;
-                let example = Example::decode(bytes.as_slice())?;
-                let easy_example = EasyExample::from(&example);
+                let raw_example = RawExample::decode(bytes.as_slice())?;
+                let example = Example::from(&raw_example);
+
+                // assert for RawExample
+                let _: RawExample = serde_json::from_str(&serde_json::to_string(&raw_example)?)?;
 
                 // assert for Example
-                {
-                    let mut buf = vec![];
-                    let reconstructed_example: Example =
-                        serde_json::from_str(&serde_json::to_string(&example)?)?;
-                    Example::encode(&reconstructed_example, &mut buf)?;
-                }
-
-                // assert for EasyExample
-                {
-                    let mut buf = vec![];
-                    let reconstructed_easy_example: EasyExample =
-                        serde_json::from_str(&serde_json::to_string(&easy_example)?)?;
-                    let reconstructed_example = Example::from(reconstructed_easy_example);
-                    Example::encode(&reconstructed_example, &mut buf)?;
-                }
+                let _: Example = serde_json::from_str(&serde_json::to_string(&example)?)?;
 
                 Fallible::Ok(())
             })

@@ -1,11 +1,11 @@
-use crate::{error::Error, markers::GenericRecord, protos::Example, record::EasyExample};
+use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample, record::Example};
 #[cfg(feature = "async_")]
 use futures::{io::AsyncRead, stream::Stream};
 use std::{io::prelude::*, marker::PhantomData, path::Path};
 
 pub type BytesReader<R> = RecordReader<Vec<u8>, R>;
+pub type RawExampleReader<R> = RecordReader<RawExample, R>;
 pub type ExampleReader<R> = RecordReader<Example, R>;
-pub type EasyExampleReader<R> = RecordReader<EasyExample, R>;
 
 #[cfg(feature = "async_")]
 pub use async_::*;
@@ -152,6 +152,16 @@ mod async_ {
             self.from_reader::<Vec<u8>, _>(reader).await
         }
 
+        pub async fn raw_examples_from_reader<R>(
+            self,
+            reader: R,
+        ) -> Result<impl Stream<Item = Result<RawExample, Error>>, Error>
+        where
+            R: 'static + AsyncRead + Unpin + Send,
+        {
+            self.from_reader::<RawExample, _>(reader).await
+        }
+
         pub async fn examples_from_reader<R>(
             self,
             reader: R,
@@ -160,16 +170,6 @@ mod async_ {
             R: 'static + AsyncRead + Unpin + Send,
         {
             self.from_reader::<Example, _>(reader).await
-        }
-
-        pub async fn easy_examples_from_reader<R>(
-            self,
-            reader: R,
-        ) -> Result<impl Stream<Item = Result<EasyExample, Error>>, Error>
-        where
-            R: 'static + AsyncRead + Unpin + Send,
-        {
-            self.from_reader::<EasyExample, _>(reader).await
         }
 
         pub async fn bytes_open<P>(
@@ -182,6 +182,16 @@ mod async_ {
             Self::open::<Vec<u8>, _>(self, path).await
         }
 
+        pub async fn raw_examples_open<P>(
+            self,
+            path: P,
+        ) -> Result<impl Stream<Item = Result<RawExample, Error>>, Error>
+        where
+            P: AsRef<async_std::path::Path>,
+        {
+            Self::open::<RawExample, _>(self, path).await
+        }
+
         pub async fn examples_open<P>(
             self,
             path: P,
@@ -190,16 +200,6 @@ mod async_ {
             P: AsRef<async_std::path::Path>,
         {
             Self::open::<Example, _>(self, path).await
-        }
-
-        pub async fn easy_examples_open<P>(
-            self,
-            path: P,
-        ) -> Result<impl Stream<Item = Result<EasyExample, Error>>, Error>
-        where
-            P: AsRef<async_std::path::Path>,
-        {
-            Self::open::<EasyExample, _>(self, path).await
         }
     }
 }

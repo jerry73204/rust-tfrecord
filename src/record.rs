@@ -1,56 +1,60 @@
-use crate::protos::{feature::Kind, BytesList, Example, Feature, Features, FloatList, Int64List};
+use crate::protos::{
+    feature::Kind, BytesList, Feature as RawFeature, Features, FloatList, Int64List,
+};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub type EasyExample = HashMap<String, EasyFeature>;
+pub use crate::protos::Example as RawExample;
+
+pub type Example = HashMap<String, Feature>;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum EasyFeature {
+pub enum Feature {
     BytesList(Vec<Vec<u8>>),
     FloatList(Vec<f32>),
     Int64List(Vec<i64>),
     None,
 }
 
-impl From<Feature> for EasyFeature {
-    fn from(from: Feature) -> Self {
+impl From<RawFeature> for Feature {
+    fn from(from: RawFeature) -> Self {
         match from.kind {
-            Some(Kind::BytesList(BytesList { value })) => EasyFeature::BytesList(value),
-            Some(Kind::FloatList(FloatList { value })) => EasyFeature::FloatList(value),
-            Some(Kind::Int64List(Int64List { value })) => EasyFeature::Int64List(value),
-            None => EasyFeature::None,
+            Some(Kind::BytesList(BytesList { value })) => Feature::BytesList(value),
+            Some(Kind::FloatList(FloatList { value })) => Feature::FloatList(value),
+            Some(Kind::Int64List(Int64List { value })) => Feature::Int64List(value),
+            None => Feature::None,
         }
     }
 }
 
-impl From<&Feature> for EasyFeature {
-    fn from(from: &Feature) -> Self {
+impl From<&RawFeature> for Feature {
+    fn from(from: &RawFeature) -> Self {
         Self::from(from.to_owned())
     }
 }
 
-impl From<EasyFeature> for Feature {
-    fn from(from: EasyFeature) -> Self {
+impl From<Feature> for RawFeature {
+    fn from(from: Feature) -> Self {
         let kind = match from {
-            EasyFeature::BytesList(value) => Some(Kind::BytesList(BytesList { value })),
-            EasyFeature::FloatList(value) => Some(Kind::FloatList(FloatList { value })),
-            EasyFeature::Int64List(value) => Some(Kind::Int64List(Int64List { value })),
-            EasyFeature::None => None,
+            Feature::BytesList(value) => Some(Kind::BytesList(BytesList { value })),
+            Feature::FloatList(value) => Some(Kind::FloatList(FloatList { value })),
+            Feature::Int64List(value) => Some(Kind::Int64List(Int64List { value })),
+            Feature::None => None,
         };
         Self { kind }
     }
 }
 
-impl From<&EasyFeature> for Feature {
-    fn from(from: &EasyFeature) -> Self {
+impl From<&Feature> for RawFeature {
+    fn from(from: &Feature) -> Self {
         Self::from(from.to_owned())
     }
 }
 
-impl From<Example> for EasyExample {
-    fn from(from: Example) -> Self {
+impl From<RawExample> for Example {
+    fn from(from: RawExample) -> Self {
         let features = match from.features {
             Some(features) => features,
             None => return HashMap::new(),
@@ -58,35 +62,35 @@ impl From<Example> for EasyExample {
         features
             .feature
             .into_iter()
-            .map(|(name, feature)| (name, EasyFeature::from(feature)))
+            .map(|(name, feature)| (name, Feature::from(feature)))
             .collect::<HashMap<_, _>>()
     }
 }
 
-impl From<&Example> for EasyExample {
-    fn from(from: &Example) -> Self {
+impl From<&RawExample> for Example {
+    fn from(from: &RawExample) -> Self {
         Self::from(from.to_owned())
     }
 }
 
-impl From<EasyExample> for Example {
-    fn from(from: EasyExample) -> Self {
+impl From<Example> for RawExample {
+    fn from(from: Example) -> Self {
         let feature = from
             .into_iter()
-            .map(|(name, easy_feature)| (name, Feature::from(easy_feature)))
+            .map(|(name, feature)| (name, RawFeature::from(feature)))
             .collect::<HashMap<_, _>>();
         if feature.is_empty() {
-            Example { features: None }
+            RawExample { features: None }
         } else {
-            Example {
+            RawExample {
                 features: Some(Features { feature }),
             }
         }
     }
 }
 
-impl From<&EasyExample> for Example {
-    fn from(from: &EasyExample) -> Self {
+impl From<&Example> for RawExample {
+    fn from(from: &Example) -> Self {
         Self::from(from.to_owned())
     }
 }

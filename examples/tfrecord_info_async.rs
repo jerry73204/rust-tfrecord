@@ -2,7 +2,7 @@
 
 use futures::stream::TryStreamExt;
 use std::{fs::File, io::BufWriter, path::PathBuf};
-use tfrecord::{EasyFeature, Error, RecordStreamInit};
+use tfrecord::{Error, Feature, RecordStreamInit};
 
 lazy_static::lazy_static! {
     pub static ref INPUT_TFRECORD_PATH: PathBuf = {
@@ -31,7 +31,7 @@ async fn main() -> Result<(), Error> {
     let stream = RecordStreamInit {
         check_integrity: true,
     }
-    .easy_examples_open(&*INPUT_TFRECORD_PATH)
+    .examples_open(&*INPUT_TFRECORD_PATH)
     .await?;
 
     // print header
@@ -46,16 +46,16 @@ async fn main() -> Result<(), Error> {
                     print!("{}\t{}\t{}\t", example_index, feature_index, name);
 
                     match feature {
-                        EasyFeature::BytesList(list) => {
+                        Feature::BytesList(list) => {
                             println!("bytes\t{}", list.len());
                         }
-                        EasyFeature::FloatList(list) => {
+                        Feature::FloatList(list) => {
                             println!("float\t{}", list.len());
                         }
-                        EasyFeature::Int64List(list) => {
+                        Feature::Int64List(list) => {
                             println!("int64\t{}", list.len());
                         }
-                        EasyFeature::None => {
+                        Feature::None => {
                             println!("none");
                         }
                     }

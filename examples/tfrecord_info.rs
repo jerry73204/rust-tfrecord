@@ -1,5 +1,5 @@
 use std::{fs::File, io::BufWriter, path::PathBuf};
-use tfrecord::{EasyExampleReader, EasyFeature, Error, RecordReaderInit};
+use tfrecord::{Error, ExampleReader, Feature, RecordReaderInit};
 
 lazy_static::lazy_static! {
     pub static ref INPUT_TFRECORD_PATH: PathBuf = {
@@ -24,7 +24,7 @@ lazy_static::lazy_static! {
 
 fn main() -> Result<(), Error> {
     // use init pattern to construct the tfrecord reader
-    let reader: EasyExampleReader<_> = RecordReaderInit {
+    let reader: ExampleReader<_> = RecordReaderInit {
         check_integrity: true,
     }
     .open(&*INPUT_TFRECORD_PATH)?;
@@ -41,16 +41,16 @@ fn main() -> Result<(), Error> {
             print!("{}\t{}\t{}\t", example_index, feature_index, name);
 
             match feature {
-                EasyFeature::BytesList(list) => {
+                Feature::BytesList(list) => {
                     println!("bytes\t{}", list.len());
                 }
-                EasyFeature::FloatList(list) => {
+                Feature::FloatList(list) => {
                     println!("float\t{}", list.len());
                 }
-                EasyFeature::Int64List(list) => {
+                Feature::Int64List(list) => {
                     println!("int64\t{}", list.len());
                 }
-                EasyFeature::None => {
+                Feature::None => {
                     println!("none");
                 }
             }
