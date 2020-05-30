@@ -3,5 +3,4 @@
 //! The types are provided by ProtocolBuffer documents from TensorFlow repository.
 //! They are used internally for {,de}serialization.
 
-mod tensorflow;
-pub use tensorflow::*;
+include!(concat!(env!("OUT_DIR"), "/tensorflow.rs"));
