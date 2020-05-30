@@ -1,9 +1,16 @@
 [package]
 name = "tfrecord"
+description = "Serialize and deserialize TFRecord data format from TensorFlow"
 version = "0.1.0"
-authors = ["jerry73204 <jerry73204@gmail.com>"]
+authors = ["Jerry Lin <jerry73204@gmail.com>"]
 edition = "2018"
+categories = ["parsing"]
+documentation = "https://docs.rs/tfrecord/"
+repository = "https://github.com/jerry73204/rust-tfrecord.git"
+homepage = "https://github.com/jerry73204/rust-tfrecord"
 build = "build.rs"
+readme = "README.md"
+license-file = "LICENSE"
 
 [dependencies]
 failure = "0.1.8"
