@@ -25,6 +25,12 @@ impl From<Feature> for EasyFeature {
     }
 }
 
+impl From<&Feature> for EasyFeature {
+    fn from(from: &Feature) -> Self {
+        Self::from(from.to_owned())
+    }
+}
+
 impl From<EasyFeature> for Feature {
     fn from(from: EasyFeature) -> Self {
         let kind = match from {
@@ -34,6 +40,12 @@ impl From<EasyFeature> for Feature {
             EasyFeature::None => None,
         };
         Self { kind }
+    }
+}
+
+impl From<&EasyFeature> for Feature {
+    fn from(from: &EasyFeature) -> Self {
+        Self::from(from.to_owned())
     }
 }
 
@@ -51,6 +63,12 @@ impl From<Example> for EasyExample {
     }
 }
 
+impl From<&Example> for EasyExample {
+    fn from(from: &Example) -> Self {
+        Self::from(from.to_owned())
+    }
+}
+
 impl From<EasyExample> for Example {
     fn from(from: EasyExample) -> Self {
         let feature = from
@@ -64,5 +82,11 @@ impl From<EasyExample> for Example {
                 features: Some(Features { feature }),
             }
         }
+    }
+}
+
+impl From<&EasyExample> for Example {
+    fn from(from: &EasyExample) -> Self {
+        Self::from(from.to_owned())
     }
 }
