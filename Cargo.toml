@@ -27,6 +27,7 @@ static_assertions = { version = "1.1.0", optional = true }
 lazy_static = "1.4.0"
 reqwest = { version = "0.10.4", features = ["blocking"] }
 serde_json = "1.0.53"
+rand = { version = "0.7.3", features = ["getrandom"] }
 
 [build-dependencies]
 glob = "0.3.0"
