@@ -16,8 +16,8 @@ pub enum Error {
     ChecksumMismatchError { expect: String, found: String },
     #[fail(display = "unexpected eof")]
     UnexpectedEofError,
-    #[fail(display = "invalid options: {}", desc)]
-    InvalidOptionsError { desc: String },
+    #[fail(display = "unicode error: {}", desc)]
+    UnicodeError { desc: String },
     #[fail(display = "failed to decode example: {:?}", error)]
     ExampleDecodeError { error: DecodeError },
     #[fail(display = "failed to encode example: {:?}", error)]

@@ -9,7 +9,7 @@ use crate::{error::Error, markers::GenericRecord};
 use async_std::{
     fs::File,
     io::BufReader,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf, MAIN_SEPARATOR},
 };
 use futures::{
     io::{AsyncReadExt, AsyncSeekExt},
@@ -57,44 +57,55 @@ impl DatasetInit {
     /// If the path ends with "/", it searchs for all files under the directory.
     /// Otherwise, it lists the files with the path prefix.
     /// The enumerated paths will be sorted in alphabetical order.
-    pub async fn from_prefix<P>(self, prefix: P) -> Result<Dataset, Error>
-    where
-        P: AsRef<Path>,
-    {
+    pub async fn from_prefix(self, prefix: &str) -> Result<Dataset, Error> {
         // get parent dir and file name prefix
-        let prefix = prefix.as_ref();
-        let (dir, file_name_prefix_opt) = match prefix.file_name() {
-            Some(file_name) => {
-                let dir = prefix.parent().unwrap();
-                (dir, Some(file_name))
-            }
-            None => {
-                // prefix itself is a directory
-                (prefix, None)
-            }
+        let prefix_path: &Path = prefix.as_ref();
+
+        // assume the prefix is a directly if it ends with the separator
+        let (dir, file_name_prefix_opt) = if prefix.ends_with(MAIN_SEPARATOR) {
+            (prefix_path, None)
+        } else {
+            let dir = prefix_path.parent().expect("please report bug");
+            let file_name_prefix = prefix_path
+                .file_name()
+                .expect("please report bug")
+                .to_str()
+                .expect("please report bug");
+            (dir, Some(file_name_prefix))
         };
 
         // filter paths
         let mut paths = dir
             .read_dir()
             .await?
+            .map(|result| result.map_err(|err| Error::from(err)))
             .try_filter_map(|entry| {
                 async move {
                     if !entry.metadata().await?.is_file() {
                         return Ok(None);
                     }
 
-                    let file_name = PathBuf::from(entry.file_name());
+                    let path = entry.path();
+                    let file_name =
+                        entry
+                            .file_name()
+                            .into_string()
+                            .map_err(|_| Error::UnicodeError {
+                                desc: format!(
+                                    r#"the file path "{}" is not Unicode"#,
+                                    path.display()
+                                ),
+                            })?;
 
                     match file_name_prefix_opt {
                         Some(file_name_prefix) => {
                             if file_name.starts_with(&file_name_prefix) {
-                                Ok(Some(entry.path()))
+                                Result::<_, Error>::Ok(Some(path))
                             } else {
                                 Ok(None)
                             }
                         }
-                        None => Ok(Some(entry.path())),
+                        None => Ok(Some(path)),
                     }
                 }
             })
