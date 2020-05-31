@@ -1,5 +1,10 @@
 #![cfg(feature = "dataset")]
 
+//! The dataset API that accesses multiple TFRecord files.
+//!
+//! The module is available when the `dataset` feature is enabled.
+//! The [Dataset] type can be constructed using [DatasetInit] initializer.
+
 use crate::{error::Error, markers::GenericRecord};
 use async_std::{
     fs::File,
@@ -20,10 +25,19 @@ struct RecordIndex {
     len: usize,
 }
 
+/// The dataset initializer.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DatasetInit {
+    /// Verify the checksum or not.
     pub check_integrity: bool,
+    /// Maximum number of open files.
+    ///
+    /// Limit the number of open files if it is `Some(_)`
+    /// It has no limit if it is `None`.
     pub max_open_files: Option<NonZeroUsize>,
+    /// Maximum number of concurrent workers.
+    ///
+    /// If it is `None`, it defaults to [num_cpus::get].
     pub max_workers: Option<NonZeroUsize>,
 }
 
@@ -38,6 +52,11 @@ impl Default for DatasetInit {
 }
 
 impl DatasetInit {
+    /// Open TFRecord files by a path prefix.
+    ///
+    /// If the path ends with "/", it searchs for all files under the directory.
+    /// Otherwise, it lists the files with the path prefix.
+    /// The enumerated paths will be sorted in alphabetical order.
     pub async fn from_prefix<P>(self, prefix: P) -> Result<Dataset, Error>
     where
         P: AsRef<Path>,
@@ -89,6 +108,10 @@ impl DatasetInit {
         self.from_paths(&paths).await
     }
 
+    /// Open TFRecord files by a set of path.
+    ///
+    /// It assumes every path is a TFRecord file, otherwise it returns error.
+    /// The order of the paths affects the order of record indexes..
     pub async fn from_paths<P>(self, paths: &[P]) -> Result<Dataset, Error>
     where
         P: AsRef<Path>,
@@ -183,6 +206,7 @@ struct DatasetState {
     pub open_file_semaphore: Option<Arc<Semaphore>>,
 }
 
+/// The dataset type.
 #[derive(Debug)]
 pub struct Dataset {
     state: Arc<DatasetState>,
@@ -199,10 +223,14 @@ impl Clone for Dataset {
 }
 
 impl Dataset {
+    /// Get the number of indexed records.
     pub fn num_records(&self) -> usize {
         self.state.record_indexes.len()
     }
 
+    /// Get an example by an index number.
+    ///
+    /// It returns `None` if the index number is greater than or equal to [num_records](Dataset::num_records).
     pub async fn get<T>(&mut self, index: usize) -> Result<Option<T>, Error>
     where
         T: GenericRecord,
@@ -220,6 +248,7 @@ impl Dataset {
         Ok(Some(record))
     }
 
+    /// Gets the record stream.
     pub fn stream<T>(&self) -> impl TryStream<Ok = T, Error = Error> + Send
     where
         T: GenericRecord,

@@ -3,7 +3,8 @@
 //! The crate provides several cargo features that you can conditionally compile modules.
 //!
 //! - `serde`: Enable interoperability with [serde](https://github.com/serde-rs/serde) to serialize and deserialize example types.
-//! - `async_`: Enable async/awat API.
+//! - `async_`: Enable async/await feature.
+//! - `dataset`: Enable the dataset API.
 //! - `full`: Enable all features above.
 
 #[cfg(feature = "dataset")]
