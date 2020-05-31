@@ -22,6 +22,8 @@ The crate provides several cargo features that you can conditionally compile mod
 - `async_`: Enable async/awat API.
 - `full`: Enable all features above.
 
+By default, the crate compiles the pre-built ProtocolBuffer code in the repository. If you would like to re-run the code generation, see [Generate ProtocolBuffer code from TensorFlow](#generate-protocolbuffer-code-from-tensorflow) section.
+
 ## Documentation
 
 See [docs.rs](https://docs.rs/tfrecord/) for the API.
@@ -131,6 +133,45 @@ async fn main() -> Result<(), Error> {
 ### More examples
 
 Also, we suggest visiting the [test code](tests) for more detailed usage.
+
+
+## Generate ProtocolBuffer code from TensorFlow
+
+The crate relies on ProtocolBuffer documents from TensorFlow. The crate ships pre-generated code from ProtocolBuffer documents by default. Most users don't need to bother with the code generation. The step is needed only in case of TensorFlow updates or your custom patch.
+
+The build script accepts several ways to access the TensorFlow source code, controlled by the `TFRECORD_BUILD_METHOD` environment variable. The generated code will be placed under `prebuild_src` directory. See the examples below to understand the usage.
+
+- Build from a source tarball
+
+```sh
+export TFRECORD_BUILD_METHOD="src_file:///home/myname/tensorflow-2.2.0.tar.gz"
+cargo build --release --features serde,generate_protobuf_src  # with serde
+cargo build --release --features generate_protobuf_src        # without serde
+```
+
+- Build from a source directory
+
+```sh
+export TFRECORD_BUILD_METHOD="src_dir:///home/myname/tensorflow-2.2.0"
+cargo build --release --features serde,generate_protobuf_src  # with serde
+cargo build --release --features generate_protobuf_src        # without serde
+```
+
+- Build from a URL
+
+```sh
+export TFRECORD_BUILD_METHOD="url://https://github.com/tensorflow/tensorflow/archive/v2.2.0.tar.gz"
+cargo build --release --features serde,generate_protobuf_src  # with serde
+cargo build --release --features generate_protobuf_src        # without serde
+```
+
+- Build from installed TensorFlow on system. The build script will search `${install_prefix}/include/tensorflow` directory for protobuf documents.
+
+```sh
+export TFRECORD_BUILD_METHOD="install_prefix:///usr"
+cargo build --release --features serde,generate_protobuf_src  # with serde
+cargo build --release --features generate_protobuf_src        # without serde
+```
 
 ## License
 
