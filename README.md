@@ -19,7 +19,8 @@ tfrecord = "0.1.1"
 The crate provides several cargo features that you can conditionally compile modules.
 
 - `serde`: Enable interoperability with [serde](https://github.com/serde-rs/serde) to serialize and deserialize example types.
-- `async_`: Enable async/awat API.
+- `async_`: Enable async/await feature.
+- `dataset`: Enable the dataset API.
 - `full`: Enable all features above.
 
 By default, the crate compiles the pre-built ProtocolBuffer code in the repository. If you would like to re-run the code generation, see [Generate ProtocolBuffer code from TensorFlow](#generate-protocolbuffer-code-from-tensorflow) section.
