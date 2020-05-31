@@ -16,6 +16,14 @@ Append this line to your `Cargo.toml`.
 tfrecord = "0.1.1"
 ```
 
+Due to a [bug](https://github.com/async-rs/async-std/pull/802) in async-std 1.6.0, it cannot read file properly sometimes. Please add the patch at the end of `Cargo.toml` unless the issue is fixed in future release.
+
+```toml
+[patch.crates-io]
+async-std = { git = "https://github.com/async-rs/async-std", branch = "master" }
+
+```
+
 The crate provides several cargo features that you can conditionally compile modules.
 
 - `serde`: Enable interoperability with [serde](https://github.com/serde-rs/serde) to serialize and deserialize example types.
