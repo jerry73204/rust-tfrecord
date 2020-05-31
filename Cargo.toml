@@ -39,6 +39,7 @@ hex = "0.4.2"
 [features]
 full = ["async_", "serde"]
 async_ = ["futures", "async-std"]
+generate_protobuf_src = []
 
 [package.metadata.docs.rs]
 features = ["full"]
