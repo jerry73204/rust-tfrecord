@@ -18,7 +18,10 @@ prost = "0.6.1"
 crc = "1.8.1"
 serde = { version = "1.0.110", features = ["derive"], optional = true }
 futures = { version = "0.3.5", optional = true }
-async-std = { version = "1.6.0", features = ["attributes"], optional = true }
+async-std = { version = "1.6.0", features = ["attributes", "unstable"], optional = true }
+num_cpus = { version = "1.13.0", optional = true }
+tokio = { version = "0.2.21", feature = ["sync"], optional = true }
+static_assertions = { version = "1.1.0", optional = true }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
@@ -37,9 +40,10 @@ blake3 = "0.3.4"
 hex = "0.4.2"
 
 [features]
-full = ["async_", "serde"]
+full = ["async_", "serde", "dataset"]
 async_ = ["futures", "async-std"]
 generate_protobuf_src = []
+dataset = ["async_", "num_cpus", "tokio", "static_assertions"]
 
 [package.metadata.docs.rs]
 features = ["full"]

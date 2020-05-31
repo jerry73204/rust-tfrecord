@@ -6,6 +6,8 @@
 //! - `async_`: Enable async/awat API.
 //! - `full`: Enable all features above.
 
+#[cfg(feature = "dataset")]
+pub mod dataset;
 pub mod error;
 pub mod io;
 pub mod markers;
@@ -29,3 +31,6 @@ pub use reader::RecordStreamInit;
 pub use reader::{BytesReader, ExampleReader, RawExampleReader, RecordReader, RecordReaderInit};
 pub use record::{Example, Feature};
 pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter, RecordWriterInit};
+
+#[cfg(feature = "dataset")]
+pub use dataset::{Dataset, DatasetInit};
