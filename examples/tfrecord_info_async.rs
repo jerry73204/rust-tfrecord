@@ -1,14 +1,11 @@
-use std::{fs::File, io::BufWriter, path::PathBuf};
-
 // NOTE
 // The feature gate #![cfg(feature = "async_")] does not work here.
 // We use the ugly hack to switch source code depending on the "async_" feature.
 
 #[cfg(feature = "async_")]
 mod async_example {
-    use super::*;
-
     use futures::stream::TryStreamExt;
+    use std::{fs::File, io::BufWriter, path::PathBuf};
     use tfrecord::{Error, Feature, RecordStreamInit};
 
     lazy_static::lazy_static! {
