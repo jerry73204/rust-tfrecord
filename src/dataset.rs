@@ -38,6 +38,57 @@ impl Default for DatasetInit {
 }
 
 impl DatasetInit {
+    pub async fn from_prefix<P>(self, prefix: P) -> Result<Dataset, Error>
+    where
+        P: AsRef<Path>,
+    {
+        // get parent dir and file name prefix
+        let prefix = prefix.as_ref();
+        let (dir, file_name_prefix_opt) = match prefix.file_name() {
+            Some(file_name) => {
+                let dir = prefix.parent().unwrap();
+                (dir, Some(file_name))
+            }
+            None => {
+                // prefix itself is a directory
+                (prefix, None)
+            }
+        };
+
+        // filter paths
+        let mut paths = dir
+            .read_dir()
+            .await?
+            .try_filter_map(|entry| {
+                async move {
+                    if !entry.metadata().await?.is_file() {
+                        return Ok(None);
+                    }
+
+                    let file_name = PathBuf::from(entry.file_name());
+
+                    match file_name_prefix_opt {
+                        Some(file_name_prefix) => {
+                            if file_name.starts_with(&file_name_prefix) {
+                                Ok(Some(entry.path()))
+                            } else {
+                                Ok(None)
+                            }
+                        }
+                        None => Ok(Some(entry.path())),
+                    }
+                }
+            })
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        // sort paths
+        paths.sort();
+
+        // construct dataset
+        self.from_paths(&paths).await
+    }
+
     pub async fn from_paths<P>(self, paths: &[P]) -> Result<Dataset, Error>
     where
         P: AsRef<Path>,
