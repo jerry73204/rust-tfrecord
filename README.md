@@ -4,7 +4,7 @@ The crate provides the functionality to serialize and deserialize TFRecord data 
 
 ## Features
 
-- Provide both high level `EasyExample` type as well as low level `Vec<u8>` bytes {,de}serialization.
+- Provide both high level `Example` type as well as low level `Vec<u8>` bytes {,de}serialization.
 - Support **async/await** syntax. It's easy to work with [futures-rs](https://github.com/rust-lang/futures-rs).
 - Interoperability with [serde](https://github.com/serde-rs/serde).
 
@@ -44,14 +44,11 @@ See [docs.rs](https://docs.rs/tfrecord/) for the API.
 This is a snipplet copied from [examples/tfrecord\_info.rs](examples/tfrecord_info.rs).
 
 ```rust
-use tfrecord::{EasyExampleReader, EasyFeature, Error, RecordReaderInit};
+use tfrecord::{Error, ExampleReader, Feature, RecordReaderInit};
 
 fn main() -> Result<(), Error> {
     // use init pattern to construct the tfrecord reader
-    let reader: EasyExampleReader<_> = RecordReaderInit {
-        check_integrity: true,
-    }
-    .open(&*INPUT_TFRECORD_PATH)?;
+    let reader: ExampleReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
 
     // print header
     println!("example_no\tfeature_no\tname\ttype\tsize");
@@ -65,16 +62,16 @@ fn main() -> Result<(), Error> {
             print!("{}\t{}\t{}\t", example_index, feature_index, name);
 
             match feature {
-                EasyFeature::BytesList(list) => {
+                Feature::BytesList(list) => {
                     println!("bytes\t{}", list.len());
                 }
-                EasyFeature::FloatList(list) => {
+                Feature::FloatList(list) => {
                     println!("float\t{}", list.len());
                 }
-                EasyFeature::Int64List(list) => {
+                Feature::Int64List(list) => {
                     println!("int64\t{}", list.len());
                 }
-                EasyFeature::None => {
+                Feature::None => {
                     println!("none");
                 }
             }
@@ -92,16 +89,13 @@ The snipplet from [examples/tfrecord\_info\_async.rs](examples/tfrecord_info_asy
 ```rust
 use futures::stream::TryStreamExt;
 use std::{fs::File, io::BufWriter, path::PathBuf};
-use tfrecord::{EasyFeature, Error, RecordStreamInit};
+use tfrecord::{Error, Feature, RecordStreamInit};
 
-#[async_std::main]
-async fn main() -> Result<(), Error> {
+pub async fn _main() -> Result<(), Error> {
     // use init pattern to construct the tfrecord stream
-    let stream = RecordStreamInit {
-        check_integrity: true,
-    }
-    .easy_examples_open(&*INPUT_TFRECORD_PATH)
-    .await?;
+    let stream = RecordStreamInit::default()
+        .examples_open(&*INPUT_TFRECORD_PATH)
+        .await?;
 
     // print header
     println!("example_no\tfeature_no\tname\ttype\tsize");
@@ -115,16 +109,16 @@ async fn main() -> Result<(), Error> {
                     print!("{}\t{}\t{}\t", example_index, feature_index, name);
 
                     match feature {
-                        EasyFeature::BytesList(list) => {
+                        Feature::BytesList(list) => {
                             println!("bytes\t{}", list.len());
                         }
-                        EasyFeature::FloatList(list) => {
+                        Feature::FloatList(list) => {
                             println!("float\t{}", list.len());
                         }
-                        EasyFeature::Int64List(list) => {
+                        Feature::Int64List(list) => {
                             println!("int64\t{}", list.len());
                         }
-                        EasyFeature::None => {
+                        Feature::None => {
                             println!("none");
                         }
                     }
