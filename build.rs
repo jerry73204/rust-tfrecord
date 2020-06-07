@@ -225,16 +225,29 @@ where
 {
     let dir = dir.as_ref();
     let include_dir = dir;
-    let proto_paths = glob::glob(
-        dir.join("tensorflow")
-            .join("core")
-            .join("example")
-            .join("*.proto")
-            .to_str()
-            .unwrap(),
-    )?
-    .into_iter()
-    .collect::<Result<Vec<_>, _>>()?;
+    let proto_paths = {
+        let example_iter = glob::glob(
+            dir.join("tensorflow")
+                .join("core")
+                .join("example")
+                .join("*.proto")
+                .to_str()
+                .unwrap(),
+        )?
+        .into_iter();
+        let framework_iter = glob::glob(
+            dir.join("tensorflow")
+                .join("core")
+                .join("framework")
+                .join("*.proto")
+                .to_str()
+                .unwrap(),
+        )?
+        .into_iter();
+        example_iter
+            .chain(framework_iter)
+            .collect::<Result<Vec<_>, _>>()?
+    };
 
     // compile protobuf
     {
