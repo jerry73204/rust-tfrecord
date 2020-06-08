@@ -24,6 +24,8 @@ pub enum Error {
     ExampleEncodeError { error: EncodeError },
     #[fail(display = "I/O error: {:?}", error)]
     IoError { error: std::io::Error },
+    #[fail(display = "conversion error: {}", desc)]
+    ConversionError { desc: String },
 }
 
 impl From<std::io::Error> for Error {
