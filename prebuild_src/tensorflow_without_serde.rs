@@ -2182,3 +2182,154 @@ pub enum VariableAggregation {
     /// global step counter.
     OnlyFirstReplica = 3,
 }
+/// Protocol buffer representing an event that happened during
+/// the execution of a Brain model.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Event {
+    /// Timestamp of the event.
+    #[prost(double, tag="1")]
+    pub wall_time: f64,
+    /// Global step of the event.
+    #[prost(int64, tag="2")]
+    pub step: i64,
+    #[prost(oneof="event::What", tags="3, 4, 5, 6, 7, 8, 9")]
+    pub what: ::std::option::Option<event::What>,
+}
+pub mod event {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum What {
+        /// An event file was started, with the specified version.
+        /// This is use to identify the contents of the record IO files
+        /// easily.  Current version is "brain.Event:2".  All versions
+        /// start with "brain.Event:".
+        #[prost(string, tag="3")]
+        FileVersion(std::string::String),
+        /// An encoded version of a GraphDef.
+        #[prost(bytes, tag="4")]
+        GraphDef(std::vec::Vec<u8>),
+        /// A summary was generated.
+        #[prost(message, tag="5")]
+        Summary(super::Summary),
+        /// The user output a log message. Not all messages are logged, only ones
+        /// generated via the Python tensorboard_logging module.
+        #[prost(message, tag="6")]
+        LogMessage(super::LogMessage),
+        /// The state of the session which can be used for restarting after crashes.
+        #[prost(message, tag="7")]
+        SessionLog(super::SessionLog),
+        /// The metadata returned by running a session.run() call.
+        #[prost(message, tag="8")]
+        TaggedRunMetadata(super::TaggedRunMetadata),
+        /// An encoded version of a MetaGraphDef.
+        #[prost(bytes, tag="9")]
+        MetaGraphDef(std::vec::Vec<u8>),
+    }
+}
+/// Protocol buffer used for logging messages to the events file.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LogMessage {
+    #[prost(enumeration="log_message::Level", tag="1")]
+    pub level: i32,
+    #[prost(string, tag="2")]
+    pub message: std::string::String,
+}
+pub mod log_message {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[repr(i32)]
+    pub enum Level {
+        Unknown = 0,
+        /// Note: The logging level 10 cannot be named DEBUG. Some software
+        /// projects compile their C/C++ code with -DDEBUG in debug builds. So the
+        /// C++ code generated from this file should not have an identifier named
+        /// DEBUG.
+        Debugging = 10,
+        Info = 20,
+        Warn = 30,
+        Error = 40,
+        Fatal = 50,
+    }
+}
+/// Protocol buffer used for logging session state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SessionLog {
+    #[prost(enumeration="session_log::SessionStatus", tag="1")]
+    pub status: i32,
+    /// This checkpoint_path contains both the path and filename.
+    #[prost(string, tag="2")]
+    pub checkpoint_path: std::string::String,
+    #[prost(string, tag="3")]
+    pub msg: std::string::String,
+}
+pub mod session_log {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[repr(i32)]
+    pub enum SessionStatus {
+        StatusUnspecified = 0,
+        Start = 1,
+        Stop = 2,
+        Checkpoint = 3,
+    }
+}
+/// For logging the metadata output for a single session.run() call.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TaggedRunMetadata {
+    /// Tag name associated with this metadata.
+    #[prost(string, tag="1")]
+    pub tag: std::string::String,
+    /// Byte-encoded version of the `RunMetadata` proto in order to allow lazy
+    /// deserialization.
+    #[prost(bytes, tag="2")]
+    pub run_metadata: std::vec::Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WatchdogConfig {
+    #[prost(int64, tag="1")]
+    pub timeout_ms: i64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestedExitCode {
+    #[prost(int32, tag="1")]
+    pub exit_code: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WorkerHeartbeatRequest {
+    #[prost(enumeration="WorkerShutdownMode", tag="1")]
+    pub shutdown_mode: i32,
+    #[prost(message, optional, tag="2")]
+    pub watchdog_config: ::std::option::Option<WatchdogConfig>,
+    #[prost(message, optional, tag="3")]
+    pub exit_code: ::std::option::Option<RequestedExitCode>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WorkerHeartbeatResponse {
+    #[prost(enumeration="WorkerHealth", tag="1")]
+    pub health_status: i32,
+    #[prost(message, repeated, tag="2")]
+    pub worker_log: ::std::vec::Vec<Event>,
+    #[prost(string, tag="3")]
+    pub hostname: std::string::String,
+}
+// Worker heartbeat messages.  Support for these operations is currently
+// internal and expected to change.
+
+/// Current health status of a worker.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum WorkerHealth {
+    /// By default a worker is healthy.
+    Ok = 0,
+    ReceivedShutdownSignal = 1,
+    InternalError = 2,
+    /// Worker has been instructed to shutdown after a timeout.
+    ShuttingDown = 3,
+}
+/// Indicates the behavior of the worker when an internal error or shutdown
+/// signal is received.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum WorkerShutdownMode {
+    Default = 0,
+    NotConfigured = 1,
+    WaitForCoordinator = 2,
+    ShutdownAfterTimeout = 3,
+}
