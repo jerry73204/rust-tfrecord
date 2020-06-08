@@ -244,8 +244,14 @@ where
                 .unwrap(),
         )?
         .into_iter();
+        let util_iter = std::iter::once(Ok(dir
+            .join("tensorflow")
+            .join("core")
+            .join("util")
+            .join("event.proto")));
         example_iter
             .chain(framework_iter)
+            .chain(util_iter)
             .collect::<Result<Vec<_>, _>>()?
     };
 
