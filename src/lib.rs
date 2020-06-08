@@ -15,6 +15,7 @@ pub mod markers;
 pub mod protos;
 pub mod reader;
 pub mod record;
+pub mod summary;
 mod utils;
 pub mod writer;
 
