@@ -55,3 +55,102 @@ impl EventInit {
             .as_micros() as f64
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SummaryInit<T>
+where
+    T: ToString,
+{
+    pub tag: T,
+}
+
+impl<T> SummaryInit<T>
+where
+    T: ToString,
+{
+    pub fn new(tag: T) -> Self {
+        Self { tag }
+    }
+
+    pub fn build_scalar(self, value: f32) -> Result<Summary, Error> {
+        let Self { tag } = self;
+
+        let summary = Summary {
+            value: vec![Value {
+                node_name: "".into(),
+                tag: tag.to_string(),
+                metadata: None,
+                value: Some(ValueEnum::SimpleValue(value)),
+            }],
+        };
+        Ok(summary)
+    }
+
+    pub fn build_histogram<H>(self, histogram: H) -> Result<Summary, Error>
+    where
+        H: TryInto<HistogramProto, Error = Error>,
+    {
+        let Self { tag } = self;
+
+        let summary = Summary {
+            value: vec![Value {
+                node_name: "".into(),
+                tag: tag.to_string(),
+                metadata: None,
+                value: Some(ValueEnum::Histo(histogram.try_into()?)),
+            }],
+        };
+        Ok(summary)
+    }
+
+    pub fn build_tensor<S>(self, tensor: S) -> Result<Summary, Error>
+    where
+        S: TryInto<TensorProto, Error = Error>,
+    {
+        let Self { tag } = self;
+
+        let summary = Summary {
+            value: vec![Value {
+                node_name: "".into(),
+                tag: tag.to_string(),
+                metadata: None,
+                value: Some(ValueEnum::Tensor(tensor.try_into()?)),
+            }],
+        };
+        Ok(summary)
+    }
+
+    pub fn build_image<M>(self, image: M) -> Result<Summary, Error>
+    where
+        M: TryInto<Image, Error = Error>,
+    {
+        let Self { tag } = self;
+
+        let summary = Summary {
+            value: vec![Value {
+                node_name: "".into(),
+                tag: tag.to_string(),
+                metadata: None,
+                value: Some(ValueEnum::Image(image.try_into()?)),
+            }],
+        };
+        Ok(summary)
+    }
+
+    pub fn build_audio<A>(self, audio: A) -> Result<Summary, Error>
+    where
+        A: TryInto<Audio, Error = Error>,
+    {
+        let Self { tag } = self;
+
+        let summary = Summary {
+            value: vec![Value {
+                node_name: "".into(),
+                tag: tag.to_string(),
+                metadata: None,
+                value: Some(ValueEnum::Audio(audio.try_into()?)),
+            }],
+        };
+        Ok(summary)
+    }
+}

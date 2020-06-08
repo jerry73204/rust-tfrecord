@@ -510,8 +510,8 @@ mod tch_conv {
 mod image_conv {
     use super::*;
     use image::{
-        flat::SampleLayout, png::PNGEncoder, Bgr, Bgra, ColorType, DynamicImage, FlatSamples,
-        ImageBuffer, Luma, LumaA, Pixel, Primitive, Rgb, Rgba,
+        flat::SampleLayout, png::PNGEncoder, Bgra, ColorType, DynamicImage, FlatSamples,
+        ImageBuffer, Luma, LumaA, Pixel, Rgb, Rgba,
     };
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

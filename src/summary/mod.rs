@@ -6,7 +6,6 @@ use crate::{
         tensor_shape_proto::Dim,
         DataType, Event, HistogramProto, Summary, TensorProto, TensorShapeProto,
     },
-    record::Example,
     writer::{RecordWriter, RecordWriterInit},
 };
 use atomig::Atomic;
@@ -14,7 +13,7 @@ use atomig::Atomic;
 use futures::io::AsyncWrite;
 use noisy_float::types::R64;
 use std::{
-    convert::TryFrom,
+    convert::{TryFrom, TryInto},
     io::Cursor,
     io::Write,
     iter,
