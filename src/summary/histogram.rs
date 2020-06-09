@@ -200,3 +200,44 @@ pub(crate) struct Bucket {
     pub(crate) limit: R64,
     pub(crate) count: AtomicUsize,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_abs_diff_eq;
+
+    #[test]
+    fn simple_histogram() -> Result<(), Error> {
+        let histogram =
+            Histogram::new(vec![R64::new(-10.0), R64::new(0.0), R64::new(10.0)]).unwrap();
+
+        assert_eq!(histogram.len(), 0);
+        assert_eq!(histogram.min(), None);
+        assert_eq!(histogram.max(), None);
+        assert_eq!(histogram.sum(), 0.0);
+        assert_eq!(histogram.sum_squares(), 0.0);
+
+        let values = vec![-11.0, -8.0, -6.0, 15.0, 7.0, 2.0];
+        let expect_len = values.len();
+
+        let (expect_min, expect_max, expect_sum, expect_sum_squares) = values.into_iter().fold(
+            (f64::INFINITY, f64::NEG_INFINITY, 0.0, 0.0),
+            |(min, max, sum, sum_squares), value| {
+                let min = min.min(value);
+                let max = max.max(value);
+                let sum = sum + value;
+                let sum_squares = sum_squares + value.powi(2);
+                histogram.add(R64::new(value));
+                (min, max, sum, sum_squares)
+            },
+        );
+
+        assert_eq!(histogram.len(), expect_len);
+        assert_abs_diff_eq!(histogram.max().unwrap(), expect_max);
+        assert_abs_diff_eq!(histogram.min().unwrap(), expect_min);
+        assert_abs_diff_eq!(histogram.sum(), expect_sum);
+        assert_abs_diff_eq!(histogram.sum_squares(), expect_sum_squares);
+
+        Ok(())
+    }
+}
