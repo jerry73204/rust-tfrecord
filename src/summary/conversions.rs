@@ -37,6 +37,7 @@ macro_rules! to_f64 {
 
 // traits
 
+/// A helper trait that converts primitive values to little-endian bytes.
 pub trait ToLeBytes
 where
     Self: Copy,
@@ -69,6 +70,7 @@ impl_to_le_bytes!(i64, DataType::DtInt64);
 impl_to_le_bytes!(f32, DataType::DtFloat);
 impl_to_le_bytes!(f64, DataType::DtDouble);
 
+/// A helper trait that converts primitive values to [f64](f64).
 pub trait ToF64
 where
     Self: Copy,

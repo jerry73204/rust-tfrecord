@@ -1,11 +1,11 @@
 use super::*;
 
-/// The writer initializer.
+/// The event writer initializer.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct EventWriterInit;
 
 impl EventWriterInit {
-    /// Construct a [EventWriter] from a type with [Write] trait.
+    /// Construct an [EventWriter] from a type with [Write] trait.
     pub fn from_writer<W>(writer: W) -> Result<EventWriter<W>, Error>
     where
         W: Write,
@@ -15,7 +15,7 @@ impl EventWriterInit {
         })
     }
 
-    /// Construct a [EventWriter] by creating a file at specified path.
+    /// Construct an [EventWriter] by creating a file at specified path.
     pub fn create<P>(path: P) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
     where
         P: AsRef<Path>,
@@ -24,6 +24,7 @@ impl EventWriterInit {
         Self::from_writer(writer)
     }
 
+    /// Construct an [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
     pub fn from_prefix<S1, S2>(
         prefix: S1,
         file_name_suffix: Option<S2>,
@@ -38,7 +39,7 @@ impl EventWriterInit {
         Self::create(path)
     }
 
-    /// Construct a [EventWriter] from a type with [AsyncWrite] trait.
+    /// Construct an [EventWriter] from a type with [AsyncWrite] trait.
     #[cfg(feature = "async_")]
     pub fn from_async_writer<W>(writer: W) -> Result<EventWriter<W>, Error>
     where
@@ -49,7 +50,7 @@ impl EventWriterInit {
         })
     }
 
-    /// Construct a [EventWriter] by creating a file at specified path.
+    /// Construct an [EventWriter] by creating a file at specified path.
     #[cfg(feature = "async_")]
     pub async fn create_async<P>(
         path: P,
@@ -61,6 +62,7 @@ impl EventWriterInit {
         Self::from_async_writer(writer)
     }
 
+    /// Construct an asynchronous [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
     #[cfg(feature = "async_")]
     pub async fn from_prefix_async<S1, S2>(
         prefix: S1,
@@ -140,6 +142,9 @@ impl EventWriterInit {
     }
 }
 
+/// The event writer type.
+///
+/// It is a wrapper of [RecordWriter] with extra capabilities.
 #[derive(Debug, Clone, PartialEq)]
 pub struct EventWriter<W> {
     events_writer: RecordWriter<Event, W>,
@@ -149,6 +154,7 @@ impl<W> EventWriter<W>
 where
     W: Write,
 {
+    /// Write a scalar summary.
     pub fn write_scalar<T>(
         &mut self,
         tag: T,
@@ -164,6 +170,7 @@ where
         Ok(())
     }
 
+    /// Write a histogram summary.
     pub fn write_histogram<T, H>(
         &mut self,
         tag: T,
@@ -180,6 +187,7 @@ where
         Ok(())
     }
 
+    /// Write a tensor summary.
     pub fn write_tensor<T, S>(
         &mut self,
         tag: T,
@@ -196,6 +204,7 @@ where
         Ok(())
     }
 
+    /// Write an image summary.
     pub fn write_image<T, M>(
         &mut self,
         tag: T,
@@ -212,6 +221,7 @@ where
         Ok(())
     }
 
+    /// Write an audio summary.
     pub fn write_audio<T, A>(
         &mut self,
         tag: T,
@@ -235,6 +245,7 @@ where
     //     todo!();
     // }
 
+    /// Write a custom event.
     pub fn write_event(&mut self, event: Event) -> Result<(), Error> {
         self.events_writer.send(event)
     }
@@ -245,6 +256,7 @@ impl<W> EventWriter<W>
 where
     W: AsyncWrite + Unpin,
 {
+    /// Write a scalar summary asynchronously.
     pub async fn write_scalar_async<T>(
         &mut self,
         tag: T,
@@ -260,6 +272,7 @@ where
         Ok(())
     }
 
+    /// Write a histogram summary asynchronously.
     pub async fn write_histogram_async<T, H>(
         &mut self,
         tag: T,
@@ -276,6 +289,7 @@ where
         Ok(())
     }
 
+    /// Write a tensor summary asynchronously.
     pub async fn write_tensor_async<T, S>(
         &mut self,
         tag: T,
@@ -292,6 +306,7 @@ where
         Ok(())
     }
 
+    /// Write an image summary asynchronously.
     pub async fn write_image_async<T, M>(
         &mut self,
         tag: T,
@@ -308,6 +323,7 @@ where
         Ok(())
     }
 
+    /// Write an audio summary asynchronously.
     pub async fn write_audio_async<T, A>(
         &mut self,
         tag: T,
@@ -331,6 +347,7 @@ where
     //     todo!();
     // }
 
+    /// Write a custom event asynchronously.
     pub async fn write_event_async(&mut self, event: Event) -> Result<(), Error> {
         self.events_writer.send_async(event).await
     }

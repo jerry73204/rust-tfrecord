@@ -1,3 +1,5 @@
+//! Summary and event types and writers for TensorBoard.
+
 use crate::{
     error::Error,
     protos::{
