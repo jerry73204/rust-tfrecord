@@ -61,7 +61,8 @@ impl EventInit {
         SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
-            .as_micros() as f64
+            .as_nanos() as f64
+            / 1.0e9
     }
 }
 
