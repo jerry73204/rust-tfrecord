@@ -22,11 +22,7 @@ pub mod writer;
 pub use error::Error;
 pub use markers::GenericRecord;
 
-/// The protobuf-generated example type from TensorFlow.
-///
-/// The type is re-exported from [protos::Example]. It is suggested
-/// to use the [record::Example] alternative.
-pub use protos::Example as RawExample;
+pub use protos::{Event, Example as RawExample, Summary};
 
 #[cfg(feature = "async_")]
 pub use reader::RecordStreamInit;
