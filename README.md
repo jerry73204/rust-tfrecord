@@ -6,9 +6,12 @@ The crate provides the functionality to serialize and deserialize TFRecord data 
 
 - Provide both high level `Example` type as well as low level `Vec<u8>` bytes {,de}serialization.
 - Support **async/await** syntax. It's easy to work with [futures-rs](https://github.com/rust-lang/futures-rs).
-- Interoperability with [serde](https://github.com/serde-rs/serde).
+- Interoperability with [serde](https://crates.io/crates/serde), [image](https://crates.io/crates/image), [ndarray](https://crates.io/crates/ndarray) and [tch](https://crates.io/crates/tch).
+- TensorBoard support.
 
 ## Usage
+
+### Use this crate in your project
 
 Append this line to your `Cargo.toml`.
 
@@ -24,14 +27,26 @@ async-std = { git = "https://github.com/async-rs/async-std", branch = "master" }
 
 ```
 
-The crate provides several cargo features that you can conditionally compile modules.
+### Notice on TensorFlow updates
 
-- `serde`: Enable interoperability with [serde](https://github.com/serde-rs/serde) to serialize and deserialize example types.
+The crate compiles the pre-generated ProtocolBuffer code from TensorFlow. In case of TensorFlow updates or custom patches, please run the code generation manually, see [Generate ProtocolBuffer code from TensorFlow](#generate-protocolbuffer-code-from-tensorflow) section for details.
+
+### Available Cargo features
+
+**Module features**
+
+- `full`: Enable all features.
 - `async_`: Enable async/await feature.
 - `dataset`: Enable the dataset API that can load records from multiple TFRecord files.
-- `full`: Enable all features above.
+- `summary`: Enable the summary and event types and writters, mainly for TensorBoard.
 
-By default, the crate compiles the pre-built ProtocolBuffer code in the repository. If you would like to re-run the code generation, see [Generate ProtocolBuffer code from TensorFlow](#generate-protocolbuffer-code-from-tensorflow) section.
+**Third-party crate support features**
+
+- `serde`: Enable support with [serde](https://crates.io/crates/serde) crate.
+- `image`: Enable support with [image](https://crates.io/crates/image) crate.
+- `ndarray`: Enable support with [ndarray](https://crates.io/crates/ndarray) crate.
+- `tch`: Enable support with [tch](https://crates.io/crates/tch) crate.
+
 
 ## Documentation
 
@@ -133,10 +148,74 @@ pub async fn _main() -> Result<(), Error> {
 }
 ```
 
+### Work with TensorBoard
+
+This is a simplified example of [examples/tensorboard.rs](examples/tensorboard.rs) that sends summary data to `log_dir` directory. After running the example, launch `tensorboard --logdir log_dir` to watch the outcome in TensorBoard.
+
+```rust
+use super::*;
+use rand::seq::SliceRandom;
+use rand_distr::{Distribution, Normal};
+use std::{f32::consts::PI, thread, time::Duration};
+use tfrecord::{EventInit, EventWriterInit};
+
+pub fn _main() -> Fallible<()> {
+    // show log dir
+    let prefix = "log_dir/my_prefix";
+
+    // download image files
+    println!("downloading images...");
+    let images = IMAGE_URLS
+        .iter()
+        .cloned()
+        .map(|url| {
+            let bytes = reqwest::blocking::get(url)?.bytes()?;
+            let image = image::load_from_memory(bytes.as_ref())?;
+            Ok(image)
+        })
+        .collect::<Fallible<Vec<_>>>()?;
+
+    // init writer
+    let mut writer = EventWriterInit::from_prefix(prefix, None)?;
+    let mut rng = rand::thread_rng();
+
+    // loop
+    for step in 0..30 {
+        println!("step: {}", step);
+
+        // scalar
+        {
+            let value: f32 = (step as f32 * PI / 8.0).sin();
+            writer.write_scalar("scalar", EventInit::with_step(step), value)?;
+        }
+
+        // histogram
+        {
+            let normal = Normal::new(-20.0, 50.0).unwrap();
+            let values = normal
+                .sample_iter(&mut rng)
+                .take(1024)
+                .collect::<Vec<f32>>();
+            writer.write_histogram("histogram", EventInit::with_step(step), values)?;
+        }
+
+        // image
+        {
+            let image = images.choose(&mut rng).unwrap();
+            writer.write_image("image", EventInit::with_step(step), image)?;
+        }
+
+        thread::sleep(Duration::from_millis(100));
+    }
+
+    Ok(())
+}
+
+```
+
 ### More examples
 
-Also, we suggest visiting the [test code](tests) for more detailed usage.
-
+You can visit the [examples](examples) and [tests](tests) directories to see more verbose examples.
 
 ## Generate ProtocolBuffer code from TensorFlow
 
