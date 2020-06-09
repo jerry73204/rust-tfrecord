@@ -101,9 +101,10 @@ where
     }
 
     /// Build a histogram summary.
-    pub fn build_histogram<H>(self, histogram: H) -> Result<Summary, Error>
+    pub fn build_histogram<H, E>(self, histogram: H) -> Result<Summary, Error>
     where
-        H: TryInto<HistogramProto, Error = Error>,
+        H: TryInto<HistogramProto, Error = E>,
+        Error: From<E>,
     {
         let Self { tag } = self;
 
@@ -119,9 +120,10 @@ where
     }
 
     /// Build a tensor summary.
-    pub fn build_tensor<S>(self, tensor: S) -> Result<Summary, Error>
+    pub fn build_tensor<S, E>(self, tensor: S) -> Result<Summary, Error>
     where
-        S: TryInto<TensorProto, Error = Error>,
+        S: TryInto<TensorProto, Error = E>,
+        Error: From<E>,
     {
         let Self { tag } = self;
 
@@ -137,9 +139,10 @@ where
     }
 
     /// Build an image summary.
-    pub fn build_image<M>(self, image: M) -> Result<Summary, Error>
+    pub fn build_image<M, E>(self, image: M) -> Result<Summary, Error>
     where
-        M: TryInto<Image, Error = Error>,
+        M: TryInto<Image, Error = E>,
+        Error: From<E>,
     {
         let Self { tag } = self;
 
@@ -155,9 +158,10 @@ where
     }
 
     /// Build an audio summary.
-    pub fn build_audio<A>(self, audio: A) -> Result<Summary, Error>
+    pub fn build_audio<A, E>(self, audio: A) -> Result<Summary, Error>
     where
-        A: TryInto<Audio, Error = Error>,
+        A: TryInto<Audio, Error = E>,
+        Error: From<E>,
     {
         let Self { tag } = self;
 

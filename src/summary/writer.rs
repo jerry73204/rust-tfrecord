@@ -169,7 +169,7 @@ where
     }
 
     /// Write a histogram summary.
-    pub fn write_histogram<T, H>(
+    pub fn write_histogram<T, H, E>(
         &mut self,
         tag: T,
         event_init: EventInit,
@@ -177,7 +177,8 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        H: TryInto<HistogramProto, Error = Error>,
+        H: TryInto<HistogramProto, Error = E>,
+        Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
         let event = event_init.build_with_summary(summary);
@@ -187,7 +188,7 @@ where
     }
 
     /// Write a tensor summary.
-    pub fn write_tensor<T, S>(
+    pub fn write_tensor<T, S, E>(
         &mut self,
         tag: T,
         event_init: EventInit,
@@ -195,7 +196,8 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        S: TryInto<TensorProto, Error = Error>,
+        S: TryInto<TensorProto, Error = E>,
+        Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
         let event = event_init.build_with_summary(summary);
@@ -205,7 +207,7 @@ where
     }
 
     /// Write an image summary.
-    pub fn write_image<T, M>(
+    pub fn write_image<T, M, E>(
         &mut self,
         tag: T,
         event_init: EventInit,
@@ -213,7 +215,8 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        M: TryInto<Image, Error = Error>,
+        M: TryInto<Image, Error = E>,
+        Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image(image)?;
         let event = event_init.build_with_summary(summary);
@@ -223,7 +226,7 @@ where
     }
 
     /// Write an audio summary.
-    pub fn write_audio<T, A>(
+    pub fn write_audio<T, A, E>(
         &mut self,
         tag: T,
         event_init: EventInit,
@@ -231,7 +234,8 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        A: TryInto<Audio, Error = Error>,
+        A: TryInto<Audio, Error = E>,
+        Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_audio(audio)?;
         let event = event_init.build_with_summary(summary);
@@ -240,7 +244,7 @@ where
         Ok(())
     }
 
-    // pub fn write_graph<T>(&mut self, tag: T, event_init: EventInit) -> Result<(), Error>
+    // pub fn write_graph<T, E>(&mut self, tag: T, event_init: EventInit) -> Result<(), Error>
     // where
     //     T: ToString,
     // {
@@ -278,7 +282,7 @@ where
     }
 
     /// Write a histogram summary asynchronously.
-    pub async fn write_histogram_async<T, H>(
+    pub async fn write_histogram_async<T, H, E>(
         &mut self,
         tag: T,
         event_init: EventInit,
@@ -286,7 +290,8 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        H: TryInto<HistogramProto, Error = Error>,
+        H: TryInto<HistogramProto, Error = E>,
+        Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
         let event = event_init.build_with_summary(summary);
@@ -296,7 +301,7 @@ where
     }
 
     /// Write a tensor summary asynchronously.
-    pub async fn write_tensor_async<T, S>(
+    pub async fn write_tensor_async<T, S, E>(
         &mut self,
         tag: T,
         event_init: EventInit,
@@ -304,7 +309,8 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        S: TryInto<TensorProto, Error = Error>,
+        S: TryInto<TensorProto, Error = E>,
+        Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
         let event = event_init.build_with_summary(summary);
@@ -314,7 +320,7 @@ where
     }
 
     /// Write an image summary asynchronously.
-    pub async fn write_image_async<T, M>(
+    pub async fn write_image_async<T, M, E>(
         &mut self,
         tag: T,
         event_init: EventInit,
@@ -322,7 +328,8 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        M: TryInto<Image, Error = Error>,
+        M: TryInto<Image, Error = E>,
+        Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image(image)?;
         let event = event_init.build_with_summary(summary);
@@ -332,7 +339,7 @@ where
     }
 
     /// Write an audio summary asynchronously.
-    pub async fn write_audio_async<T, A>(
+    pub async fn write_audio_async<T, A, E>(
         &mut self,
         tag: T,
         event_init: EventInit,
@@ -340,7 +347,8 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        A: TryInto<Audio, Error = Error>,
+        A: TryInto<Audio, Error = E>,
+        Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_audio(audio)?;
         let event = event_init.build_with_summary(summary);
@@ -349,7 +357,7 @@ where
         Ok(())
     }
 
-    // pub async fn write_graph<T>(&mut self, tag: T, event_init: EventInit) -> Result<(), Error>
+    // pub async fn write_graph<T, E>(&mut self, tag: T, event_init: EventInit) -> Result<(), Error>
     // where
     //     T: ToString,
     // {
