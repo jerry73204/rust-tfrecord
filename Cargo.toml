@@ -13,9 +13,9 @@ readme = "README.md"
 license-file = "LICENSE"
 
 [dependencies]
-failure = "0.1.8"
-prost = "0.6.1"
-crc = "1.8.1"
+failure = "0.1"
+prost = "0.6"
+crc = "1.8"
 serde = { version = "1.0", features = ["derive"], optional = true }
 futures = { version = "0.3", optional = true }
 async-std = { version = "1.6", features = ["attributes", "unstable"], optional = true }
@@ -30,22 +30,23 @@ ndarray = { version = "0.13", optional = true }
 hostname = "0.3"
 
 [dev-dependencies]
-lazy_static = "1.4.0"
-reqwest = { version = "0.10.4", features = ["blocking"] }
-serde_json = "1.0.53"
-rand = { version = "0.7.3", features = ["getrandom"] }
+lazy_static = "1.4"
+reqwest = { version = "0.10", features = ["blocking"] }
+serde_json = "1.0"
+rand = { version = "0.7", features = ["getrandom"] }
+rand_distr = "0.2"
 approx = "0.3"
 
 [build-dependencies]
-glob = "0.3.0"
-prost-build = "0.6.1"
-failure = "0.1.8"
-lazy_static = "1.4.0"
-reqwest = { version = "0.10.4", features = ["blocking"] }
-tar = "0.4.28"
-flate2 = "1.0.14"
-blake3 = "0.3.4"
-hex = "0.4.2"
+glob = "0.3"
+prost-build = "0.6"
+failure = "0.1"
+lazy_static = "1.4"
+reqwest = { version = "0.10", features = ["blocking"] }
+tar = "0.4"
+flate2 = "1.0"
+blake3 = "0.3"
+hex = "0.4"
 
 [features]
 full = ["async_", "serde", "dataset", "summary", "tch", "image", "ndarray"]
