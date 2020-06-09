@@ -16,7 +16,7 @@ The crate provides the functionality to serialize and deserialize TFRecord data 
 Append this line to your `Cargo.toml`.
 
 ```
-tfrecord = "0.1.2"
+tfrecord = "0.2.0"
 ```
 
 Due to a [bug](https://github.com/async-rs/async-std/pull/802) in async-std 1.6.0, it cannot read file properly sometimes. Please add the patch at the end of `Cargo.toml` unless the issue is fixed in future release.
