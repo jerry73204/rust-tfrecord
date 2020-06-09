@@ -77,8 +77,8 @@ fn blocking_event_writer() -> Fallible<()> {
 async fn async_event_writer() -> Fallible<()> {
     // download image files
     let images = async_std::task::spawn_blocking(|| {
-        // reqwest uses tokio runtime, it fails with async-std
-        // use blocking wait instead
+        // Because reqwest uses tokio runtime, it fails with async-std.
+        // We use blocking wait instead.
         IMAGE_URLS
             .iter()
             .cloned()
