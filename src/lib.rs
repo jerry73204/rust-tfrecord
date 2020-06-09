@@ -32,6 +32,8 @@ pub use protos::Example as RawExample;
 pub use reader::RecordStreamInit;
 pub use reader::{BytesReader, ExampleReader, RawExampleReader, RecordReader, RecordReaderInit};
 pub use record::{Example, Feature};
+#[cfg(feature = "summary")]
+pub use summary::{EventInit, EventWriter, EventWriterInit, Histogram, SummaryInit};
 pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter, RecordWriterInit};
 
 #[cfg(feature = "dataset")]

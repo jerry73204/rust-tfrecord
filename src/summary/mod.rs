@@ -1,3 +1,5 @@
+#![cfg(feature = "summary")]
+
 //! Summary and event types and writers for TensorBoard.
 
 use crate::{

@@ -48,10 +48,11 @@ blake3 = "0.3.4"
 hex = "0.4.2"
 
 [features]
-full = ["async_", "serde", "dataset", "tch", "image", "ndarray"]
+full = ["async_", "serde", "dataset", "summary", "tch", "image", "ndarray"]
 async_ = ["futures", "async-std"]
 generate_protobuf_src = []
 dataset = ["async_", "num_cpus", "tokio", "static_assertions"]
+summary = []
 
 [package.metadata.docs.rs]
 features = ["full"]
