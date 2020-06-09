@@ -4,9 +4,7 @@ pub use futures::stream::TryStreamExt;
 #[cfg(feature = "serde")]
 pub use prost::Message;
 pub use rand::rngs::OsRng;
-pub use std::{fs::File, io::BufWriter, num::NonZeroUsize, path::PathBuf};
-#[cfg(feature = "summary")]
-pub use tfrecord::EventWriterInit;
+pub use std::{fs::File, io::BufWriter, num::NonZeroUsize, path::PathBuf, thread, time::Duration};
 #[cfg(feature = "async_")]
 pub use tfrecord::RecordStreamInit;
 pub use tfrecord::{
@@ -15,6 +13,8 @@ pub use tfrecord::{
 };
 #[cfg(feature = "dataset")]
 pub use tfrecord::{Dataset, DatasetInit};
+#[cfg(feature = "summary")]
+pub use tfrecord::{EventInit, EventWriterInit};
 
 lazy_static::lazy_static! {
     pub static ref INPUT_TFRECORD_PATH: PathBuf = {
