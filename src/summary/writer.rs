@@ -164,6 +164,7 @@ where
         let summary = SummaryInit { tag }.build_scalar(value)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
+        self.events_writer.flush()?;
         Ok(())
     }
 
@@ -181,6 +182,7 @@ where
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
+        self.events_writer.flush()?;
         Ok(())
     }
 
@@ -198,6 +200,7 @@ where
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
+        self.events_writer.flush()?;
         Ok(())
     }
 
@@ -215,6 +218,7 @@ where
         let summary = SummaryInit { tag }.build_image(image)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
+        self.events_writer.flush()?;
         Ok(())
     }
 
@@ -232,6 +236,7 @@ where
         let summary = SummaryInit { tag }.build_audio(audio)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
+        self.events_writer.flush()?;
         Ok(())
     }
 
@@ -244,7 +249,9 @@ where
 
     /// Write a custom event.
     pub fn write_event(&mut self, event: Event) -> Result<(), Error> {
-        self.events_writer.send(event)
+        self.events_writer.send(event)?;
+        self.events_writer.flush()?;
+        Ok(())
     }
 }
 
@@ -266,6 +273,7 @@ where
         let summary = SummaryInit { tag }.build_scalar(value)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
+        self.events_writer.flush_async().await?;
         Ok(())
     }
 
@@ -283,6 +291,7 @@ where
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
+        self.events_writer.flush_async().await?;
         Ok(())
     }
 
@@ -300,6 +309,7 @@ where
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
+        self.events_writer.flush_async().await?;
         Ok(())
     }
 
@@ -317,6 +327,7 @@ where
         let summary = SummaryInit { tag }.build_image(image)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
+        self.events_writer.flush_async().await?;
         Ok(())
     }
 
@@ -334,6 +345,7 @@ where
         let summary = SummaryInit { tag }.build_audio(audio)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
+        self.events_writer.flush_async().await?;
         Ok(())
     }
 
@@ -346,6 +358,8 @@ where
 
     /// Write a custom event asynchronously.
     pub async fn write_event_async(&mut self, event: Event) -> Result<(), Error> {
-        self.events_writer.send_async(event).await
+        self.events_writer.send_async(event).await?;
+        self.events_writer.flush_async().await?;
+        Ok(())
     }
 }
