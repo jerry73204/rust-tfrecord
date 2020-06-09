@@ -1,6 +1,8 @@
 use super::*;
 
 /// Concurrent histogram data structure.
+///
+/// The methods of the histogram can be called concurrently.
 #[derive(Debug)]
 pub struct Histogram {
     pub(crate) buckets: Vec<Bucket>,
