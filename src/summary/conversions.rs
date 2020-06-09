@@ -186,24 +186,33 @@ impl From<Histogram> for HistogramProto {
 
 // slice or vec to histogram
 
-impl From<&[f64]> for HistogramProto {
-    fn from(from: &[f64]) -> Self {
+impl<T> From<&[T]> for HistogramProto
+where
+    T: ToF64,
+{
+    fn from(from: &[T]) -> Self {
         let histogram = Histogram::default();
         from.iter()
             .cloned()
-            .for_each(|value| histogram.add(R64::new(value)));
+            .for_each(|value| histogram.add(R64::new(value.to_f64())));
         histogram.into()
     }
 }
 
-impl From<&Vec<f64>> for HistogramProto {
-    fn from(from: &Vec<f64>) -> Self {
+impl<T> From<&Vec<T>> for HistogramProto
+where
+    T: ToF64,
+{
+    fn from(from: &Vec<T>) -> Self {
         Self::from(from.as_slice())
     }
 }
 
-impl From<Vec<f64>> for HistogramProto {
-    fn from(from: Vec<f64>) -> Self {
+impl<T> From<Vec<T>> for HistogramProto
+where
+    T: ToF64,
+{
+    fn from(from: Vec<T>) -> Self {
         Self::from(from.as_slice())
     }
 }
