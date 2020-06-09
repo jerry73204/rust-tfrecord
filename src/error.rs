@@ -2,6 +2,7 @@
 
 use failure::Fail;
 use prost::{DecodeError, EncodeError};
+use std::convert::Infallible;
 
 /// The error type for this crate.
 ///
@@ -45,5 +46,11 @@ impl From<EncodeError> for Error {
 impl From<DecodeError> for Error {
     fn from(error: DecodeError) -> Self {
         Self::ExampleDecodeError { error }
+    }
+}
+
+impl From<Infallible> for Error {
+    fn from(_: Infallible) -> Self {
+        unreachable!();
     }
 }
