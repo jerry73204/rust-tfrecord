@@ -35,6 +35,7 @@ mod event;
 mod histogram;
 mod writer;
 
+pub use conversions::*;
 pub use event::*;
 pub use histogram::*;
 pub use writer::*;
