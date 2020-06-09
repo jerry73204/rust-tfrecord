@@ -25,13 +25,12 @@ impl EventWriterInit {
     }
 
     /// Construct an [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
-    pub fn from_prefix<S1, S2>(
+    pub fn from_prefix<S1>(
         prefix: S1,
-        file_name_suffix: Option<S2>,
+        file_name_suffix: Option<String>,
     ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
     where
         S1: AsRef<str>,
-        S2: ToString,
     {
         let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
         fs::create_dir_all(&dir_prefix)?;
@@ -64,13 +63,12 @@ impl EventWriterInit {
 
     /// Construct an asynchronous [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
     #[cfg(feature = "async_")]
-    pub async fn from_prefix_async<S1, S2>(
+    pub async fn from_prefix_async<S1>(
         prefix: S1,
-        file_name_suffix: Option<S2>,
+        file_name_suffix: Option<String>,
     ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
     where
         S1: AsRef<str>,
-        S2: ToString,
     {
         let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
         async_std::fs::create_dir_all(&dir_prefix).await?;
@@ -78,13 +76,12 @@ impl EventWriterInit {
         Self::create(path)
     }
 
-    fn create_tf_style_path<S1, S2>(
+    fn create_tf_style_path<S1>(
         prefix: S1,
-        file_name_suffix: Option<S2>,
+        file_name_suffix: Option<String>,
     ) -> Result<(PathBuf, String), Error>
     where
         S1: AsRef<str>,
-        S2: ToString,
     {
         let file_name_suffix = file_name_suffix
             .map(|suffix| suffix.to_string())
