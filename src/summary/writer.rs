@@ -24,7 +24,7 @@ impl EventWriterInit {
         Self::from_writer(writer)
     }
 
-    pub fn from_tf_style_prefix<S1, S2>(
+    pub fn from_prefix<S1, S2>(
         prefix: S1,
         file_name_suffix: Option<S2>,
     ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
@@ -62,7 +62,7 @@ impl EventWriterInit {
     }
 
     #[cfg(feature = "async_")]
-    pub async fn from_tf_style_prefix_async<S1, S2>(
+    pub async fn from_prefix_async<S1, S2>(
         prefix: S1,
         file_name_suffix: Option<S2>,
     ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
