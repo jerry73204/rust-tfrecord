@@ -54,7 +54,8 @@ async_ = ["futures", "async-std"]
 generate_protobuf_src = []
 dataset = ["async_", "num_cpus", "tokio", "static_assertions"]
 summary = []
+doc-only = ["tch/doc-only"]
 
 [package.metadata.docs.rs]
-features = ["full"]
+features = ["full", "doc-only"]
 no-default-features = true
