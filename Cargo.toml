@@ -27,6 +27,7 @@ atomig = "0.1"
 image = { version = "0.23", optional = true }
 tch = { version = "0.1", optional = true }
 ndarray = { version = "0.13", optional = true }
+hostname = "0.3"
 
 [dev-dependencies]
 lazy_static = "1.4.0"

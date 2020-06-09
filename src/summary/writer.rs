@@ -24,6 +24,20 @@ impl EventWriterInit {
         Self::from_writer(writer)
     }
 
+    pub fn from_tf_style_prefix<S1, S2>(
+        prefix: S1,
+        file_name_suffix: Option<S2>,
+    ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
+    where
+        S1: AsRef<str>,
+        S2: ToString,
+    {
+        let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
+        fs::create_dir_all(&dir_prefix)?;
+        let path = dir_prefix.join(file_name);
+        Self::create(path)
+    }
+
     /// Construct a [EventWriter] from a type with [AsyncWrite] trait.
     #[cfg(feature = "async_")]
     pub fn from_async_writer<W>(writer: W) -> Result<EventWriter<W>, Error>
@@ -45,6 +59,84 @@ impl EventWriterInit {
     {
         let writer = async_std::io::BufWriter::new(async_std::fs::File::create(path).await?);
         Self::from_async_writer(writer)
+    }
+
+    #[cfg(feature = "async_")]
+    pub async fn from_tf_style_prefix_async<S1, S2>(
+        prefix: S1,
+        file_name_suffix: Option<S2>,
+    ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
+    where
+        S1: AsRef<str>,
+        S2: ToString,
+    {
+        let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
+        async_std::fs::create_dir_all(&dir_prefix).await?;
+        let path = dir_prefix.join(file_name);
+        Self::create(path)
+    }
+
+    fn create_tf_style_path<S1, S2>(
+        prefix: S1,
+        file_name_suffix: Option<S2>,
+    ) -> Result<(PathBuf, String), Error>
+    where
+        S1: AsRef<str>,
+        S2: ToString,
+    {
+        let file_name_suffix = file_name_suffix
+            .map(|suffix| suffix.to_string())
+            .unwrap_or("".into());
+        let prefix = {
+            let prefix = prefix.as_ref();
+            if prefix.is_empty() {
+                return Err(Error::InvalidArgumentsError {
+                    desc: "the prefix must not be empty".into(),
+                });
+            }
+            prefix
+        };
+
+        let (dir_prefix, file_name_prefix): (PathBuf, String) = match prefix.chars().last() {
+            Some(MAIN_SEPARATOR) => {
+                let dir_prefix = PathBuf::from(prefix);
+                let file_name_prefix = "".into();
+                (dir_prefix, file_name_prefix)
+            }
+            _ => {
+                let path = PathBuf::from(prefix);
+                let file_name_prefix = match path.file_name() {
+                    Some(file_name) => file_name
+                        .to_str()
+                        .ok_or_else(|| Error::UnicodeError {
+                            desc: format!("the path {} is not unicode", path.display()),
+                        })?
+                        .to_string(),
+                    None => "".into(),
+                };
+                let dir_prefix = path.parent().map(ToOwned::to_owned).unwrap_or(path);
+                (dir_prefix, file_name_prefix)
+            }
+        };
+
+        let file_name = {
+            let timestamp = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_micros();
+            let host_name = hostname::get()?
+                .into_string()
+                .map_err(|_| Error::UnicodeError {
+                    desc: "the host name is not Unicode".into(),
+                })?;
+            let file_name = format!(
+                "{}.out.tfevents.{}.{}{}",
+                file_name_prefix, timestamp, host_name, file_name_suffix
+            );
+            file_name
+        };
+
+        Ok((dir_prefix, file_name))
     }
 }
 

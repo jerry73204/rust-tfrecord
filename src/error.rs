@@ -26,6 +26,8 @@ pub enum Error {
     IoError { error: std::io::Error },
     #[fail(display = "conversion error: {}", desc)]
     ConversionError { desc: String },
+    #[fail(display = "invalid arguments: {}", desc)]
+    InvalidArgumentsError { desc: String },
 }
 
 impl From<std::io::Error> for Error {

@@ -14,11 +14,12 @@ use futures::io::AsyncWrite;
 use noisy_float::types::R64;
 use std::{
     convert::{TryFrom, TryInto},
+    fs,
     io::Cursor,
     io::Write,
     iter,
     ops::{Deref, Neg},
-    path::Path,
+    path::{Path, PathBuf, MAIN_SEPARATOR},
     slice,
     string::ToString,
     sync::atomic::{AtomicUsize, Ordering},
