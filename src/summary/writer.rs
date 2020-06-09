@@ -66,14 +66,14 @@ impl EventWriterInit {
     pub async fn from_prefix_async<S1>(
         prefix: S1,
         file_name_suffix: Option<String>,
-    ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
+    ) -> Result<EventWriter<async_std::io::BufWriter<async_std::fs::File>>, Error>
     where
         S1: AsRef<str>,
     {
         let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
         async_std::fs::create_dir_all(&dir_prefix).await?;
         let path = dir_prefix.join(file_name);
-        Self::create(path)
+        Self::create_async(path).await
     }
 
     fn create_tf_style_path<S1>(
