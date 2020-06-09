@@ -136,12 +136,13 @@ impl ToF64 for f64 {
     }
 }
 
-// built-in Histogram type
+// built-in Histogram to HistogramProto
 
 impl From<&Histogram> for HistogramProto {
     fn from(from: &Histogram) -> Self {
         let Histogram {
             buckets,
+            len,
             min,
             max,
             sum,
@@ -152,6 +153,7 @@ impl From<&Histogram> for HistogramProto {
         let max = max.load(Ordering::Relaxed);
         let sum = sum.load(Ordering::Relaxed);
         let sum_squares = sum_squares.load(Ordering::Relaxed);
+        let len = len.load(Ordering::Relaxed);
 
         let counts = buckets
             .iter()
@@ -161,12 +163,11 @@ impl From<&Histogram> for HistogramProto {
             .iter()
             .map(|bucket| bucket.limit.raw())
             .collect::<Vec<_>>();
-        let total_count = counts.iter().sum();
 
         Self {
             min,
             max,
-            num: total_count,
+            num: len as f64,
             sum,
             sum_squares,
             bucket_limit: limits,
