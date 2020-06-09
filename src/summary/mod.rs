@@ -14,7 +14,7 @@ use crate::{
 };
 use atomig::Atomic;
 #[cfg(feature = "async_")]
-use futures::io::AsyncWrite;
+use futures::io::AsyncWriteExt;
 use noisy_float::types::R64;
 use std::{
     convert::{TryFrom, TryInto},

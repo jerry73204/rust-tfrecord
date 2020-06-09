@@ -38,11 +38,11 @@ impl EventWriterInit {
         Self::create(path)
     }
 
-    /// Construct an [EventWriter] from a type with [AsyncWrite] trait.
+    /// Construct an [EventWriter] from a type with [AsyncWriteExt] trait.
     #[cfg(feature = "async_")]
     pub fn from_async_writer<W>(writer: W) -> Result<EventWriter<W>, Error>
     where
-        W: AsyncWrite,
+        W: AsyncWriteExt,
     {
         Ok(EventWriter {
             events_writer: RecordWriterInit::from_async_writer(writer)?,
@@ -251,7 +251,7 @@ where
 #[cfg(feature = "async_")]
 impl<W> EventWriter<W>
 where
-    W: AsyncWrite + Unpin,
+    W: AsyncWriteExt + Unpin,
 {
     /// Write a scalar summary asynchronously.
     pub async fn write_scalar_async<T>(

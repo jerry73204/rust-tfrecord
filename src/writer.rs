@@ -2,11 +2,11 @@
 //!
 //! The [RecordWriterInit] initializer builds [RecordWriter].
 //! You can use either blocing [RecordWriter::send] or asynchronous [RecordWriter::send_async]
-//! to write a type, depending on whether the it is constructed from a [Write] or [AsyncWrite] writer.
+//! to write a type, depending on whether the it is constructed from a [Write] or [AsyncWriteExt] writer.
 
 use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample, record::Example};
 #[cfg(feature = "async_")]
-use futures::io::AsyncWrite;
+use futures::io::AsyncWriteExt;
 use std::{io::Write, marker::PhantomData, path::Path};
 
 /// Alias to [RecordWriter] which input record type is [Vec<u8>](Vec).
@@ -49,14 +49,14 @@ impl RecordWriterInit {
         Self::from_writer(writer)
     }
 
-    /// Construct a [RecordWriter] from a type with [AsyncWrite] trait.
+    /// Construct a [RecordWriter] from a type with [AsyncWriteExt] trait.
     ///
     /// The constructed [RecordWriter] enables the asynchronous [send_async](RecordWriter::send_async) method.
     #[cfg(feature = "async_")]
     pub fn from_async_writer<T, W>(writer: W) -> Result<RecordWriter<T, W>, Error>
     where
         T: GenericRecord,
-        W: AsyncWrite,
+        W: AsyncWriteExt,
     {
         Ok(RecordWriter {
             writer,
@@ -103,20 +103,32 @@ where
         crate::io::blocking::try_write_record(&mut self.writer, bytes)?;
         Ok(())
     }
+
+    /// Flush the output stream.
+    pub fn flush(&mut self) -> Result<(), Error> {
+        self.writer.flush()?;
+        Ok(())
+    }
 }
 
 #[cfg(feature = "async_")]
 impl<T, W> RecordWriter<T, W>
 where
     T: GenericRecord,
-    W: AsyncWrite + Unpin,
+    W: AsyncWriteExt + Unpin,
 {
     /// Write a record.
     ///
-    /// The method is enabled if the underlying writer implements [AsyncWrite].
+    /// The method is enabled if the underlying writer implements [AsyncWriteExt].
     pub async fn send_async(&mut self, record: T) -> Result<(), Error> {
         let bytes = T::to_bytes(record)?;
         crate::io::async_::try_write_record(&mut self.writer, bytes).await?;
+        Ok(())
+    }
+
+    /// Flush the output stream asynchronously.
+    pub async fn flush_async(&mut self) -> Result<(), Error> {
+        self.writer.flush().await?;
         Ok(())
     }
 }
