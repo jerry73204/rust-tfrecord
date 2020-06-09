@@ -2,10 +2,17 @@
 //!
 //! The crate provides several cargo features that you can conditionally compile modules.
 //!
-//! - `serde`: Enable interoperability with [serde](https://github.com/serde-rs/serde) to serialize and deserialize example types.
+//! Optional features:
+//! - `full`: Enable all features.
 //! - `async_`: Enable async/await feature.
 //! - `dataset`: Enable the dataset API.
-//! - `full`: Enable all features above.
+//! - `summary`: Enable the summary and event API, which is mainly targeted for TensorBoard.
+//!
+//! Third-party supports:
+//! - `serde`: Enable interoperability with [serde](https://crates.io/crates/serde) to serialize and deserialize example types.
+//! - `tch`: Enable [tch](https://crates.io/crates/tch) types support.
+//! - `image`: Enable [image](https://crates.io/crates/image) types support.
+//! - `ndarray`: Enable [ndarray](https://crates.io/crates/ndarray) types support.
 
 #[cfg(feature = "dataset")]
 pub mod dataset;
