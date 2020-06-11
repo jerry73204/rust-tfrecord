@@ -1,9 +1,9 @@
-//! Marker traits and impls.
+//! Marker traits.
 
 use crate::{
     error::Error,
     protos::{Event, Example as RawExample},
-    record::Example,
+    types::Example,
 };
 use prost::Message;
 

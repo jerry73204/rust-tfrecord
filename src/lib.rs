@@ -14,29 +14,35 @@
 //! - `image`: Enable [image](https://crates.io/crates/image) types support.
 //! - `ndarray`: Enable [ndarray](https://crates.io/crates/ndarray) types support.
 
+// mods
+
 #[cfg(feature = "dataset")]
 pub mod dataset;
+
+mod conversions;
 pub mod error;
 pub mod io;
 pub mod markers;
+pub mod ops;
 pub mod protos;
 pub mod reader;
-pub mod record;
 pub mod summary;
+pub mod types;
 mod utils;
 pub mod writer;
 
+// re-exports
+
 pub use error::Error;
 pub use markers::GenericRecord;
-
 pub use protos::{Event, Example as RawExample, Summary};
 
 #[cfg(feature = "async_")]
 pub use reader::RecordStreamInit;
 pub use reader::{BytesReader, ExampleReader, RawExampleReader, RecordReader, RecordReaderInit};
-pub use record::{Example, Feature};
 #[cfg(feature = "summary")]
-pub use summary::{EventInit, EventWriter, EventWriterInit, Histogram, SummaryInit};
+pub use summary::{EventInit, EventWriter, EventWriterInit, SummaryInit};
+pub use types::{Example, Feature, Histogram};
 pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter, RecordWriterInit};
 
 #[cfg(feature = "dataset")]

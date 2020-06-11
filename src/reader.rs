@@ -10,7 +10,7 @@
 //! The [RecordStreamInit] initializer constructs streams from types with [AsyncRead](AsyncRead) trait.
 //! The streams can integrated with [futures::stream] API.
 
-use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample, record::Example};
+use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample, types::Example};
 #[cfg(feature = "async_")]
 use futures::{io::AsyncRead, stream::Stream};
 use std::{io::prelude::*, marker::PhantomData, path::Path};

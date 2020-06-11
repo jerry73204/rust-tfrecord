@@ -4,7 +4,7 @@
 //! You can use either blocing [RecordWriter::send] or asynchronous [RecordWriter::send_async]
 //! to write a type, depending on whether the it is constructed from a [Write] or [AsyncWriteExt] writer.
 
-use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample, record::Example};
+use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample, types::Example};
 #[cfg(feature = "async_")]
 use futures::io::AsyncWriteExt;
 use std::{io::Write, marker::PhantomData, path::Path};

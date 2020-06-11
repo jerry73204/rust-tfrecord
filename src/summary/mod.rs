@@ -7,35 +7,25 @@ use crate::{
     protos::{
         event::What,
         summary::{value::Value as ValueEnum, Audio, Image, Value},
-        tensor_shape_proto::Dim,
-        DataType, Event, HistogramProto, Summary, TensorProto, TensorShapeProto,
+        Event, HistogramProto, Summary, TensorProto,
     },
     writer::{RecordWriter, RecordWriterInit},
 };
-use atomig::Atomic;
 #[cfg(feature = "async_")]
 use futures::io::AsyncWriteExt;
-use noisy_float::types::R64;
 use std::{
-    convert::{TryFrom, TryInto},
+    convert::TryInto,
     fs,
-    io::Cursor,
     io::Write,
-    iter,
-    ops::{Deref, Neg},
     path::{Path, PathBuf, MAIN_SEPARATOR},
-    slice,
     string::ToString,
-    sync::atomic::{AtomicUsize, Ordering},
     time::SystemTime,
 };
 
-mod conversions;
 mod event;
 mod histogram;
 mod writer;
 
-pub use conversions::*;
 pub use event::*;
 pub use histogram::*;
 pub use writer::*;
