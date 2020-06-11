@@ -23,9 +23,7 @@ use std::{
 };
 
 mod event;
-mod histogram;
 mod writer;
 
 pub use event::*;
-pub use histogram::*;
 pub use writer::*;
