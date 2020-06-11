@@ -12,8 +12,8 @@ use std::{convert::TryFrom, io::Cursor, ops::Deref, slice, sync::atomic::Orderin
 
 // built-in Histogram to HistogramProto
 
-impl From<&Histogram> for HistogramProto {
-    fn from(from: &Histogram) -> Self {
+impl From<Histogram> for HistogramProto {
+    fn from(from: Histogram) -> Self {
         let Histogram {
             buckets,
             len,
@@ -47,12 +47,6 @@ impl From<&Histogram> for HistogramProto {
             bucket_limit: limits,
             bucket: counts,
         }
-    }
-}
-
-impl From<Histogram> for HistogramProto {
-    fn from(from: Histogram) -> Self {
-        Self::from(&from)
     }
 }
 
