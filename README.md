@@ -42,10 +42,10 @@ The crate compiles the pre-generated ProtocolBuffer code from TensorFlow. In cas
 
 **Third-party crate support features**
 
-- `serde`: Enable support with [serde](https://crates.io/crates/serde) crate.
-- `image`: Enable support with [image](https://crates.io/crates/image) crate.
-- `ndarray`: Enable support with [ndarray](https://crates.io/crates/ndarray) crate.
-- `tch`: Enable support with [tch](https://crates.io/crates/tch) crate.
+- `with-serde`: Enable support with [serde](https://crates.io/crates/serde) crate.
+- `with-image`: Enable support with [image](https://crates.io/crates/image) crate.
+- `with-ndarray`: Enable support with [ndarray](https://crates.io/crates/ndarray) crate.
+- `with-tch`: Enable support with [tch](https://crates.io/crates/tch) crate.
 
 
 ## Documentation

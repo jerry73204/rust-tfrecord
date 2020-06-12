@@ -9,10 +9,10 @@
 //! - `summary`: Enable the summary and event API, which is mainly targeted for TensorBoard.
 //!
 //! Third-party supports:
-//! - `serde`: Enable interoperability with [serde](https://crates.io/crates/serde) to serialize and deserialize example types.
-//! - `tch`: Enable [tch](https://crates.io/crates/tch) types support.
-//! - `image`: Enable [image](https://crates.io/crates/image) types support.
-//! - `ndarray`: Enable [ndarray](https://crates.io/crates/ndarray) types support.
+//! - `with-serde`: Enable interoperability with [serde](https://crates.io/crates/serde) to serialize and deserialize example types.
+//! - `with-tch`: Enable [tch](https://crates.io/crates/tch) types support.
+//! - `with-image`: Enable [image](https://crates.io/crates/image) types support.
+//! - `with-ndarray`: Enable [ndarray](https://crates.io/crates/ndarray) types support.
 
 // mods
 

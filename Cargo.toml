@@ -50,12 +50,16 @@ blake3 = "0.3"
 hex = "0.4"
 
 [features]
-full = ["async_", "serde", "dataset", "summary", "tch", "image", "ndarray"]
+full = ["async_", "dataset", "summary", "with-tch", "with-image", "with-ndarray", "with-serde"]
 async_ = ["futures", "async-std"]
 generate_protobuf_src = []
 dataset = ["async_", "num_cpus", "tokio", "static_assertions"]
 summary = []
 doc-only = ["tch/doc-only"]
+with-tch = ["tch", "with-image"]
+with-image = ["image"]
+with-ndarray = ["ndarray"]
+with-serde = ["serde"]
 
 [package.metadata.docs.rs]
 features = ["full", "doc-only"]

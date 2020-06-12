@@ -128,7 +128,7 @@ async fn main() -> Fallible<()> {
     async_example::_main().await
 }
 
-#[cfg(not(feature = "full",))]
+#[cfg(not(feature = "full"))]
 fn main() {
     panic!(r#"please enable the "full" feature to run this example"#);
 }

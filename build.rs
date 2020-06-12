@@ -159,7 +159,7 @@ fn copy_prebuild_src() -> Fallible<()> {
     }
 
     // copy file
-    let prebuild_file: &Path = if cfg!(feature = "serde") {
+    let prebuild_file: &Path = if cfg!(feature = "with-serde") {
         &*PREBUILD_PROTOBUF_SRC_WITH_SERDE
     } else {
         &*PREBUILD_PROTOBUF_SRC_WITHOUT_SERDE
@@ -260,7 +260,7 @@ where
         let mut config = prost_build::Config::new();
 
         // conditionally use serde
-        if cfg!(feature = "serde") {
+        if cfg!(feature = "with-serde") {
             config.type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]");
         }
 
@@ -277,7 +277,7 @@ where
 
     // save compiled protobuf code if "generate_protobuf_src" feature presents
     if cfg!(feature = "generate_protobuf_src") {
-        let prebuild_dest: &Path = if cfg!(feature = "serde") {
+        let prebuild_dest: &Path = if cfg!(feature = "with-serde") {
             &*PREBUILD_PROTOBUF_SRC_WITH_SERDE
         } else {
             &*PREBUILD_PROTOBUF_SRC_WITHOUT_SERDE

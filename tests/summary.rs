@@ -6,9 +6,9 @@ use rand_distr::Distribution;
 
 #[cfg(all(
     feature = "summary",
-    feature = "image",
-    feature = "tch",
-    feature = "ndarray"
+    feature = "with-image",
+    feature = "with-tch",
+    feature = "with-ndarray"
 ))]
 #[test]
 fn blocking_event_writer() -> Fallible<()> {
@@ -68,9 +68,9 @@ fn blocking_event_writer() -> Fallible<()> {
 
 #[cfg(all(
     feature = "summary",
-    feature = "image",
-    feature = "tch",
-    feature = "ndarray",
+    feature = "with-image",
+    feature = "with-tch",
+    feature = "with-ndarray",
     feature = "async_"
 ))]
 #[async_std::test]
