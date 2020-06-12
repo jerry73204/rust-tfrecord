@@ -157,6 +157,46 @@ where
         Ok(summary)
     }
 
+    /// Build a summary with multiple images.
+    pub fn build_image_list<V, E>(self, images: V) -> Result<Summary, Error>
+    where
+        V: TryInto<Vec<Image>, Error = E>,
+        Error: From<E>,
+    {
+        let Self { tag } = self;
+
+        let image_protos = images.try_into()?;
+
+        let values = match image_protos.len() {
+            1 => {
+                let image_proto = image_protos.into_iter().next().unwrap();
+                let values = vec![Value {
+                    node_name: "".into(),
+                    tag: format!("{}/image", tag.to_string()),
+                    metadata: None,
+                    value: Some(ValueEnum::Image(image_proto)),
+                }];
+                values
+            }
+            _ => {
+                let values = image_protos
+                    .into_iter()
+                    .enumerate()
+                    .map(|(index, image_proto)| Value {
+                        node_name: "".into(),
+                        tag: format!("{}/image/{}", tag.to_string(), index),
+                        metadata: None,
+                        value: Some(ValueEnum::Image(image_proto)),
+                    })
+                    .collect::<Vec<_>>();
+                values
+            }
+        };
+
+        let summary = Summary { value: values };
+        Ok(summary)
+    }
+
     /// Build an audio summary.
     pub fn build_audio<A, E>(self, audio: A) -> Result<Summary, Error>
     where

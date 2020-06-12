@@ -225,6 +225,25 @@ where
         Ok(())
     }
 
+    /// Write a summary with multiple images.
+    pub fn write_image_list<T, V, E>(
+        &mut self,
+        tag: T,
+        event_init: EventInit,
+        images: V,
+    ) -> Result<(), Error>
+    where
+        T: ToString,
+        V: TryInto<Vec<Image>, Error = E>,
+        Error: From<E>,
+    {
+        let summary = SummaryInit { tag }.build_image_list(images)?;
+        let event = event_init.build_with_summary(summary);
+        self.events_writer.send(event)?;
+        self.events_writer.flush()?;
+        Ok(())
+    }
+
     /// Write an audio summary.
     pub fn write_audio<T, A, E>(
         &mut self,
@@ -332,6 +351,25 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image(image)?;
+        let event = event_init.build_with_summary(summary);
+        self.events_writer.send_async(event).await?;
+        self.events_writer.flush_async().await?;
+        Ok(())
+    }
+
+    /// Write a summary with multiple images asynchronously.
+    pub async fn write_image_list_async<T, V, E>(
+        &mut self,
+        tag: T,
+        event_init: EventInit,
+        images: V,
+    ) -> Result<(), Error>
+    where
+        T: ToString,
+        V: TryInto<Vec<Image>, Error = E>,
+        Error: From<E>,
+    {
+        let summary = SummaryInit { tag }.build_image_list(images)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         self.events_writer.flush_async().await?;
