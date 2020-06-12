@@ -2,14 +2,17 @@ use crate::{
     error::Error,
     markers::{HistogramProtoElement, TensorProtoElement},
     protos::{
-        summary::Image, tensor_shape_proto::Dim, DataType, HistogramProto, TensorProto,
-        TensorShapeProto,
+        feature::Kind, summary::Image, tensor_shape_proto::Dim, BytesList, DataType,
+        Example as RawExample, Feature as RawFeature, Features, FloatList, HistogramProto,
+        Int64List, TensorProto, TensorShapeProto,
     },
-    types::Histogram,
+    types::{Example, Feature, Histogram},
 };
 use integer_encoding::VarInt;
 use noisy_float::types::R64;
-use std::{convert::TryFrom, io::Cursor, ops::Deref, slice, sync::atomic::Ordering};
+use std::{
+    collections::HashMap, convert::TryFrom, io::Cursor, ops::Deref, slice, sync::atomic::Ordering,
+};
 
 // auxiliary types
 
@@ -115,6 +118,87 @@ where
                 .fold(1, |prod, val| prod * val),
             "please report bug"
         );
+    }
+}
+
+// protobuf Feature from/to crate's Feature
+
+impl From<RawFeature> for Feature {
+    fn from(from: RawFeature) -> Self {
+        match from.kind {
+            Some(Kind::BytesList(BytesList { value })) => Feature::BytesList(value),
+            Some(Kind::FloatList(FloatList { value })) => Feature::FloatList(value),
+            Some(Kind::Int64List(Int64List { value })) => Feature::Int64List(value),
+            None => Feature::None,
+        }
+    }
+}
+
+impl From<&RawFeature> for Feature {
+    fn from(from: &RawFeature) -> Self {
+        Self::from(from.to_owned())
+    }
+}
+
+impl From<Feature> for RawFeature {
+    fn from(from: Feature) -> Self {
+        let kind = match from {
+            Feature::BytesList(value) => Some(Kind::BytesList(BytesList { value })),
+            Feature::FloatList(value) => Some(Kind::FloatList(FloatList { value })),
+            Feature::Int64List(value) => Some(Kind::Int64List(Int64List { value })),
+            Feature::None => None,
+        };
+        Self { kind }
+    }
+}
+
+impl From<&Feature> for RawFeature {
+    fn from(from: &Feature) -> Self {
+        Self::from(from.to_owned())
+    }
+}
+
+// protobuf Example from/to crate's Example
+
+impl From<RawExample> for Example {
+    fn from(from: RawExample) -> Self {
+        let features = match from.features {
+            Some(features) => features,
+            None => return HashMap::new(),
+        };
+        features
+            .feature
+            .into_iter()
+            .map(|(name, feature)| (name, Feature::from(feature)))
+            .collect::<HashMap<_, _>>()
+    }
+}
+
+impl From<&RawExample> for Example {
+    fn from(from: &RawExample) -> Self {
+        Self::from(from.to_owned())
+    }
+}
+
+impl From<Example> for RawExample {
+    fn from(from: Example) -> Self {
+        let feature = from
+            .into_iter()
+            .map(|(name, feature)| (name, RawFeature::from(feature)))
+            .collect::<HashMap<_, _>>();
+        if feature.is_empty() {
+            RawExample { features: None }
+        } else {
+            RawExample {
+                features: Some(Features { feature }),
+            }
+        }
+    }
+}
+
+impl From<&Example> for RawExample {
+    fn from(from: &Example) -> Self {
+        Self::from(from.to_owned())
     }
 }
 

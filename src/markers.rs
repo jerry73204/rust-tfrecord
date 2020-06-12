@@ -67,7 +67,7 @@ impl GenericRecord for Event {
     }
 }
 
-/// The marker trait that can be converted to elements of [TensorProto](crate::protos::tensor_shape_proto::TensorProto).
+/// The marker trait that can be converted to elements of [TensorProto](crate::protos::TensorProto).
 pub trait TensorProtoElement
 where
     Self: Copy,
@@ -100,7 +100,7 @@ impl_to_le_bytes!(i64, DataType::DtInt64);
 impl_to_le_bytes!(f32, DataType::DtFloat);
 impl_to_le_bytes!(f64, DataType::DtDouble);
 
-/// A trait marking types that can be converted to elements of HistogramProto[].
+/// A trait marking types that can be converted to elements of [HistogramProto](crate::protos::HistogramProto).
 pub trait HistogramProtoElement
 where
     Self: Copy,

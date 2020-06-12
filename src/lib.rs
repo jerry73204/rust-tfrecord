@@ -33,7 +33,7 @@ pub mod writer;
 // re-exports
 
 pub use error::Error;
-pub use markers::GenericRecord;
+pub use markers::{GenericRecord, HistogramProtoElement, TensorProtoElement};
 pub use protos::{Event, Example as RawExample, Summary};
 
 #[cfg(feature = "async_")]
