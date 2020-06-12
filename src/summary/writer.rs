@@ -234,7 +234,7 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        V: TryInto<Vec<Image>, Error = E>,
+        V: TryInfoImageList<Error = E>,
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image_list(images)?;
@@ -366,7 +366,7 @@ where
     ) -> Result<(), Error>
     where
         T: ToString,
-        V: TryInto<Vec<Image>, Error = E>,
+        V: TryInfoImageList<Error = E>,
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image_list(images)?;

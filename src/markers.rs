@@ -2,7 +2,7 @@
 
 use crate::{
     error::Error,
-    protos::{DataType, Event, Example as RawExample},
+    protos::{summary::Image, DataType, Event, Example as RawExample},
     types::Example,
 };
 use prost::Message;
@@ -166,4 +166,11 @@ impl HistogramProtoElement for f64 {
     fn to_f64(&self) -> f64 {
         *self
     }
+}
+
+/// A trait marking if the type can be converted to a list of imgaes.
+pub trait TryInfoImageList {
+    type Error;
+
+    fn try_into_image_list(self) -> Result<Vec<Image>, Self::Error>;
 }

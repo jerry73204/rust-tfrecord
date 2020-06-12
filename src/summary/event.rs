@@ -160,12 +160,12 @@ where
     /// Build a summary with multiple images.
     pub fn build_image_list<V, E>(self, images: V) -> Result<Summary, Error>
     where
-        V: TryInto<Vec<Image>, Error = E>,
+        V: TryInfoImageList<Error = E>,
         Error: From<E>,
     {
         let Self { tag } = self;
 
-        let image_protos = images.try_into()?;
+        let image_protos = images.try_into_image_list()?;
 
         let values = match image_protos.len() {
             1 => {

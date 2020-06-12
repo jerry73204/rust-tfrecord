@@ -4,6 +4,7 @@
 
 use crate::{
     error::Error,
+    markers::TryInfoImageList,
     protos::{
         event::What,
         summary::{value::Value as ValueEnum, Audio, Image, Value},
