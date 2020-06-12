@@ -1,14 +1,122 @@
 use crate::{
     error::Error,
-    ops::{ToF64, ToLeBytes},
+    markers::{HistogramProtoElement, TensorProtoElement},
     protos::{
         summary::Image, tensor_shape_proto::Dim, DataType, HistogramProto, TensorProto,
         TensorShapeProto,
     },
     types::Histogram,
 };
+use integer_encoding::VarInt;
 use noisy_float::types::R64;
 use std::{convert::TryFrom, io::Cursor, ops::Deref, slice, sync::atomic::Ordering};
+
+// auxiliary types
+
+struct TensorProtoInit<S>
+where
+    S: AsRef<[usize]>,
+{
+    pub shape: Option<S>,
+}
+
+impl<S> TensorProtoInit<S>
+where
+    S: AsRef<[usize]>,
+{
+    pub fn build_with_data<T>(self, data: &[T]) -> TensorProto
+    where
+        T: TensorProtoElement,
+    {
+        self.verify_shape(data.len());
+        let dtype = T::DATA_TYPE as i32;
+        let tensor_content = data
+            .iter()
+            .cloned()
+            .flat_map(|elem| elem.to_bytes())
+            .collect();
+
+        TensorProto {
+            dtype,
+            tensor_shape: self.build_tensor_shape(),
+            version_number: 0,
+            tensor_content,
+            half_val: vec![],
+            float_val: vec![],
+            double_val: vec![],
+            int_val: vec![],
+            string_val: vec![],
+            scomplex_val: vec![],
+            int64_val: vec![],
+            bool_val: vec![],
+            dcomplex_val: vec![],
+            resource_handle_val: vec![],
+            variant_val: vec![],
+            uint32_val: vec![],
+            uint64_val: vec![],
+        }
+    }
+
+    pub fn build_string<T>(self, data: &[T]) -> TensorProto
+    where
+        T: AsRef<[u8]>,
+    {
+        self.verify_shape(data.len());
+        let len_iter = data
+            .iter()
+            .flat_map(|bytes| (bytes.as_ref().len() as i32).encode_var_vec());
+        let bytes_iter = data.iter().flat_map(|bytes| bytes.as_ref().iter().cloned());
+        let tensor_content = len_iter.chain(bytes_iter).collect::<Vec<_>>();
+
+        TensorProto {
+            dtype: DataType::DtString as i32,
+            tensor_shape: self.build_tensor_shape(),
+            version_number: 0,
+            tensor_content,
+            half_val: vec![],
+            float_val: vec![],
+            double_val: vec![],
+            int_val: vec![],
+            string_val: vec![],
+            scomplex_val: vec![],
+            int64_val: vec![],
+            bool_val: vec![],
+            dcomplex_val: vec![],
+            resource_handle_val: vec![],
+            variant_val: vec![],
+            uint32_val: vec![],
+            uint64_val: vec![],
+        }
+    }
+
+    fn build_tensor_shape(&self) -> Option<TensorShapeProto> {
+        self.shape.as_ref().map(|shape| TensorShapeProto {
+            dim: shape
+                .as_ref()
+                .iter()
+                .cloned()
+                .map(|sz| Dim {
+                    size: sz as i64,
+                    name: "".into(),
+                })
+                .collect::<Vec<_>>(),
+            unknown_rank: false,
+        })
+    }
+
+    fn verify_shape(&self, len: usize) {
+        assert_eq!(
+            len,
+            self.shape
+                .as_ref()
+                .expect("please report bug")
+                .as_ref()
+                .iter()
+                .fold(1, |prod, val| prod * val),
+            "please report bug"
+        );
+    }
+}
 
 // built-in Histogram to HistogramProto
 
@@ -54,7 +162,7 @@ impl From<Histogram> for HistogramProto {
 
 impl<T> From<&[T]> for HistogramProto
 where
-    T: ToF64,
+    T: HistogramProtoElement,
 {
     fn from(from: &[T]) -> Self {
         let histogram = Histogram::default();
@@ -67,7 +175,7 @@ where
 
 impl<T> From<&Vec<T>> for HistogramProto
 where
-    T: ToF64,
+    T: HistogramProtoElement,
 {
     fn from(from: &Vec<T>) -> Self {
         Self::from(from.as_slice())
@@ -76,10 +184,42 @@ where
 
 impl<T> From<Vec<T>> for HistogramProto
 where
-    T: ToF64,
+    T: HistogramProtoElement,
 {
     fn from(from: Vec<T>) -> Self {
         Self::from(from.as_slice())
+    }
+}
+
+// slice or vec to TensorProto
+
+impl<S> From<&[S]> for TensorProto
+where
+    S: AsRef<[u8]>,
+{
+    fn from(from: &[S]) -> Self {
+        TensorProtoInit {
+            shape: Some(vec![from.len()]),
+        }
+        .build_string(from)
+    }
+}
+
+impl<S> From<&Vec<S>> for TensorProto
+where
+    S: AsRef<[u8]>,
+{
+    fn from(from: &Vec<S>) -> Self {
+        From::<&[_]>::from(from.as_ref())
+    }
+}
+
+impl<S> From<Vec<S>> for TensorProto
+where
+    S: AsRef<[u8]>,
+{
+    fn from(from: Vec<S>) -> Self {
+        From::<&[_]>::from(from.as_ref())
     }
 }
 
@@ -87,44 +227,6 @@ where
 mod ndarray_conv {
     use super::*;
     use ndarray::{ArrayBase, Data, Dimension, RawData};
-
-    fn create_tensor_proto(
-        dtype: DataType,
-        shape: &[usize],
-        tensor_content: Vec<u8>,
-    ) -> TensorProto {
-        let shape = TensorShapeProto {
-            dim: shape
-                .iter()
-                .cloned()
-                .map(|sz| Dim {
-                    size: sz as i64,
-                    name: "".into(),
-                })
-                .collect::<Vec<_>>(),
-            unknown_rank: false,
-        };
-
-        TensorProto {
-            dtype: dtype as i32,
-            tensor_shape: Some(shape),
-            version_number: 0,
-            tensor_content,
-            half_val: vec![],
-            float_val: vec![],
-            double_val: vec![],
-            int_val: vec![],
-            string_val: vec![],
-            scomplex_val: vec![],
-            int64_val: vec![],
-            bool_val: vec![],
-            dcomplex_val: vec![],
-            resource_handle_val: vec![],
-            variant_val: vec![],
-            uint32_val: vec![],
-            uint64_val: vec![],
-        }
-    }
 
     // to histogram
 
@@ -170,14 +272,13 @@ mod ndarray_conv {
     where
         D: Dimension,
         S: RawData<Elem = T> + Data,
-        T: ToLeBytes,
+        T: TensorProtoElement,
     {
         fn from(from: &ArrayBase<S, D>) -> Self {
-            let content = from
-                .iter()
-                .flat_map(|value| value.to_bytes())
-                .collect::<Vec<_>>();
-            create_tensor_proto(T::DATA_TYPE, from.shape(), content)
+            TensorProtoInit {
+                shape: Some(from.shape()),
+            }
+            .build_with_data(&from.iter().cloned().collect::<Vec<T>>())
         }
     }
 
@@ -185,7 +286,7 @@ mod ndarray_conv {
     where
         D: Dimension,
         S: RawData<Elem = T> + Data,
-        T: ToLeBytes,
+        T: TensorProtoElement,
     {
         fn from(from: ArrayBase<S, D>) -> Self {
             Self::from(&from)
@@ -229,14 +330,15 @@ mod tch_conv {
         }};
     }
 
-    macro_rules! tensor_to_bytes {
+    macro_rules! tensor_to_proto {
         ($tensor:ident, $ty:ident) => {{
             let values = tensor_to_vec!($tensor, $ty);
-            let content = values
+            let size = $tensor
+                .size()
                 .into_iter()
-                .flat_map(|value| value.to_le_bytes().iter().cloned().collect::<Vec<_>>())
+                .map(|sz| sz as usize)
                 .collect::<Vec<_>>();
-            content
+            TensorProtoInit { shape: Some(size) }.build_with_data(&values)
         }};
     }
 
@@ -276,44 +378,22 @@ mod tch_conv {
         }
     }
 
-    // to tensor
+    // to TensorProto
 
     impl TryFrom<&Tensor> for TensorProto {
         type Error = Error;
 
         fn try_from(from: &Tensor) -> Result<Self, Self::Error> {
-            let size = from.size();
+            // let size = from.size();
             let kind = from.kind();
-
-            let (dtype, tensor_content) = match kind {
-                Kind::Uint8 => {
-                    let content = tensor_to_bytes!(from, u8);
-                    (DataType::DtUint8, content)
-                }
-                Kind::Int8 => {
-                    let content = tensor_to_bytes!(from, i8);
-                    (DataType::DtInt8, content)
-                }
-                Kind::Int16 => {
-                    let content = tensor_to_bytes!(from, i16);
-                    (DataType::DtInt16, content)
-                }
-                Kind::Int => {
-                    let content = tensor_to_bytes!(from, i32);
-                    (DataType::DtInt32, content)
-                }
-                Kind::Int64 => {
-                    let content = tensor_to_bytes!(from, i64);
-                    (DataType::DtInt64, content)
-                }
-                Kind::Float => {
-                    let content = tensor_to_bytes!(from, f32);
-                    (DataType::DtFloat, content)
-                }
-                Kind::Double => {
-                    let content = tensor_to_bytes!(from, f64);
-                    (DataType::DtDouble, content)
-                }
+            let proto = match kind {
+                Kind::Uint8 => tensor_to_proto!(from, u8),
+                Kind::Int8 => tensor_to_proto!(from, i8),
+                Kind::Int16 => tensor_to_proto!(from, i16),
+                Kind::Int => tensor_to_proto!(from, i32),
+                Kind::Int64 => tensor_to_proto!(from, i64),
+                Kind::Float => tensor_to_proto!(from, f32),
+                Kind::Double => tensor_to_proto!(from, f64),
                 _ => {
                     return Err(Error::ConversionError {
                         desc: format!("unsupported tensor kind {:?}", kind),
@@ -321,36 +401,7 @@ mod tch_conv {
                 }
             };
 
-            let shape = TensorShapeProto {
-                dim: size
-                    .into_iter()
-                    .map(|sz| Dim {
-                        size: sz,
-                        name: "".into(),
-                    })
-                    .collect::<Vec<_>>(),
-                unknown_rank: false,
-            };
-
-            Ok(TensorProto {
-                dtype: dtype as i32,
-                tensor_shape: Some(shape),
-                version_number: 0,
-                tensor_content,
-                half_val: vec![],
-                float_val: vec![],
-                double_val: vec![],
-                int_val: vec![],
-                string_val: vec![],
-                scomplex_val: vec![],
-                int64_val: vec![],
-                bool_val: vec![],
-                dcomplex_val: vec![],
-                resource_handle_val: vec![],
-                variant_val: vec![],
-                uint32_val: vec![],
-                uint64_val: vec![],
-            })
+            Ok(proto)
         }
     }
 
@@ -444,7 +495,7 @@ mod image_conv {
         P: 'static + Pixel,
         P::Subpixel: 'static,
         C: Deref<Target = [P::Subpixel]>,
-        P::Subpixel: ToF64,
+        P::Subpixel: HistogramProtoElement,
     {
         type Error = Error;
 
@@ -473,7 +524,7 @@ mod image_conv {
         P: 'static + Pixel,
         P::Subpixel: 'static,
         C: Deref<Target = [P::Subpixel]>,
-        P::Subpixel: ToF64,
+        P::Subpixel: HistogramProtoElement,
     {
         type Error = Error;
 
@@ -486,7 +537,7 @@ mod image_conv {
 
     impl<T> TryFrom<&FlatSamples<&[T]>> for TensorProto
     where
-        T: ToLeBytes,
+        T: TensorProtoElement,
     {
         type Error = Error;
 
@@ -504,44 +555,17 @@ mod image_conv {
             let samples = (0..height)
                 .flat_map(|y| (0..width).flat_map(move |x| (0..channels).map(move |c| (y, x, c))))
                 .map(|(y, x, c)| *from.get_sample(c, x, y).unwrap())
-                .flat_map(|value| value.to_bytes())
                 .collect::<Vec<_>>();
-            let shape = TensorShapeProto {
-                dim: vec![height as i64, width as i64, channels as i64]
-                    .into_iter()
-                    .map(|sz| Dim {
-                        size: sz,
-                        name: "".into(),
-                    })
-                    .collect::<Vec<_>>(),
-                unknown_rank: false,
-            };
+            let shape = vec![height as usize, width as usize, channels as usize];
+            let proto = TensorProtoInit { shape: Some(shape) }.build_with_data(&samples);
 
-            Ok(TensorProto {
-                dtype: DataType::DtUint8 as i32,
-                tensor_shape: Some(shape),
-                version_number: 0,
-                tensor_content: samples,
-                half_val: vec![],
-                float_val: vec![],
-                double_val: vec![],
-                int_val: vec![],
-                string_val: vec![],
-                scomplex_val: vec![],
-                int64_val: vec![],
-                bool_val: vec![],
-                dcomplex_val: vec![],
-                resource_handle_val: vec![],
-                variant_val: vec![],
-                uint32_val: vec![],
-                uint64_val: vec![],
-            })
+            Ok(proto)
         }
     }
 
     impl<T> TryFrom<FlatSamples<&[T]>> for TensorProto
     where
-        T: ToLeBytes,
+        T: TensorProtoElement,
     {
         type Error = Error;
 
@@ -552,7 +576,7 @@ mod image_conv {
 
     impl<T> TryFrom<&FlatSamples<&Vec<T>>> for TensorProto
     where
-        T: ToLeBytes,
+        T: TensorProtoElement,
     {
         type Error = Error;
 
@@ -563,7 +587,7 @@ mod image_conv {
 
     impl<T> TryFrom<FlatSamples<&Vec<T>>> for TensorProto
     where
-        T: ToLeBytes,
+        T: TensorProtoElement,
     {
         type Error = Error;
 
@@ -574,7 +598,7 @@ mod image_conv {
 
     impl<T> TryFrom<&FlatSamples<Vec<T>>> for TensorProto
     where
-        T: ToLeBytes,
+        T: TensorProtoElement,
     {
         type Error = Error;
 
@@ -585,7 +609,7 @@ mod image_conv {
 
     impl<T> TryFrom<FlatSamples<Vec<T>>> for TensorProto
     where
-        T: ToLeBytes,
+        T: TensorProtoElement,
     {
         type Error = Error;
 
@@ -631,7 +655,7 @@ mod image_conv {
     where
         P: 'static + Pixel<Subpixel = T>,
         C: Deref<Target = [P::Subpixel]> + AsRef<[P::Subpixel]>,
-        T: 'static + ToLeBytes + Primitive,
+        T: 'static + TensorProtoElement + Primitive,
     {
         type Error = Error;
 
@@ -644,7 +668,7 @@ mod image_conv {
     where
         P: 'static + Pixel<Subpixel = T>,
         C: Deref<Target = [P::Subpixel]> + AsRef<[P::Subpixel]>,
-        T: 'static + ToLeBytes + Primitive,
+        T: 'static + TensorProtoElement + Primitive,
     {
         type Error = Error;
 

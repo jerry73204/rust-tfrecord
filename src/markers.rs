@@ -2,7 +2,7 @@
 
 use crate::{
     error::Error,
-    protos::{Event, Example as RawExample},
+    protos::{DataType, Event, Example as RawExample},
     types::Example,
 };
 use prost::Message;
@@ -64,5 +64,106 @@ impl GenericRecord for Event {
         let mut bytes = vec![];
         Event::encode(&record, &mut bytes)?;
         Ok(bytes)
+    }
+}
+
+/// The marker trait that can be converted to elements of [TensorProto](crate::protos::tensor_shape_proto::TensorProto).
+pub trait TensorProtoElement
+where
+    Self: Copy,
+{
+    const DATA_TYPE: DataType;
+
+    fn to_bytes(&self) -> Vec<u8>;
+}
+
+macro_rules! impl_to_le_bytes {
+    ($ty:ty, $dtype:expr) => {
+        impl TensorProtoElement for $ty {
+            const DATA_TYPE: DataType = $dtype;
+
+            fn to_bytes(&self) -> Vec<u8> {
+                self.to_le_bytes().iter().cloned().collect()
+            }
+        }
+    };
+}
+
+impl_to_le_bytes!(u8, DataType::DtUint8);
+impl_to_le_bytes!(u16, DataType::DtUint16);
+impl_to_le_bytes!(u32, DataType::DtUint32);
+impl_to_le_bytes!(u64, DataType::DtUint64);
+impl_to_le_bytes!(i8, DataType::DtInt8);
+impl_to_le_bytes!(i16, DataType::DtInt16);
+impl_to_le_bytes!(i32, DataType::DtInt32);
+impl_to_le_bytes!(i64, DataType::DtInt64);
+impl_to_le_bytes!(f32, DataType::DtFloat);
+impl_to_le_bytes!(f64, DataType::DtDouble);
+
+/// A trait marking types that can be converted to elements of HistogramProto[].
+pub trait HistogramProtoElement
+where
+    Self: Copy,
+{
+    fn to_f64(&self) -> f64;
+}
+
+impl HistogramProtoElement for u8 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for u16 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for u32 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for u64 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for i8 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for i16 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for i32 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for i64 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for f32 {
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+}
+
+impl HistogramProtoElement for f64 {
+    fn to_f64(&self) -> f64 {
+        *self
     }
 }
