@@ -75,7 +75,7 @@ mod blocking_example {
             .collect::<Fallible<Vec<_>>>()?;
 
         // init writer
-        let mut writer = EventWriterInit::from_prefix(prefix, None)?;
+        let mut writer = EventWriterInit::default().from_prefix(prefix, None)?;
         let mut rng = rand::thread_rng();
 
         // loop

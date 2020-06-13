@@ -80,7 +80,9 @@ mod async_example {
         .await?;
 
         // init writer
-        let mut writer = EventWriterInit::from_prefix_async(prefix, None).await?;
+        let mut writer = EventWriterInit::default()
+            .from_prefix_async(prefix, None)
+            .await?;
         let mut rng = rand::thread_rng();
 
         // loop

@@ -31,7 +31,7 @@ fn blocking_event_writer() -> Fallible<()> {
         .into_os_string()
         .into_string()
         .unwrap();
-    let mut writer = EventWriterInit::from_prefix(prefix, None)?;
+    let mut writer = EventWriterInit::default().from_prefix(prefix, None)?;
     let mut rng = rand::thread_rng();
 
     // loop
@@ -99,7 +99,9 @@ async fn async_event_writer() -> Fallible<()> {
         .into_os_string()
         .into_string()
         .unwrap();
-    let mut writer = EventWriterInit::from_prefix_async(prefix, None).await?;
+    let mut writer = EventWriterInit::default()
+        .from_prefix_async(prefix, None)
+        .await?;
     let mut rng = rand::thread_rng();
 
     // loop

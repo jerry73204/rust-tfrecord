@@ -2,30 +2,43 @@ use super::*;
 
 /// The event writer initializer.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct EventWriterInit;
+pub struct EventWriterInit {
+    /// If set, the writer flushes the buffer after writing a event.
+    pub auto_flush: bool,
+}
+
+impl Default for EventWriterInit {
+    fn default() -> Self {
+        Self { auto_flush: true }
+    }
+}
 
 impl EventWriterInit {
     /// Construct an [EventWriter] from a type with [Write] trait.
-    pub fn from_writer<W>(writer: W) -> Result<EventWriter<W>, Error>
+    pub fn from_writer<W>(self, writer: W) -> Result<EventWriter<W>, Error>
     where
         W: Write,
     {
+        let Self { auto_flush } = self;
+
         Ok(EventWriter {
+            auto_flush,
             events_writer: RecordWriterInit::from_writer(writer)?,
         })
     }
 
     /// Construct an [EventWriter] by creating a file at specified path.
-    pub fn create<P>(path: P) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
+    pub fn create<P>(self, path: P) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
     where
         P: AsRef<Path>,
     {
         let writer = std::io::BufWriter::new(std::fs::File::create(path)?);
-        Self::from_writer(writer)
+        self.from_writer(writer)
     }
 
     /// Construct an [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
     pub fn from_prefix<S1>(
+        self,
         prefix: S1,
         file_name_suffix: Option<String>,
     ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
@@ -35,16 +48,18 @@ impl EventWriterInit {
         let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
         fs::create_dir_all(&dir_prefix)?;
         let path = dir_prefix.join(file_name);
-        Self::create(path)
+        self.create(path)
     }
 
     /// Construct an [EventWriter] from a type with [AsyncWriteExt] trait.
     #[cfg(feature = "async_")]
-    pub fn from_async_writer<W>(writer: W) -> Result<EventWriter<W>, Error>
+    pub fn from_async_writer<W>(self, writer: W) -> Result<EventWriter<W>, Error>
     where
         W: AsyncWriteExt,
     {
+        let Self { auto_flush } = self;
         Ok(EventWriter {
+            auto_flush,
             events_writer: RecordWriterInit::from_async_writer(writer)?,
         })
     }
@@ -52,18 +67,20 @@ impl EventWriterInit {
     /// Construct an [EventWriter] by creating a file at specified path.
     #[cfg(feature = "async_")]
     pub async fn create_async<P>(
+        self,
         path: P,
     ) -> Result<EventWriter<async_std::io::BufWriter<async_std::fs::File>>, Error>
     where
         P: AsRef<async_std::path::Path>,
     {
         let writer = async_std::io::BufWriter::new(async_std::fs::File::create(path).await?);
-        Self::from_async_writer(writer)
+        self.from_async_writer(writer)
     }
 
     /// Construct an asynchronous [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
     #[cfg(feature = "async_")]
     pub async fn from_prefix_async<S1>(
+        self,
         prefix: S1,
         file_name_suffix: Option<String>,
     ) -> Result<EventWriter<async_std::io::BufWriter<async_std::fs::File>>, Error>
@@ -73,7 +90,7 @@ impl EventWriterInit {
         let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
         async_std::fs::create_dir_all(&dir_prefix).await?;
         let path = dir_prefix.join(file_name);
-        Self::create_async(path).await
+        self.create_async(path).await
     }
 
     fn create_tf_style_path<S1>(
@@ -144,6 +161,7 @@ impl EventWriterInit {
 /// It is a wrapper of [RecordWriter] with extra capabilities.
 #[derive(Debug, Clone, PartialEq)]
 pub struct EventWriter<W> {
+    auto_flush: bool,
     events_writer: RecordWriter<Event, W>,
 }
 
@@ -164,7 +182,9 @@ where
         let summary = SummaryInit { tag }.build_scalar(value)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
-        self.events_writer.flush()?;
+        if self.auto_flush {
+            self.events_writer.flush()?;
+        }
         Ok(())
     }
 
@@ -183,7 +203,9 @@ where
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
-        self.events_writer.flush()?;
+        if self.auto_flush {
+            self.events_writer.flush()?;
+        }
         Ok(())
     }
 
@@ -202,7 +224,9 @@ where
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
-        self.events_writer.flush()?;
+        if self.auto_flush {
+            self.events_writer.flush()?;
+        }
         Ok(())
     }
 
@@ -221,7 +245,9 @@ where
         let summary = SummaryInit { tag }.build_image(image)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
-        self.events_writer.flush()?;
+        if self.auto_flush {
+            self.events_writer.flush()?;
+        }
         Ok(())
     }
 
@@ -240,7 +266,9 @@ where
         let summary = SummaryInit { tag }.build_image_list(images)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
-        self.events_writer.flush()?;
+        if self.auto_flush {
+            self.events_writer.flush()?;
+        }
         Ok(())
     }
 
@@ -259,7 +287,9 @@ where
         let summary = SummaryInit { tag }.build_audio(audio)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send(event)?;
-        self.events_writer.flush()?;
+        if self.auto_flush {
+            self.events_writer.flush()?;
+        }
         Ok(())
     }
 
@@ -273,6 +303,14 @@ where
     /// Write a custom event.
     pub fn write_event(&mut self, event: Event) -> Result<(), Error> {
         self.events_writer.send(event)?;
+        if self.auto_flush {
+            self.events_writer.flush()?;
+        }
+        Ok(())
+    }
+
+    /// Flush this output stream.
+    pub fn flush(&mut self) -> Result<(), Error> {
         self.events_writer.flush()?;
         Ok(())
     }
@@ -296,7 +334,9 @@ where
         let summary = SummaryInit { tag }.build_scalar(value)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
-        self.events_writer.flush_async().await?;
+        if self.auto_flush {
+            self.events_writer.flush_async().await?;
+        }
         Ok(())
     }
 
@@ -315,7 +355,9 @@ where
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
-        self.events_writer.flush_async().await?;
+        if self.auto_flush {
+            self.events_writer.flush_async().await?;
+        }
         Ok(())
     }
 
@@ -334,7 +376,9 @@ where
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
-        self.events_writer.flush_async().await?;
+        if self.auto_flush {
+            self.events_writer.flush_async().await?;
+        }
         Ok(())
     }
 
@@ -353,7 +397,9 @@ where
         let summary = SummaryInit { tag }.build_image(image)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
-        self.events_writer.flush_async().await?;
+        if self.auto_flush {
+            self.events_writer.flush_async().await?;
+        }
         Ok(())
     }
 
@@ -372,7 +418,9 @@ where
         let summary = SummaryInit { tag }.build_image_list(images)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
-        self.events_writer.flush_async().await?;
+        if self.auto_flush {
+            self.events_writer.flush_async().await?;
+        }
         Ok(())
     }
 
@@ -391,7 +439,9 @@ where
         let summary = SummaryInit { tag }.build_audio(audio)?;
         let event = event_init.build_with_summary(summary);
         self.events_writer.send_async(event).await?;
-        self.events_writer.flush_async().await?;
+        if self.auto_flush {
+            self.events_writer.flush_async().await?;
+        }
         Ok(())
     }
 
@@ -405,6 +455,14 @@ where
     /// Write a custom event asynchronously.
     pub async fn write_event_async(&mut self, event: Event) -> Result<(), Error> {
         self.events_writer.send_async(event).await?;
+        if self.auto_flush {
+            self.events_writer.flush_async().await?;
+        }
+        Ok(())
+    }
+
+    /// Flush this output stream asynchronously.
+    pub async fn flush_async(&mut self) -> Result<(), Error> {
         self.events_writer.flush_async().await?;
         Ok(())
     }
