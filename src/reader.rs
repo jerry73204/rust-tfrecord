@@ -15,7 +15,7 @@ use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample,
 use futures::{io::AsyncRead, stream::Stream};
 use std::{io::prelude::*, marker::PhantomData, path::Path};
 
-/// Alias to [RecordReader] which output record type is [Vec<u8>](Vec).
+/// Alias to [RecordReader] which output record type is [Vec\<u8\>](Vec).
 pub type BytesReader<R> = RecordReader<Vec<u8>, R>;
 /// Alias to [RecordReader] which output record type is [RawExample](RawExample).
 pub type RawExampleReader<R> = RecordReader<RawExample, R>;

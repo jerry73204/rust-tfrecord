@@ -158,7 +158,22 @@ impl EventWriterInit {
 
 /// The event writer type.
 ///
-/// It is a wrapper of [RecordWriter] with extra capabilities.
+/// The [EventWriter] is initialized by [EventWriterInit].
+/// It provies a series `write_*` methods and `write_*_async` asynchronous
+/// analogues to append events to the file recognized by TensorBoard.
+///
+/// The typical usage call the [EventWriterInit::from_prefix] with the log
+/// directory to build a [EventWriter].
+///
+/// ```rust
+/// use tfrecord::{EventInit, EventWriterInit};
+/// let mut writer = EventWriterInit::default()
+///     .from_prefix("log_dir/myprefix-", None)
+///     .unwrap();
+/// writer
+///     .write_scalar("my_event_name", EventInit::with_step(0), 3.14)
+///     .unwrap();
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct EventWriter<W> {
     auto_flush: bool,

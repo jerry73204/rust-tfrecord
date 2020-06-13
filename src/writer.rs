@@ -1,8 +1,11 @@
 //! Writing TFRecord data format.
 //!
-//! The [RecordWriterInit] initializer builds [RecordWriter].
-//! You can use either blocing [RecordWriter::send] or asynchronous [RecordWriter::send_async]
-//! to write a type, depending on whether the it is constructed from a [Write] or [AsyncWriteExt] writer.
+//! The [RecordWriter] is initialized by [RecordWriterInit]. It can write
+//! either [Example], [RawExampple](crate::RawExample), [Vec\<u8\>](Vec), and many other record types.
+//! that implements [GenericRecord], depending on your choice.
+//!
+//! The type aliases [ExampleWriter], [RawExampleWriter] and [BytesWriter]
+//! are [RecordWriter] writing specific record types.
 
 use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample, types::Example};
 #[cfg(feature = "async_")]
@@ -81,6 +84,10 @@ impl RecordWriterInit {
 }
 
 /// The writer type.
+///
+/// It provides blocing [RecordWriter::send] and analogues [RecordWriter::send_async] methods
+/// to write records.
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecordWriter<T, W>
 where
