@@ -70,3 +70,6 @@ with-serde = ["serde"]
 [package.metadata.docs.rs]
 features = ["full", "doc-only"]
 no-default-features = true
+
+[patch.crates-io]
+tch = { git = "https://github.com/LaurentMazare/tch-rs.git" }

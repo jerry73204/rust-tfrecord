@@ -22,6 +22,8 @@ pub enum Error {
     ConversionError { desc: String },
     #[error("invalid arguments: {desc:}")]
     InvalidArgumentsError { desc: String },
+    #[error("tch error: {desc:}")]
+    TchError { desc: String },
 }
 
 impl From<std::io::Error> for Error {
@@ -45,5 +47,14 @@ impl From<DecodeError> for Error {
 impl From<Infallible> for Error {
     fn from(_: Infallible) -> Self {
         unreachable!();
+    }
+}
+
+#[cfg(feature = "with-tch")]
+impl From<tch::TchError> for Error {
+    fn from(error: tch::TchError) -> Self {
+        Self::TchError {
+            desc: format!("{:?}", error),
+        }
     }
 }

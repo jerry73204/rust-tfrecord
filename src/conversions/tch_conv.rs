@@ -49,18 +49,16 @@ macro_rules! tensor_to_proto {
 // auxiliary functions
 
 fn normalized_tensor(tensor: &Tensor) -> Result<Tensor, Error> {
-    let kind = tensor.kind();
+    let kind = tensor.kind()?;
 
     let normalized_tensor = match kind {
         Kind::Uint8 => tensor.shallow_clone(),
         Kind::Float | Kind::Double => {
             // determine the scale and offset by min/max values
-            let valid_values_mask = tensor.f_isfinite().map_err(tch_to_conversion_error)?;
-            let valid_values = tensor
-                .f_masked_select(&valid_values_mask)
-                .map_err(tch_to_conversion_error)?;
-            let min_value = f64::from(valid_values.f_min().map_err(tch_to_conversion_error)?);
-            let max_value = f64::from(valid_values.f_max().map_err(tch_to_conversion_error)?);
+            let valid_values_mask = tensor.f_isfinite()?;
+            let valid_values = tensor.f_masked_select(&valid_values_mask)?;
+            let min_value = f64::from(valid_values.f_min()?);
+            let max_value = f64::from(valid_values.f_max()?);
 
             let (scale, offset) = if min_value >= 0.0 {
                 let scale = 255.0 / max_value;
@@ -73,12 +71,9 @@ fn normalized_tensor(tensor: &Tensor) -> Result<Tensor, Error> {
             };
 
             let normalized_tensor = tensor
-                .f_mul1(scale)
-                .map_err(tch_to_conversion_error)?
-                .f_add1(offset)
-                .map_err(tch_to_conversion_error)?
-                .f_to_kind(Kind::Uint8)
-                .map_err(tch_to_conversion_error)?;
+                .f_mul1(scale)?
+                .f_add1(offset)?
+                .f_to_kind(Kind::Uint8)?;
 
             normalized_tensor
         }
@@ -90,12 +85,6 @@ fn normalized_tensor(tensor: &Tensor) -> Result<Tensor, Error> {
     };
 
     Ok(normalized_tensor)
-}
-
-fn tch_to_conversion_error(err: failure::Error) -> Error {
-    Error::ConversionError {
-        desc: format!("tch error: {:?}", err),
-    }
 }
 
 fn guess_color_space_by_channels(channels: i64) -> Option<ColorSpace> {
@@ -116,7 +105,7 @@ impl TryFrom<&Tensor> for HistogramProto {
     type Error = Error;
 
     fn try_from(from: &Tensor) -> Result<Self, Self::Error> {
-        let kind = from.kind();
+        let kind = from.kind()?;
         let values = match kind {
             Kind::Uint8 => tensor_to_r64_vec!(from, u8)?,
             Kind::Int8 => tensor_to_r64_vec!(from, i8)?,
@@ -153,7 +142,7 @@ impl TryFrom<&Tensor> for TensorProto {
 
     fn try_from(from: &Tensor) -> Result<Self, Self::Error> {
         // let size = from.size();
-        let kind = from.kind();
+        let kind = from.kind()?;
         let proto = match kind {
             Kind::Uint8 => tensor_to_proto!(from, u8),
             Kind::Int8 => tensor_to_proto!(from, i8),
