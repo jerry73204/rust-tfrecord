@@ -16,7 +16,7 @@ The crate provides the functionality to serialize and deserialize TFRecord data 
 Append this line to your `Cargo.toml`.
 
 ```
-tfrecord = "0.3.0"
+tfrecord = "0.3.1"
 ```
 
 ### Notice on TensorFlow updates
