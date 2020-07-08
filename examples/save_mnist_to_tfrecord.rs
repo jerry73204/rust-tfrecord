@@ -1,4 +1,4 @@
-use failure::{ensure, Fallible};
+use anyhow::{ensure, Result};
 use flate2::read::GzDecoder;
 use itertools::izip;
 use packed_struct::prelude::*;
@@ -10,7 +10,7 @@ const IMAGES_URL: &'static str = "http://yann.lecun.com/exdb/mnist/train-images-
 const LABELS_URL: &'static str = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
 const OUTPUT_FILE: &'static str = "mnist.tfrecord";
 
-fn main() -> Fallible<()> {
+fn main() -> Result<()> {
     // download and decode data set
     let (images, labels) = mnist_loader::load_mnist()?;
 
@@ -63,7 +63,7 @@ mod mnist_loader {
         pub num_cols: u32,
     }
 
-    pub fn load_mnist() -> Fallible<(Vec<Vec<u8>>, Vec<u8>)> {
+    pub fn load_mnist() -> Result<(Vec<Vec<u8>>, Vec<u8>)> {
         let images_bytes = download_url(IMAGES_URL)?;
         let labels_bytes = download_url(LABELS_URL)?;
 
@@ -74,7 +74,7 @@ mod mnist_loader {
         Ok((images, labels))
     }
 
-    fn parse_images_bytes(bytes: &[u8]) -> Fallible<Vec<Vec<u8>>> {
+    fn parse_images_bytes(bytes: &[u8]) -> Result<Vec<Vec<u8>>> {
         // decode header
         let ImageHeader {
             magic,
@@ -104,7 +104,7 @@ mod mnist_loader {
         Ok(images)
     }
 
-    fn parse_labels_bytes(bytes: &[u8]) -> Fallible<Vec<u8>> {
+    fn parse_labels_bytes(bytes: &[u8]) -> Result<Vec<u8>> {
         // decode header
         let LabelHeader { magic, num_labels } =
             LabelHeader::unpack_from_slice(&bytes[0..LabelHeader::packed_bytes()])?;
@@ -122,7 +122,7 @@ mod mnist_loader {
         Ok(labels)
     }
 
-    fn download_url(url: &str) -> Fallible<Vec<u8>> {
+    fn download_url(url: &str) -> Result<Vec<u8>> {
         println!("downloading {}", url);
         let bytes = reqwest::blocking::get(url)?.bytes()?;
         let cursor = Cursor::new(bytes.as_ref());

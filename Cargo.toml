@@ -13,7 +13,7 @@ readme = "README.md"
 license-file = "LICENSE"
 
 [dependencies]
-failure = "0.1"
+thiserror = "1.0"
 prost = "0.6"
 crc = "1.8"
 serde = { version = "1.0", features = ["derive"], optional = true }
@@ -29,6 +29,7 @@ tch = { version = "0.1", optional = true }
 ndarray = { version = "0.13", optional = true }
 hostname = "0.3"
 integer-encoding = "1.1"
+failure = { version = "0.1", optional = true }
 
 [dev-dependencies]
 lazy_static = "1.4"
@@ -41,11 +42,12 @@ flate2 = "1.0"
 packed_struct = "0.3"
 packed_struct_codegen = "0.3"
 itertools = "0.9"
+anyhow = "1.0"
 
 [build-dependencies]
 glob = "0.3"
 prost-build = "0.6"
-failure = "0.1"
+anyhow = "1.0"
 lazy_static = "1.4"
 reqwest = { version = "0.10", features = ["blocking"] }
 tar = "0.4"
@@ -60,7 +62,7 @@ generate_protobuf_src = []
 dataset = ["async_", "num_cpus", "tokio", "static_assertions"]
 summary = []
 doc-only = ["tch/doc-only"]
-with-tch = ["tch", "with-image"]
+with-tch = ["tch", "with-image", "failure"]
 with-image = ["image"]
 with-ndarray = ["ndarray"]
 with-serde = ["serde"]

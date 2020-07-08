@@ -1,33 +1,26 @@
 //! Error types and error handling utilities.
 
-use failure::Fail;
 use prost::{DecodeError, EncodeError};
 use std::convert::Infallible;
 
 /// The error type for this crate.
-///
-/// It implements [failure::Fail] that it can be directly converted to
-/// [failure::Error].
-#[derive(Debug, Fail)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[fail(
-        display = "checksum mismatch error: expect {}, but found {}",
-        expect, found
-    )]
+    #[error("checksum mismatch error: expect {expect:}, but found {found:}")]
     ChecksumMismatchError { expect: String, found: String },
-    #[fail(display = "unexpected eof")]
+    #[error("unexpected eof")]
     UnexpectedEofError,
-    #[fail(display = "unicode error: {}", desc)]
+    #[error("unicode error: {desc:}")]
     UnicodeError { desc: String },
-    #[fail(display = "failed to decode example: {:?}", error)]
+    #[error("errored to decode example: {error:?}")]
     ExampleDecodeError { error: DecodeError },
-    #[fail(display = "failed to encode example: {:?}", error)]
+    #[error("errored to encode example: {error:?}")]
     ExampleEncodeError { error: EncodeError },
-    #[fail(display = "I/O error: {:?}", error)]
+    #[error("I/O error: {error:?}")]
     IoError { error: std::io::Error },
-    #[fail(display = "conversion error: {}", desc)]
+    #[error("conversion error: {desc:}")]
     ConversionError { desc: String },
-    #[fail(display = "invalid arguments: {}", desc)]
+    #[error("invalid arguments: {desc:}")]
     InvalidArgumentsError { desc: String },
 }
 

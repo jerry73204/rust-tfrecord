@@ -1,4 +1,4 @@
-use failure::{bail, ensure, Error, Fallible};
+use anyhow::{bail, ensure, Error, Result};
 use flate2::read::GzDecoder;
 use std::{
     env::{self, VarError},
@@ -43,7 +43,7 @@ enum BuildMethod {
 impl FromStr for BuildMethod {
     type Err = Error;
 
-    fn from_str(text: &str) -> Fallible<Self> {
+    fn from_str(text: &str) -> Result<Self> {
         const URL_PREFIX: &str = "url://";
         const SRC_DIR_PREFIX: &str = "src_dir://";
         const SRC_FILE_PREFIX: &str = "src_file://";
@@ -72,7 +72,7 @@ impl FromStr for BuildMethod {
     }
 }
 
-fn main() -> Fallible<()> {
+fn main() -> Result<()> {
     // re-run conditions
     println!(
         "cargo:rerun-if-changed={}",
@@ -97,7 +97,7 @@ fn main() -> Fallible<()> {
     Ok(())
 }
 
-fn guess_build_method() -> Fallible<BuildMethod> {
+fn guess_build_method() -> Result<BuildMethod> {
     let build_method = match env::var(BUILD_METHOD_ENV) {
         Ok(hint) => BuildMethod::from_str(&hint)?,
         Err(VarError::NotPresent) => BuildMethod::PreBuild,
@@ -111,13 +111,13 @@ fn guess_build_method() -> Fallible<BuildMethod> {
     Ok(build_method)
 }
 
-fn build_by_url(url: &str) -> Fallible<()> {
+fn build_by_url(url: &str) -> Result<()> {
     let src_file = download_tensorflow(url)?;
     build_by_src_file(src_file)?;
     Ok(())
 }
 
-fn build_by_src_dir<P>(src_dir: P) -> Fallible<()>
+fn build_by_src_dir<P>(src_dir: P) -> Result<()>
 where
     P: AsRef<Path>,
 {
@@ -130,7 +130,7 @@ where
     Ok(())
 }
 
-fn build_by_src_file<P>(src_file: P) -> Fallible<()>
+fn build_by_src_file<P>(src_file: P) -> Result<()>
 where
     P: AsRef<Path>,
 {
@@ -144,7 +144,7 @@ where
     Ok(())
 }
 
-fn build_by_install_prefix<P>(prefix: P) -> Fallible<()>
+fn build_by_install_prefix<P>(prefix: P) -> Result<()>
 where
     P: AsRef<Path>,
 {
@@ -152,7 +152,7 @@ where
     Ok(())
 }
 
-fn copy_prebuild_src() -> Fallible<()> {
+fn copy_prebuild_src() -> Result<()> {
     // check if conflicting "generate_protobuf_src" feature presents
     if cfg!(feature = "generate_protobuf_src") {
         bail!(r#"please specify the environment variable "{}" in combination with "generate_protobuf_src" feature"#, BUILD_METHOD_ENV);
@@ -176,7 +176,7 @@ fn copy_prebuild_src() -> Fallible<()> {
     Ok(())
 }
 
-fn extract_src_file<P>(src_file: P) -> Fallible<PathBuf>
+fn extract_src_file<P>(src_file: P) -> Result<PathBuf>
 where
     P: AsRef<Path>,
 {
@@ -219,7 +219,7 @@ where
     Ok(src_dir)
 }
 
-fn compile_protobuf<P>(dir: P) -> Fallible<()>
+fn compile_protobuf<P>(dir: P) -> Result<()>
 where
     P: AsRef<Path>,
 {
@@ -290,7 +290,7 @@ where
     Ok(())
 }
 
-fn download_tensorflow(url: &str) -> Fallible<PathBuf> {
+fn download_tensorflow(url: &str) -> Result<PathBuf> {
     let working_dir = OUT_DIR.join("tensorflow");
     let tar_path = working_dir.join(format!("v{}.tar.gz", TENSORFLOW_VERSION));
 

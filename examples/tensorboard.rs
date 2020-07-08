@@ -1,4 +1,4 @@
-use failure::Fallible;
+use anyhow::Result;
 use std::path::PathBuf;
 
 lazy_static::lazy_static! {
@@ -49,7 +49,7 @@ mod blocking_example {
     use std::{f32::consts::PI, thread, time::Duration};
     use tfrecord::{EventInit, EventWriterInit};
 
-    pub fn _main() -> Fallible<()> {
+    pub fn _main() -> Result<()> {
         // show log dir
         let log_dir = DATA_DIR.join("tensorboard_log_dir");
         let prefix = log_dir
@@ -72,7 +72,7 @@ mod blocking_example {
                 let image = image::load_from_memory(bytes.as_ref())?;
                 Ok(image)
             })
-            .collect::<Fallible<Vec<_>>>()?;
+            .collect::<Result<Vec<_>>>()?;
 
         // init writer
         let mut writer = EventWriterInit::default().from_prefix(prefix, None)?;
@@ -112,7 +112,7 @@ mod blocking_example {
 }
 
 #[cfg(feature = "full")]
-fn main() -> Fallible<()> {
+fn main() -> Result<()> {
     blocking_example::_main()
 }
 

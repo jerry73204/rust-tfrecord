@@ -1,4 +1,4 @@
-use failure::Fallible;
+use anyhow::Result;
 use std::path::PathBuf;
 
 lazy_static::lazy_static! {
@@ -49,7 +49,7 @@ mod async_example {
     use std::{f32::consts::PI, time::Duration};
     use tfrecord::{EventInit, EventWriterInit};
 
-    pub async fn _main() -> Fallible<()> {
+    pub async fn _main() -> Result<()> {
         // show log dir
         let log_dir = DATA_DIR.join("tensorboard_log_dir");
         let prefix = log_dir
@@ -75,7 +75,7 @@ mod async_example {
                     let image = image::load_from_memory(bytes.as_ref())?;
                     Ok(image)
                 })
-                .collect::<Fallible<Vec<_>>>()
+                .collect::<Result<Vec<_>>>()
         })
         .await?;
 
@@ -126,7 +126,7 @@ mod async_example {
 
 #[cfg(feature = "full")]
 #[async_std::main]
-async fn main() -> Fallible<()> {
+async fn main() -> Result<()> {
     async_example::_main().await
 }
 
