@@ -49,7 +49,7 @@ macro_rules! tensor_to_proto {
 // auxiliary functions
 
 fn normalized_tensor(tensor: &Tensor) -> Result<Tensor, Error> {
-    let kind = tensor.kind()?;
+    let kind = tensor.f_kind()?;
 
     let normalized_tensor = match kind {
         Kind::Uint8 => tensor.shallow_clone(),
@@ -105,7 +105,7 @@ impl TryFrom<&Tensor> for HistogramProto {
     type Error = Error;
 
     fn try_from(from: &Tensor) -> Result<Self, Self::Error> {
-        let kind = from.kind()?;
+        let kind = from.f_kind()?;
         let values = match kind {
             Kind::Uint8 => tensor_to_r64_vec!(from, u8)?,
             Kind::Int8 => tensor_to_r64_vec!(from, i8)?,
@@ -142,7 +142,7 @@ impl TryFrom<&Tensor> for TensorProto {
 
     fn try_from(from: &Tensor) -> Result<Self, Self::Error> {
         // let size = from.size();
-        let kind = from.kind()?;
+        let kind = from.f_kind()?;
         let proto = match kind {
             Kind::Uint8 => tensor_to_proto!(from, u8),
             Kind::Int8 => tensor_to_proto!(from, i8),
