@@ -11,7 +11,7 @@ use rand_distr::Distribution;
     feature = "with-ndarray"
 ))]
 #[test]
-fn blocking_event_writer() -> Fallible<()> {
+fn blocking_event_writer() -> Result<()> {
     // download image files
     let images = IMAGE_URLS
         .iter()
@@ -22,7 +22,7 @@ fn blocking_event_writer() -> Fallible<()> {
             let image = image::load_from_memory(bytes.as_ref())?;
             Ok(image)
         })
-        .collect::<Fallible<Vec<_>>>()?;
+        .collect::<Result<Vec<_>>>()?;
 
     // init writer
     let prefix = DATA_DIR
@@ -74,7 +74,7 @@ fn blocking_event_writer() -> Fallible<()> {
     feature = "async_"
 ))]
 #[async_std::test]
-async fn async_event_writer() -> Fallible<()> {
+async fn async_event_writer() -> Result<()> {
     // download image files
     let images = async_std::task::spawn_blocking(|| {
         // Because reqwest uses tokio runtime, it fails with async-std.
@@ -88,7 +88,7 @@ async fn async_event_writer() -> Fallible<()> {
                 let image = image::load_from_memory(bytes.as_ref())?;
                 Ok(image)
             })
-            .collect::<Fallible<Vec<_>>>()
+            .collect::<Result<Vec<_>>>()
     })
     .await?;
 

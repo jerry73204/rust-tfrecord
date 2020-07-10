@@ -5,7 +5,7 @@ use rand::Rng;
 
 #[cfg(feature = "async_")]
 #[async_std::test]
-async fn dataset_stream_test() -> Fallible<()> {
+async fn dataset_stream_test() -> Result<()> {
     let num_workers = num_cpus::get();
 
     for max_open_files in 0..=(num_cpus::get()) {
@@ -58,7 +58,7 @@ async fn dataset_stream_test() -> Fallible<()> {
                         })
                         .await?;
 
-                    Fallible::Ok(())
+                    Result::<_, Error>::Ok(())
                 }
             })
             .map(async_std::task::spawn);
@@ -70,7 +70,7 @@ async fn dataset_stream_test() -> Fallible<()> {
 
 #[cfg(feature = "async_")]
 #[async_std::test]
-async fn dataset_random_access_test() -> Fallible<()> {
+async fn dataset_random_access_test() -> Result<()> {
     let num_workers = num_cpus::get();
 
     for max_open_files in 0..=(num_cpus::get()) {

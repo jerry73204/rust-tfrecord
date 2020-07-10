@@ -29,7 +29,6 @@ tch = { version = "0.1", optional = true }
 ndarray = { version = "0.13", optional = true }
 hostname = "0.3"
 integer-encoding = "1.1"
-failure = { version = "0.1", optional = true }
 
 [dev-dependencies]
 lazy_static = "1.4"
@@ -62,7 +61,7 @@ generate_protobuf_src = []
 dataset = ["async_", "num_cpus", "tokio", "static_assertions"]
 summary = []
 doc-only = ["tch/doc-only"]
-with-tch = ["tch", "with-image", "failure"]
+with-tch = ["tch", "with-image"]
 with-image = ["image"]
 with-ndarray = ["ndarray"]
 with-serde = ["serde"]

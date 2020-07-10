@@ -1,4 +1,4 @@
-pub use failure::{ensure, format_err, Fallible};
+pub use anyhow::{ensure, format_err, Error, Result};
 #[cfg(feature = "async_")]
 pub use futures::stream::TryStreamExt;
 #[cfg(feature = "serde")]

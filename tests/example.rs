@@ -3,7 +3,7 @@ mod common;
 use common::*;
 
 #[test]
-fn blocking_reader_test() -> Fallible<()> {
+fn blocking_reader_test() -> Result<()> {
     // bytes
     {
         let reader: BytesReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
@@ -28,7 +28,7 @@ fn blocking_reader_test() -> Fallible<()> {
 
 #[cfg(feature = "async_")]
 #[async_std::test]
-async fn async_stream_test() -> Fallible<()> {
+async fn async_stream_test() -> Result<()> {
     // bytes
     {
         let stream = RecordStreamInit::default()
@@ -57,7 +57,7 @@ async fn async_stream_test() -> Fallible<()> {
 }
 
 #[test]
-fn blocking_writer_test() -> Fallible<()> {
+fn blocking_writer_test() -> Result<()> {
     let output_path = DATA_DIR.join("blocking_writer_output.tfrecord");
 
     // bytes
@@ -105,7 +105,7 @@ fn blocking_writer_test() -> Fallible<()> {
 
 #[cfg(feature = "async_")]
 #[async_std::test]
-async fn async_writer_test() -> Fallible<()> {
+async fn async_writer_test() -> Result<()> {
     let output_path = DATA_DIR.join("async_writer_output.tfrecord");
 
     // bytes
@@ -170,7 +170,7 @@ async fn async_writer_test() -> Fallible<()> {
 
 #[cfg(feature = "serde")]
 #[test]
-fn serde_test() -> Fallible<()> {
+fn serde_test() -> Result<()> {
     {
         let reader: BytesReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
         reader
@@ -185,9 +185,9 @@ fn serde_test() -> Fallible<()> {
                 // assert for Example
                 let _: Example = serde_json::from_str(&serde_json::to_string(&example)?)?;
 
-                Fallible::Ok(())
+                Result::Ok(())
             })
-            .collect::<Fallible<Vec<_>>>()?;
+            .collect::<Result<Vec<_>>>()?;
     }
 
     Ok(())
