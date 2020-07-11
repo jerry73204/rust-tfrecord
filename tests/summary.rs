@@ -41,7 +41,7 @@ fn blocking_event_writer() -> Fallible<()> {
         // scalar
         {
             let value: f32 = (step as f32 * std::f32::consts::PI / 8.0).sin();
-            writer.write_scalar("scalar", EventInit::with_step(step), value)?;
+            writer.write_scalar("scalar", step, value)?; // with step and default wall time
         }
 
         // histogram
@@ -51,13 +51,13 @@ fn blocking_event_writer() -> Fallible<()> {
                 .sample_iter(&mut rng)
                 .take(1024)
                 .collect::<Vec<f32>>();
-            writer.write_histogram("histogram", EventInit::with_step(step), values)?;
+            writer.write_histogram("histogram", EventInit::with_step(step), values)?; // more verbose writing
         }
 
         // image
         {
             let image = images.choose(&mut rng).unwrap();
-            writer.write_image("image", EventInit::with_step(step), image)?;
+            writer.write_image("image", (step, SystemTime::now()), image)?; // with step and specified wall time
         }
 
         thread::sleep(Duration::from_millis(100));
@@ -111,9 +111,7 @@ async fn async_event_writer() -> Fallible<()> {
         // scalar
         {
             let value: f32 = (step as f32 * std::f32::consts::PI / 8.0).sin();
-            writer
-                .write_scalar_async("scalar", EventInit::with_step(step), value)
-                .await?;
+            writer.write_scalar_async("scalar", step, value).await?; // with step and default wall time
         }
 
         // histogram
@@ -124,7 +122,7 @@ async fn async_event_writer() -> Fallible<()> {
                 .take(1024)
                 .collect::<Vec<f32>>();
             writer
-                .write_histogram_async("histogram", EventInit::with_step(step), values)
+                .write_histogram_async("histogram", EventInit::with_step(step), values) // more verbose writing
                 .await?;
         }
 
@@ -132,7 +130,7 @@ async fn async_event_writer() -> Fallible<()> {
         {
             let image = images.choose(&mut rng).unwrap();
             writer
-                .write_image_async("image", EventInit::with_step(step), image)
+                .write_image_async("image", (step, SystemTime::now()), image) // with step and specified wall time
                 .await?;
         }
 

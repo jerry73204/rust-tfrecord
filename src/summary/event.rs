@@ -66,6 +66,30 @@ impl EventInit {
     }
 }
 
+impl From<i64> for EventInit {
+    fn from(step: i64) -> Self {
+        Self::with_step(step)
+    }
+}
+
+impl From<(i64, f64)> for EventInit {
+    fn from((step, wall_time): (i64, f64)) -> Self {
+        Self::new(step, wall_time)
+    }
+}
+
+impl From<(i64, SystemTime)> for EventInit {
+    fn from((step, time): (i64, SystemTime)) -> Self {
+        Self::new(
+            step,
+            time.duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos() as f64
+                / 1.0e9,
+        )
+    }
+}
+
 /// A [Summary] initializer.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SummaryInit<T>

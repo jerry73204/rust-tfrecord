@@ -44,13 +44,55 @@ lazy_static::lazy_static! {
 #[cfg(feature = "full")]
 mod blocking_example {
     use super::*;
+    use image::DynamicImage;
     use rand::seq::SliceRandom;
     use rand_distr::{Distribution, Normal};
     use std::{f32::consts::PI, thread, time::Duration};
-    use tfrecord::{EventInit, EventWriterInit};
+    use tfrecord::EventWriterInit;
 
     pub fn _main() -> Result<()> {
-        // show log dir
+        // download image files
+        let images = download_images()?;
+
+        // initialize writer
+        let path_prefix = get_path_prefix();
+        let path_suffix = None;
+        let mut writer = EventWriterInit::default().from_prefix(path_prefix, path_suffix)?;
+        let mut rng = rand::thread_rng();
+
+        // loop
+        for step in 0..30 {
+            println!("step: {}", step);
+
+            // scalar
+            {
+                let value: f32 = (step as f32 * PI / 8.0).sin();
+                writer.write_scalar("scalar", step, value)?;
+            }
+
+            // histogram
+            {
+                let normal = Normal::new(-20.0, 50.0).unwrap();
+                let values = normal
+                    .sample_iter(&mut rng)
+                    .take(1024)
+                    .collect::<Vec<f32>>();
+                writer.write_histogram("histogram", step, values)?;
+            }
+
+            // image
+            {
+                let image = images.choose(&mut rng).unwrap();
+                writer.write_image("image", step, image)?;
+            }
+
+            thread::sleep(Duration::from_millis(100));
+        }
+
+        Ok(())
+    }
+
+    fn get_path_prefix() -> String {
         let log_dir = DATA_DIR.join("tensorboard_log_dir");
         let prefix = log_dir
             .join("tensorboard_example")
@@ -61,10 +103,12 @@ mod blocking_example {
             r#"Run `tensorboard --logdir '{}'` to watch the output"#,
             log_dir.display()
         );
+        prefix
+    }
 
-        // download image files
+    fn download_images() -> Result<Vec<DynamicImage>> {
         println!("downloading images...");
-        let images = IMAGE_URLS
+        IMAGE_URLS
             .iter()
             .cloned()
             .map(|url| {
@@ -72,42 +116,7 @@ mod blocking_example {
                 let image = image::load_from_memory(bytes.as_ref())?;
                 Ok(image)
             })
-            .collect::<Result<Vec<_>>>()?;
-
-        // init writer
-        let mut writer = EventWriterInit::default().from_prefix(prefix, None)?;
-        let mut rng = rand::thread_rng();
-
-        // loop
-        for step in 0..30 {
-            println!("step: {}", step);
-
-            // scalar
-            {
-                let value: f32 = (step as f32 * PI / 8.0).sin();
-                writer.write_scalar("scalar", EventInit::with_step(step), value)?;
-            }
-
-            // histogram
-            {
-                let normal = Normal::new(-20.0, 50.0).unwrap();
-                let values = normal
-                    .sample_iter(&mut rng)
-                    .take(1024)
-                    .collect::<Vec<f32>>();
-                writer.write_histogram("histogram", EventInit::with_step(step), values)?;
-            }
-
-            // image
-            {
-                let image = images.choose(&mut rng).unwrap();
-                writer.write_image("image", EventInit::with_step(step), image)?;
-            }
-
-            thread::sleep(Duration::from_millis(100));
-        }
-
-        Ok(())
+            .collect::<Result<Vec<_>>>()
     }
 }
 

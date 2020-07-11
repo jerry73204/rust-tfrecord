@@ -188,14 +188,14 @@ where
     pub fn write_scalar<T>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         value: f32,
     ) -> Result<(), Error>
     where
         T: ToString,
     {
         let summary = SummaryInit { tag }.build_scalar(value)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -207,7 +207,7 @@ where
     pub fn write_histogram<T, H, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         histogram: H,
     ) -> Result<(), Error>
     where
@@ -216,7 +216,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -228,7 +228,7 @@ where
     pub fn write_tensor<T, S, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         tensor: S,
     ) -> Result<(), Error>
     where
@@ -237,7 +237,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -249,7 +249,7 @@ where
     pub fn write_image<T, M, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         image: M,
     ) -> Result<(), Error>
     where
@@ -258,7 +258,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image(image)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -270,7 +270,7 @@ where
     pub fn write_image_list<T, V, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         images: V,
     ) -> Result<(), Error>
     where
@@ -279,7 +279,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image_list(images)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -291,7 +291,7 @@ where
     pub fn write_audio<T, A, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         audio: A,
     ) -> Result<(), Error>
     where
@@ -300,7 +300,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_audio(audio)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -340,14 +340,14 @@ where
     pub async fn write_scalar_async<T>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         value: f32,
     ) -> Result<(), Error>
     where
         T: ToString,
     {
         let summary = SummaryInit { tag }.build_scalar(value)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -359,7 +359,7 @@ where
     pub async fn write_histogram_async<T, H, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         histogram: H,
     ) -> Result<(), Error>
     where
@@ -368,7 +368,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -380,7 +380,7 @@ where
     pub async fn write_tensor_async<T, S, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         tensor: S,
     ) -> Result<(), Error>
     where
@@ -389,7 +389,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -401,7 +401,7 @@ where
     pub async fn write_image_async<T, M, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         image: M,
     ) -> Result<(), Error>
     where
@@ -410,7 +410,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image(image)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -422,7 +422,7 @@ where
     pub async fn write_image_list_async<T, V, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         images: V,
     ) -> Result<(), Error>
     where
@@ -431,7 +431,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_image_list(images)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -443,7 +443,7 @@ where
     pub async fn write_audio_async<T, A, E>(
         &mut self,
         tag: T,
-        event_init: EventInit,
+        event_init: impl Into<EventInit>,
         audio: A,
     ) -> Result<(), Error>
     where
@@ -452,7 +452,7 @@ where
         Error: From<E>,
     {
         let summary = SummaryInit { tag }.build_audio(audio)?;
-        let event = event_init.build_with_summary(summary);
+        let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;

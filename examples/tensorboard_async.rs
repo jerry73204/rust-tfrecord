@@ -44,12 +44,59 @@ lazy_static::lazy_static! {
 #[cfg(feature = "full")]
 mod async_example {
     use super::*;
+    use image::DynamicImage;
     use rand::seq::SliceRandom;
     use rand_distr::{Distribution, Normal};
     use std::{f32::consts::PI, time::Duration};
-    use tfrecord::{EventInit, EventWriterInit};
+    use tfrecord::EventWriterInit;
 
     pub async fn _main() -> Result<()> {
+        // download image files
+        let images = download_images().await?;
+
+        // init writer
+        let path_prefix = get_path_prefix();
+        let path_suffix = None;
+        let mut writer = EventWriterInit::default()
+            .from_prefix_async(path_prefix, path_suffix)
+            .await?;
+        let mut rng = rand::thread_rng();
+
+        // loop
+        for step in 0..30 {
+            println!("step: {}", step);
+
+            // scalar
+            {
+                let value: f32 = (step as f32 * PI / 8.0).sin();
+                writer.write_scalar_async("scalar", step, value).await?;
+            }
+
+            // histogram
+            {
+                let normal = Normal::new(-20.0, 50.0).unwrap();
+                let values = normal
+                    .sample_iter(&mut rng)
+                    .take(1024)
+                    .collect::<Vec<f32>>();
+                writer
+                    .write_histogram_async("histogram", step, values)
+                    .await?;
+            }
+
+            // image
+            {
+                let image = images.choose(&mut rng).unwrap();
+                writer.write_image_async("image", step, image).await?;
+            }
+
+            async_std::task::sleep(Duration::from_millis(100)).await;
+        }
+
+        Ok(())
+    }
+
+    fn get_path_prefix() -> String {
         // show log dir
         let log_dir = DATA_DIR.join("tensorboard_log_dir");
         let prefix = log_dir
@@ -61,10 +108,12 @@ mod async_example {
             r#"Run `tensorboard --logdir '{}'` to watch the output"#,
             log_dir.display()
         );
+        prefix
+    }
 
-        // download image files
+    async fn download_images() -> Result<Vec<DynamicImage>> {
         println!("downloading images...");
-        let images = async_std::task::spawn_blocking(|| {
+        async_std::task::spawn_blocking(|| {
             // Because reqwest uses tokio runtime, it fails with async-std.
             // We use blocking wait instead.
             IMAGE_URLS
@@ -77,50 +126,7 @@ mod async_example {
                 })
                 .collect::<Result<Vec<_>>>()
         })
-        .await?;
-
-        // init writer
-        let mut writer = EventWriterInit::default()
-            .from_prefix_async(prefix, None)
-            .await?;
-        let mut rng = rand::thread_rng();
-
-        // loop
-        for step in 0..30 {
-            println!("step: {}", step);
-
-            // scalar
-            {
-                let value: f32 = (step as f32 * PI / 8.0).sin();
-                writer
-                    .write_scalar_async("scalar", EventInit::with_step(step), value)
-                    .await?;
-            }
-
-            // histogram
-            {
-                let normal = Normal::new(-20.0, 50.0).unwrap();
-                let values = normal
-                    .sample_iter(&mut rng)
-                    .take(1024)
-                    .collect::<Vec<f32>>();
-                writer
-                    .write_histogram_async("histogram", EventInit::with_step(step), values)
-                    .await?;
-            }
-
-            // image
-            {
-                let image = images.choose(&mut rng).unwrap();
-                writer
-                    .write_image_async("image", EventInit::with_step(step), image)
-                    .await?;
-            }
-
-            async_std::task::sleep(Duration::from_millis(100)).await;
-        }
-
-        Ok(())
+        .await
     }
 }
 

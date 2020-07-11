@@ -6,7 +6,13 @@ pub use prost::Message;
 pub use rand::rngs::OsRng;
 pub use rand_distr::Normal;
 pub use std::{
-    fs::File, io::BufWriter, io::Cursor, num::NonZeroUsize, path::PathBuf, thread, time::Duration,
+    fs::File,
+    io::BufWriter,
+    io::Cursor,
+    num::NonZeroUsize,
+    path::PathBuf,
+    thread,
+    time::{Duration, SystemTime},
 };
 #[cfg(feature = "async_")]
 pub use tfrecord::RecordStreamInit;
