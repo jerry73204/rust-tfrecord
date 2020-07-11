@@ -149,7 +149,7 @@ use super::*;
 use rand::seq::SliceRandom;
 use rand_distr::{Distribution, Normal};
 use std::{f32::consts::PI, thread, time::Duration};
-use tfrecord::{EventInit, EventWriterInit};
+use tfrecord::EventWriterInit;
 
 pub fn _main() -> Fallible<()> {
     // show log dir
@@ -178,7 +178,7 @@ pub fn _main() -> Fallible<()> {
         // scalar
         {
             let value: f32 = (step as f32 * PI / 8.0).sin();
-            writer.write_scalar("scalar", EventInit::with_step(step), value)?;
+            writer.write_scalar("scalar", step, value)?;
         }
 
         // histogram
@@ -188,13 +188,13 @@ pub fn _main() -> Fallible<()> {
                 .sample_iter(&mut rng)
                 .take(1024)
                 .collect::<Vec<f32>>();
-            writer.write_histogram("histogram", EventInit::with_step(step), values)?;
+            writer.write_histogram("histogram", step, values)?;
         }
 
         // image
         {
             let image = images.choose(&mut rng).unwrap();
-            writer.write_image("image", EventInit::with_step(step), image)?;
+            writer.write_image("image", step, image)?;
         }
 
         thread::sleep(Duration::from_millis(100));
