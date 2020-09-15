@@ -151,7 +151,7 @@ use rand_distr::{Distribution, Normal};
 use std::{f32::consts::PI, thread, time::Duration};
 use tfrecord::EventWriterInit;
 
-pub fn _main() -> Fallible<()> {
+pub fn _main() -> Result<()> {
     // show log dir
     let prefix = "log_dir/my_prefix";
 
@@ -165,7 +165,7 @@ pub fn _main() -> Fallible<()> {
             let image = image::load_from_memory(bytes.as_ref())?;
             Ok(image)
         })
-        .collect::<Fallible<Vec<_>>>()?;
+        .collect::<Result<Vec<_>>>()?;
 
     // init writer
     let mut writer = EventWriterInit::from_prefix(prefix, None)?;
