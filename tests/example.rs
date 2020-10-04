@@ -116,11 +116,9 @@ async fn async_writer_test() -> Result<()> {
         let writer: BytesWriter<_> = RecordWriterInit::create_async(&output_path).await?;
 
         stream
-            .try_fold(writer, |mut writer, bytes| {
-                async {
-                    writer.send_async(bytes).await?;
-                    Ok(writer)
-                }
+            .try_fold(writer, |mut writer, bytes| async {
+                writer.send_async(bytes).await?;
+                Ok(writer)
             })
             .await?;
 
@@ -135,11 +133,9 @@ async fn async_writer_test() -> Result<()> {
         let writer: RawExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
 
         stream
-            .try_fold(writer, |mut writer, example| {
-                async {
-                    writer.send_async(example).await?;
-                    Ok(writer)
-                }
+            .try_fold(writer, |mut writer, example| async {
+                writer.send_async(example).await?;
+                Ok(writer)
             })
             .await?;
 
@@ -154,11 +150,9 @@ async fn async_writer_test() -> Result<()> {
         let writer: ExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
 
         stream
-            .try_fold(writer, |mut writer, example| {
-                async {
-                    writer.send_async(example).await?;
-                    Ok(writer)
-                }
+            .try_fold(writer, |mut writer, example| async {
+                writer.send_async(example).await?;
+                Ok(writer)
             })
             .await?;
 

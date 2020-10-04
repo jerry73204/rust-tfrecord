@@ -116,7 +116,6 @@ mod blocking {
             Some(record_result)
         }
     }
-
 }
 
 #[cfg(feature = "async_")]
@@ -154,8 +153,8 @@ mod async_ {
         {
             let RecordStreamInit { check_integrity } = self;
 
-            let stream = futures::stream::unfold(Some((reader, check_integrity)), |state_opt| {
-                async move {
+            let stream =
+                futures::stream::unfold(Some((reader, check_integrity)), |state_opt| async move {
                     let (mut reader, check_integrity) = state_opt?;
                     let result = crate::io::async_::try_read_record(&mut reader, check_integrity)
                         .await
@@ -169,8 +168,7 @@ mod async_ {
                         Ok(bytes) => Some((Ok(bytes), Some((reader, check_integrity)))),
                         Err(err) => Some((Err(err), None)),
                     }
-                }
-            });
+                });
 
             Ok(stream)
         }

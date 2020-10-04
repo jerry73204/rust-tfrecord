@@ -79,34 +79,29 @@ impl DatasetInit {
             .read_dir()
             .await?
             .map(|result| result.map_err(|err| Error::from(err)))
-            .try_filter_map(|entry| {
-                async move {
-                    if !entry.metadata().await?.is_file() {
-                        return Ok(None);
-                    }
+            .try_filter_map(|entry| async move {
+                if !entry.metadata().await?.is_file() {
+                    return Ok(None);
+                }
 
-                    let path = entry.path();
-                    let file_name =
-                        entry
-                            .file_name()
-                            .into_string()
-                            .map_err(|_| Error::UnicodeError {
-                                desc: format!(
-                                    r#"the file path "{}" is not Unicode"#,
-                                    path.display()
-                                ),
-                            })?;
+                let path = entry.path();
+                let file_name =
+                    entry
+                        .file_name()
+                        .into_string()
+                        .map_err(|_| Error::UnicodeError {
+                            desc: format!(r#"the file path "{}" is not Unicode"#, path.display()),
+                        })?;
 
-                    match file_name_prefix_opt {
-                        Some(file_name_prefix) => {
-                            if file_name.starts_with(&file_name_prefix) {
-                                Result::<_, Error>::Ok(Some(path))
-                            } else {
-                                Ok(None)
-                            }
+                match file_name_prefix_opt {
+                    Some(file_name_prefix) => {
+                        if file_name.starts_with(&file_name_prefix) {
+                            Result::<_, Error>::Ok(Some(path))
+                        } else {
+                            Ok(None)
                         }
-                        None => Ok(Some(path)),
                     }
+                    None => Ok(Some(path)),
                 }
             })
             .try_collect::<Vec<_>>()
@@ -265,14 +260,12 @@ impl Dataset {
         T: GenericRecord,
     {
         let dataset = self.clone();
-        futures::stream::try_unfold((dataset, 0), |state| {
-            async move {
-                let (mut dataset, index) = state;
-                Ok(dataset.get::<T>(index).await?.map(|record| {
-                    let new_state = (dataset, index + 1);
-                    (record, new_state)
-                }))
-            }
+        futures::stream::try_unfold((dataset, 0), |state| async move {
+            let (mut dataset, index) = state;
+            Ok(dataset.get::<T>(index).await?.map(|record| {
+                let new_state = (dataset, index + 1);
+                (record, new_state)
+            }))
         })
     }
 
@@ -312,22 +305,20 @@ fn record_index_stream<R>(
 where
     R: AsyncReadExt + AsyncSeekExt + Unpin,
 {
-    futures::stream::try_unfold((reader, check_integrity), |args| {
-        async move {
-            let (mut reader, check_integrity) = args;
+    futures::stream::try_unfold((reader, check_integrity), |args| async move {
+        let (mut reader, check_integrity) = args;
 
-            let len = match crate::io::async_::try_read_len(&mut reader, check_integrity).await? {
-                Some(len) => len,
-                None => return Ok(None),
-            };
+        let len = match crate::io::async_::try_read_len(&mut reader, check_integrity).await? {
+            Some(len) => len,
+            None => return Ok(None),
+        };
 
-            let offset = reader.seek(SeekFrom::Current(0)).await?;
-            crate::io::async_::try_read_record_data(&mut reader, len, check_integrity).await?;
+        let offset = reader.seek(SeekFrom::Current(0)).await?;
+        crate::io::async_::try_read_record_data(&mut reader, len, check_integrity).await?;
 
-            let index = (offset, len);
-            let args = (reader, check_integrity);
-            Result::<_, Error>::Ok(Some((index, args)))
-        }
+        let index = (offset, len);
+        let args = (reader, check_integrity);
+        Result::<_, Error>::Ok(Some((index, args)))
     })
 }
 

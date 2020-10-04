@@ -227,7 +227,6 @@ mod histogram {
         pub(crate) limit: R64,
         pub(crate) count: AtomicUsize,
     }
-
 }
 
 pub use histogram::*;

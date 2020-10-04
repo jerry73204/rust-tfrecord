@@ -51,7 +51,8 @@ fn blocking_event_writer() -> Result<()> {
                 .sample_iter(&mut rng)
                 .take(1024)
                 .collect::<Vec<f32>>();
-            writer.write_histogram("histogram", EventInit::with_step(step), values)?; // more verbose writing
+            writer.write_histogram("histogram", EventInit::with_step(step), values)?;
+            // more verbose writing
         }
 
         // image

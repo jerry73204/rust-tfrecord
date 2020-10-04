@@ -155,7 +155,10 @@ where
 fn copy_prebuild_src() -> Result<()> {
     // check if conflicting "generate_protobuf_src" feature presents
     if cfg!(feature = "generate_protobuf_src") {
-        bail!(r#"please specify the environment variable "{}" in combination with "generate_protobuf_src" feature"#, BUILD_METHOD_ENV);
+        bail!(
+            r#"please specify the environment variable "{}" in combination with "generate_protobuf_src" feature"#,
+            BUILD_METHOD_ENV
+        );
     }
 
     // copy file

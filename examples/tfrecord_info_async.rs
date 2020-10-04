@@ -69,7 +69,6 @@ mod async_example {
 
         Ok(())
     }
-
 }
 
 #[cfg(feature = "async_")]
