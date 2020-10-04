@@ -27,7 +27,7 @@ atomig = "0.1"
 image = { version = "0.23", optional = true }
 tch = { version = "0.2", optional = true }
 ndarray = { version = "0.13", optional = true }
-hostname = "0.3"
+hostname = { version = "0.3", optional = true }
 integer-encoding = "1.1"
 
 [dev-dependencies]
@@ -35,7 +35,7 @@ lazy_static = "1.4"
 reqwest = { version = "0.10", features = ["blocking"] }
 serde_json = "1.0"
 rand = { version = "0.7", features = ["getrandom"] }
-rand_distr = "0.2"
+rand_distr = "0.3"
 approx = "0.3"
 flate2 = "1.0"
 packed_struct = "0.3"
@@ -59,7 +59,7 @@ full = ["async_", "dataset", "summary", "with-tch", "with-image", "with-ndarray"
 async_ = ["futures", "async-std"]
 generate_protobuf_src = []
 dataset = ["async_", "num_cpus", "tokio", "static_assertions"]
-summary = []
+summary = ["hostname"]
 doc-only = ["tch/doc-only"]
 with-tch = ["tch", "with-image"]
 with-image = ["image"]
