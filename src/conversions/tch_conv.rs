@@ -1,7 +1,7 @@
 #![cfg(feature = "with-tch")]
 
 use super::*;
-use image::{png::PNGEncoder, ColorType};
+use image::{png::PngEncoder, ColorType};
 use tch::{IndexOp, Kind, Tensor};
 
 // macros
@@ -209,7 +209,7 @@ impl TryFrom<&Tensor> for Image {
                 _ => unreachable!("please report bug"),
             };
             let mut cursor = Cursor::new(vec![]);
-            PNGEncoder::new(&mut cursor)
+            PngEncoder::new(&mut cursor)
                 .encode(&samples, width as u32, height as u32, color_type)
                 .map_err(|err| Error::ConversionError {
                     desc: format!("{:?}", err),

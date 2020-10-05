@@ -2,7 +2,7 @@
 
 use super::*;
 use image::{
-    flat::SampleLayout, png::PNGEncoder, ColorType, DynamicImage, FlatSamples, ImageBuffer, Pixel,
+    flat::SampleLayout, png::PngEncoder, ColorType, DynamicImage, FlatSamples, ImageBuffer, Pixel,
     Primitive,
 };
 
@@ -313,7 +313,7 @@ where
 
         let encoded_image_string = {
             let mut cursor = Cursor::new(vec![]);
-            PNGEncoder::new(&mut cursor)
+            PngEncoder::new(&mut cursor)
                 .encode(&samples, width, height, color_type)
                 .map_err(|err| Error::ConversionError {
                     desc: format!("{:?}", err),
