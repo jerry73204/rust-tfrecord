@@ -498,10 +498,6 @@ pub struct ResourceHandleProto {
     /// Data types and shapes for the underlying resource.
     #[prost(message, repeated, tag="6")]
     pub dtypes_and_shapes: ::std::vec::Vec<resource_handle_proto::DtypeAndShape>,
-    /// A set of devices containing the resource. If empty, the resource only
-    /// exists on `device`.
-    #[prost(string, repeated, tag="7")]
-    pub allowed_devices: ::std::vec::Vec<std::string::String>,
 }
 pub mod resource_handle_proto {
     /// Protocol buffer representing a pair of (data type, tensor shape).
