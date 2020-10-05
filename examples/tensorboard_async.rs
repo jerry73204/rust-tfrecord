@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 
 lazy_static::lazy_static! {
     pub static ref IMAGE_URLS: &'static [&'static str] = &[
@@ -113,14 +113,14 @@ mod async_example {
 
     async fn download_images() -> Result<Vec<DynamicImage>> {
         println!("downloading images...");
+        // ureq blocks the thread so let's wrap in spawn_blocking
         async_std::task::spawn_blocking(|| {
-            // Because reqwest uses tokio runtime, it fails with async-std.
-            // We use blocking wait instead.
             IMAGE_URLS
                 .iter()
                 .cloned()
                 .map(|url| {
-                    let bytes = reqwest::blocking::get(url)?.bytes()?;
+                    let mut bytes = vec![];
+                    io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
                     let image = image::load_from_memory(bytes.as_ref())?;
                     Ok(image)
                 })

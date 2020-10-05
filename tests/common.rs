@@ -7,8 +7,7 @@ pub use rand::rngs::OsRng;
 pub use rand_distr::Normal;
 pub use std::{
     fs::File,
-    io::BufWriter,
-    io::Cursor,
+    io::{self, BufWriter, Cursor},
     num::NonZeroUsize,
     path::PathBuf,
     thread,
@@ -35,8 +34,10 @@ lazy_static::lazy_static! {
         std::fs::create_dir_all(&data_dir).unwrap();
 
         let out_path = data_dir.join(file_name);
-        let mut out_file = BufWriter::new(File::create(&out_path).unwrap());
-        reqwest::blocking::get(url).unwrap().copy_to(&mut out_file).unwrap();
+        std::io::copy(
+            &mut ureq::get(url).call().into_reader(),
+            &mut BufWriter::new(File::create(&out_path).unwrap()),
+        ).unwrap();
 
         out_path
     };

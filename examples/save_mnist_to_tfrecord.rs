@@ -3,7 +3,7 @@ use flate2::read::GzDecoder;
 use itertools::izip;
 use packed_struct::prelude::*;
 use packed_struct_codegen::PackedStruct;
-use std::io::{prelude::*, Cursor};
+use std::io::{self, prelude::*, Cursor};
 use tfrecord::{Example, ExampleWriter, Feature, RecordWriterInit};
 
 const IMAGES_URL: &'static str = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
@@ -124,8 +124,12 @@ mod mnist_loader {
 
     fn download_url(url: &str) -> Result<Vec<u8>> {
         println!("downloading {}", url);
-        let bytes = reqwest::blocking::get(url)?.bytes()?;
-        let cursor = Cursor::new(bytes.as_ref());
+        let bytes = {
+            let mut bytes = vec![];
+            io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
+            bytes
+        };
+        let cursor = Cursor::new(&bytes);
         let mut decoder = GzDecoder::new(cursor);
 
         let mut buf = vec![];

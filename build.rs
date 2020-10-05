@@ -3,7 +3,7 @@ use flate2::read::GzDecoder;
 use std::{
     env::{self, VarError},
     fs::File,
-    io::{prelude::*, BufReader, BufWriter},
+    io::{self, prelude::*, BufReader, BufWriter},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -306,10 +306,10 @@ fn download_tensorflow(url: &str) -> Result<PathBuf> {
     }
 
     // download file
-    {
-        let mut file = BufWriter::new(File::create(&tar_path)?);
-        reqwest::blocking::get(url).unwrap().copy_to(&mut file)?;
-    }
+    io::copy(
+        &mut ureq::get(url).call().into_reader(),
+        &mut BufWriter::new(File::create(&tar_path)?),
+    )?;
 
     Ok(tar_path)
 }

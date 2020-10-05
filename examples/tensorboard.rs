@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 
 lazy_static::lazy_static! {
     pub static ref IMAGE_URLS: &'static [&'static str] = &[
@@ -112,7 +112,8 @@ mod blocking_example {
             .iter()
             .cloned()
             .map(|url| {
-                let bytes = reqwest::blocking::get(url)?.bytes()?;
+                let mut bytes = vec![];
+                io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
                 let image = image::load_from_memory(bytes.as_ref())?;
                 Ok(image)
             })

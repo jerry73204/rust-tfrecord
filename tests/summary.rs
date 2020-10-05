@@ -18,7 +18,8 @@ fn blocking_event_writer() -> Result<()> {
         .cloned()
         .map(|url| {
             println!("downloading {}", url);
-            let bytes = reqwest::blocking::get(url)?.bytes()?;
+            let mut bytes = vec![];
+            io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
             let image = image::load_from_memory(bytes.as_ref())?;
             Ok(image)
         })
@@ -77,15 +78,15 @@ fn blocking_event_writer() -> Result<()> {
 #[async_std::test]
 async fn async_event_writer() -> Result<()> {
     // download image files
+    // ureq blocks the thread so let's wrap in spawn_blocking
     let images = async_std::task::spawn_blocking(|| {
-        // Because reqwest uses tokio runtime, it fails with async-std.
-        // We use blocking wait instead.
         IMAGE_URLS
             .iter()
             .cloned()
             .map(|url| {
                 println!("downloading {}", url);
-                let bytes = reqwest::blocking::get(url)?.bytes()?;
+                let mut bytes = vec![];
+                io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
                 let image = image::load_from_memory(bytes.as_ref())?;
                 Ok(image)
             })

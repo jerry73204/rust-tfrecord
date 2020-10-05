@@ -5,7 +5,11 @@
 #[cfg(feature = "async_")]
 mod async_example {
     use futures::stream::TryStreamExt;
-    use std::{fs::File, io::BufWriter, path::PathBuf};
+    use std::{
+        fs::File,
+        io::{self, BufWriter},
+        path::PathBuf,
+    };
     use tfrecord::{DatasetInit, Error, Example, Feature};
 
     lazy_static::lazy_static! {
@@ -17,8 +21,10 @@ mod async_example {
             std::fs::create_dir_all(&data_dir).unwrap();
 
             let out_path = data_dir.join(file_name);
-            let mut out_file = BufWriter::new(File::create(&out_path).unwrap());
-            reqwest::blocking::get(url).unwrap().copy_to(&mut out_file).unwrap();
+            io::copy(
+                &mut ureq::get(url).call().into_reader(),
+                &mut BufWriter::new(File::create(&out_path).unwrap()),
+            ).unwrap();
 
             let prefix = data_dir.join("fsns-");
             prefix.into_os_string().into_string().unwrap()

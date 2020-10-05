@@ -32,7 +32,7 @@ integer-encoding = "1.1"
 
 [dev-dependencies]
 lazy_static = "1.4"
-reqwest = { version = "0.10", features = ["blocking"] }
+ureq = "1.5"
 serde_json = "1.0"
 rand = { version = "0.7", features = ["getrandom"] }
 rand_distr = "0.3"
@@ -48,7 +48,7 @@ glob = "0.3"
 prost-build = "0.6"
 anyhow = "1.0"
 lazy_static = "1.4"
-reqwest = { version = "0.10", features = ["blocking"] }
+ureq = "1.5"
 tar = "0.4"
 flate2 = "1.0"
 blake3 = "0.3"
