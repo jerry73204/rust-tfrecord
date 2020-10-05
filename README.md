@@ -148,7 +148,7 @@ This is a simplified example of [examples/tensorboard.rs](examples/tensorboard.r
 use super::*;
 use rand::seq::SliceRandom;
 use rand_distr::{Distribution, Normal};
-use std::{f32::consts::PI, thread, time::Duration};
+use std::{f32::consts::PI, io, thread, time::Duration};
 use tfrecord::EventWriterInit;
 
 pub fn _main() -> Result<()> {
@@ -161,7 +161,8 @@ pub fn _main() -> Result<()> {
         .iter()
         .cloned()
         .map(|url| {
-            let bytes = reqwest::blocking::get(url)?.bytes()?;
+            let mut bytes = vec![];
+            io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
             let image = image::load_from_memory(bytes.as_ref())?;
             Ok(image)
         })
