@@ -1,20 +1,19 @@
-use anyhow::{bail, ensure, Error, Result};
+use anyhow::{bail, Context, Error, Result};
 use flate2::read::GzDecoder;
 use std::{
     env::{self, VarError},
     fs::File,
-    io::{self, prelude::*, BufReader, BufWriter},
+    io::{self, BufReader, BufWriter},
     path::{Path, PathBuf},
     str::FromStr,
 };
 use tar::Archive;
 
-const TENSORFLOW_VERSION: &str = "2.2.0";
+const DEFAULT_TENSORFLOW_VERSION: &str = "2.3.1";
 const BUILD_METHOD_ENV: &str = "TFRECORD_BUILD_METHOD";
 
 lazy_static::lazy_static! {
-    static ref TENSORFLOW_URL: String = format!("https://github.com/tensorflow/tensorflow/archive/v{}.tar.gz", TENSORFLOW_VERSION);
-    static ref TENSORFLOW_B3SUM: Vec<u8> = hex::decode("e10d1c18f528df623dd1df82968e1bd7c83104a1a11522e569f0839beb36c709").unwrap();
+    static ref DEFAULT_TENSORFLOW_URL: String = format!("https://github.com/tensorflow/tensorflow/archive/v{}.tar.gz", DEFAULT_TENSORFLOW_VERSION);
     static ref OUT_DIR: PathBuf = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     static ref CARGO_MANIFEST_DIR: PathBuf = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
     static ref GENERATED_PROTOBUF_FILE: PathBuf = {
@@ -54,7 +53,10 @@ impl FromStr for BuildMethod {
             BuildMethod::PreBuild
         } else if text.starts_with(URL_PREFIX) {
             let url = text[URL_PREFIX.len()..].to_owned();
-            Self::Url(url)
+            match url.as_str() {
+                "" => Self::Url(DEFAULT_TENSORFLOW_URL.to_string()),
+                _ => Self::Url(url),
+            }
         } else if text.starts_with(SRC_DIR_PREFIX) {
             let dir = PathBuf::from(&text[SRC_DIR_PREFIX.len()..]);
             Self::SrcDir(dir)
@@ -112,8 +114,10 @@ fn guess_build_method() -> Result<BuildMethod> {
 }
 
 fn build_by_url(url: &str) -> Result<()> {
+    eprintln!("download file {}", url);
     let src_file = download_tensorflow(url)?;
-    build_by_src_file(src_file)?;
+    build_by_src_file(&src_file)
+        .with_context(|| format!("remove {} and try again", src_file.display()))?;
     Ok(())
 }
 
@@ -185,23 +189,12 @@ where
 {
     let working_dir = OUT_DIR.join("tensorflow");
     let src_file = src_file.as_ref();
-    let src_dirname = format!("tensorflow-{}", TENSORFLOW_VERSION);
+    let src_dirname = format!("tensorflow-{}", DEFAULT_TENSORFLOW_VERSION);
     let src_dir = working_dir.join(&src_dirname);
 
     // remove previously extracted dir
     if src_dir.is_dir() {
         std::fs::remove_dir_all(&src_dir)?;
-    }
-
-    // verify source file
-    {
-        let mut buf = vec![];
-        let mut file = BufReader::new(File::open(src_file)?);
-        file.read_to_end(&mut buf)?;
-        ensure!(
-            blake3::hash(&buf).as_bytes().as_ref() == TENSORFLOW_B3SUM.as_slice(),
-            "the downloaded tensorflow package does not pass the integrity check"
-        );
     }
 
     // extract package
@@ -213,7 +206,7 @@ where
 
         if !src_dir.is_dir() {
             bail!(
-                r#"expect "{}" directory in source package. Did you download the wrong version?"#,
+                r#"expect "{}" directory in source package. Did you download the correct version?"#,
                 src_dirname
             );
         }
@@ -295,7 +288,7 @@ where
 
 fn download_tensorflow(url: &str) -> Result<PathBuf> {
     let working_dir = OUT_DIR.join("tensorflow");
-    let tar_path = working_dir.join(format!("v{}.tar.gz", TENSORFLOW_VERSION));
+    let tar_path = working_dir.join(format!("v{}.tar.gz", DEFAULT_TENSORFLOW_VERSION));
 
     // createw working dir
     std::fs::create_dir_all(&working_dir)?;

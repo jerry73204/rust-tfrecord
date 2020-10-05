@@ -51,7 +51,6 @@ lazy_static = "1.4"
 ureq = "1.5"
 tar = "0.4"
 flate2 = "1.0"
-blake3 = "0.3"
 hex = "0.4"
 
 [features]
