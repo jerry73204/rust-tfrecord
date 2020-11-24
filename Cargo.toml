@@ -42,6 +42,8 @@ packed_struct = "0.3"
 packed_struct_codegen = "0.3"
 itertools = "0.9"
 anyhow = "1.0"
+clap = "3.0.0-beta.1"
+csv = "1.1.4"
 
 [build-dependencies]
 glob = "0.3"
