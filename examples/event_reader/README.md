@@ -1,62 +1,56 @@
 # Event reader example: Extracting training curves from the TensorBoard log
 
-For the common training in deep learning, we usually save the training log
-into [TensorBoard](https://github.com/tensorflow/tensorboard) for better
-visualization.
+For common deep learning training tasks, we can save event files and visualize them
+with [TensorBoard](https://github.com/tensorflow/tensorboard).
 
-For example, the code `./generate_tensorboard.py` adopted from
+For example, the code `./generate_tensorboard.py` from
 [PyTorch summary writer tutorial](https://pytorch.org/docs/stable/tensorboard.html)
-can generate the following sample TensorBoard log.
+generates sample TensorBoard event files in `logs` directory.
 
-```bash
-python generate_tensorboard.py
+```sh
+python3 generate_tensorboard.py
 tensorboard --logdir logs
 ```
 
 ![demo](./demo.png)
 
-On the other hand, we may want to extract the data inside the
-TensorBoard log, which is just a kind of **TFRecord Event**,
-to analyze training behavior.
+On the other hand, we may want to analyze data from event files. We can read event files
+as though they are TFRecord files. This example lists available tags from a event file
+just generated in `logs` directory.
 
-With the help of rust-tfrecord, we can run this example to extract the
-data we want. First, specify the *EVENT_FILE* inside the log folder *logs*,
-and run this example to see the tags inside it.
-
-```bash
+```sh
 cargo run \
     --example event_reader \
     --features with-serde \
     -- \
-    --event EVENT_FILE
+    --event event_reader/logs/events.out.tfevents.1600000000.my-pc.4244.0
 ```
 
-*Example output*
+It shows available tags in the terminal.
 
-```bash
-The tags inside this event are [
+```sh
+The tags inside this event are {
     "Accuracy/test",
     "Accuracy/train",
     "Loss/test",
     "Loss/train",
-]
+}
 Please specify the tags to be extracted.
 ```
 
-Then we can run the example again to conditionally export the
-learning curves to CSV files by specifying the tags.
+Then, we can specify wanted tags to export training curves to CSV files.
 
 ```bash
 cargo run --example event_reader \
     --features with-serde \
     -- \
-    --event EVENT_FILE \
+    --event event_reader/logs/events.out.tfevents.1600000000.my-pc.4244.0 \
     --tags Accuracy/test Accuracy/train
 ```
 
-Example CSV files saved in the output directory.
+The generated CSV files are saved in the `output` directory.
 
-*output/Accuracy-test.csv*
+- `output/Accuracy-test.csv`
 
 
 ```csv
@@ -67,7 +61,7 @@ step,value
 ...
 ```
 
-*output/Accuracy-train.csv*
+- `output/Accuracy-train.csv`
 
 ```csv
 step,value
