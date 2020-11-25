@@ -38,7 +38,9 @@ pub use protos::{Event, Example as RawExample, Summary};
 
 #[cfg(feature = "async_")]
 pub use reader::RecordStreamInit;
-pub use reader::{BytesReader, ExampleReader, RawExampleReader, RecordReader, RecordReaderInit};
+pub use reader::{
+    BytesReader, EventReader, ExampleReader, RawExampleReader, RecordReader, RecordReaderInit,
+};
 #[cfg(feature = "summary")]
 pub use summary::{EventInit, EventWriter, EventWriterInit, SummaryInit};
 pub use types::{Example, Feature, Histogram};
