@@ -1,16 +1,12 @@
 use anyhow::Result;
 use clap::Clap;
 use csv::Writer;
+use serde::Serialize;
 use std::collections::HashSet;
 use tfrecord::{
-    protos::{
-        event::What,
-        summary::value::Value::SimpleValue,
-        Event,
-    },
+    protos::{event::What, summary::value::Value::SimpleValue, Event},
     RecordReader, RecordReaderInit,
 };
-use serde::Serialize;
 
 #[derive(Clap)]
 struct Args {
@@ -71,7 +67,9 @@ fn main() -> Result<()> {
 
     let tag_list = {
         let mut tags = HashSet::new();
-        history.iter().for_each(|x| { tags.insert(x.tag.clone()); });
+        history.iter().for_each(|x| {
+            tags.insert(x.tag.clone());
+        });
         let mut vec = tags.into_iter().collect::<Vec<String>>();
         vec.sort();
         vec
@@ -85,11 +83,7 @@ fn main() -> Result<()> {
                 tag,
                 tag_list,
             );
-            let file_name = format!(
-                "{}/{}.csv",
-                &args.output,
-                tag.replace("/", "-"),
-            );
+            let file_name = format!("{}/{}.csv", &args.output, tag.replace("/", "-"),);
             let mut wtr = Writer::from_path(&file_name)?;
             history.iter().for_each(|x| {
                 if x.tag == tag {
