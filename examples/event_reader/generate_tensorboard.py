@@ -1,3 +1,5 @@
+#/usr/bin/env python3
+
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
