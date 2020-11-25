@@ -208,7 +208,9 @@ pub fn _main() -> Result<()> {
 
 ### More examples
 
-You can visit the [examples](examples) and [tests](tests) directories to see more verbose examples.
+To read values from event files used by TensorBoard, you can see the [event reader](examples/event_reader) example.
+
+More examples can be found in [examples](examples) and [tests](tests) directories.
 
 ## Generate ProtocolBuffer code from TensorFlow
 
