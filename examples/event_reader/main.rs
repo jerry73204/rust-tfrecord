@@ -1,11 +1,12 @@
 use anyhow::Result;
 use clap::Clap;
 use csv::Writer;
+use indexmap::IndexSet;
 use serde::Serialize;
-use std::collections::HashSet;
+use std::path::PathBuf;
 use tfrecord::{
-    protos::{event::What, summary::value::Value::SimpleValue, Event},
-    RecordReader, RecordReaderInit,
+    protos::{event::What, summary::value::Value::SimpleValue, Summary},
+    EventReader, RecordReaderInit,
 };
 
 #[derive(Clap)]
@@ -17,7 +18,7 @@ struct Args {
     tags: Option<Vec<String>>,
 
     #[clap(long, short, default_value = "./output")]
-    output: String,
+    output: PathBuf,
 }
 
 struct TagData {
@@ -42,60 +43,67 @@ impl From<&TagData> for Data {
 }
 
 fn main() -> Result<()> {
-    let args = Args::parse();
-    let reader: RecordReader<Event, _> = RecordReaderInit::default().open(&args.event)?;
-    std::fs::create_dir_all(&args.output)?;
+    let Args {
+        event: event_file,
+        tags: query_tags,
+        output: output_dir,
+    } = Args::parse();
+    let reader: EventReader<_> = RecordReaderInit::default().open(&event_file)?;
+    std::fs::create_dir_all(&output_dir)?;
 
-    let history = reader
+    let history: Vec<TagData> = reader
         .into_iter()
-        .filter_map(Result::ok)
-        .filter_map(|event| match event.what {
-            Some(What::Summary(summary)) => {
-                let val = &summary.value[0];
-                match val.value {
-                    Some(SimpleValue(value)) => Some(TagData {
-                        step: event.step,
-                        tag: val.tag.clone(),
-                        value: value,
-                    }),
-                    _ => None,
+        .map(|result| -> Result<_> {
+            let event = result?;
+            let tag = match event.what {
+                Some(What::Summary(Summary { value })) => {
+                    let val = &value[0];
+                    match val.value {
+                        Some(SimpleValue(value)) => Some(TagData {
+                            step: event.step,
+                            tag: val.tag.clone(),
+                            value,
+                        }),
+                        _ => None,
+                    }
                 }
-            }
-            _ => None,
+                _ => None,
+            };
+            Ok(tag)
         })
-        .collect::<Vec<TagData>>();
+        .filter_map(|result| result.transpose())
+        .collect::<Result<_>>()?;
 
     let tag_list = {
-        let mut tags = HashSet::new();
-        history.iter().for_each(|x| {
-            tags.insert(x.tag.clone());
-        });
-        let mut vec = tags.into_iter().collect::<Vec<String>>();
-        vec.sort();
-        vec
+        let mut tags: IndexSet<_> = history.iter().map(|tag_data| &tag_data.tag).collect();
+        tags.sort();
+        tags
     };
 
-    if let Some(tags) = args.tags {
-        for tag in tags {
-            assert!(
-                tag_list.contains(&tag),
-                "\nThe tag {:?} not in valid tags {:#?}",
-                tag,
-                tag_list,
-            );
-            let file_name = format!("{}/{}.csv", &args.output, tag.replace("/", "-"),);
-            let mut wtr = Writer::from_path(&file_name)?;
-            history.iter().for_each(|x| {
-                if x.tag == tag {
-                    wtr.serialize(Data::from(x)).unwrap();
-                }
-            });
+    if let Some(query_tags) = query_tags {
+        query_tags.iter().try_for_each(|tag| -> Result<_> {
+            if !tag_list.contains(&tag) {
+                eprintln!(
+                    "Warning: The tag {:?} is not found in valid tags {:#?}",
+                    tag, tag_list
+                );
+                return Ok(());
+            }
+
+            let output_file = output_dir.join(format!("{}.csv", tag.replace("/", "-")));
+            let mut wtr = Writer::from_path(&output_file)?;
+            history
+                .iter()
+                .filter(|data| &data.tag == tag)
+                .try_for_each(|data| wtr.serialize(Data::from(data)))?;
             wtr.flush()?;
-            println!("The tag data has been saved as {}", &file_name);
-        }
+            println!("The tag data is saved to {}", output_file.display());
+            Ok(())
+        })?;
     } else {
-        println!("The tags inside this event are {:#?}", &tag_list);
+        println!("The tags inside this event file are {:#?}", tag_list);
         println!("Please specify the tags to be extracted.");
     }
+
     Ok(())
 }
