@@ -81,17 +81,18 @@ mod mnist_loader {
             num_images,
             num_rows,
             num_cols,
-        } = ImageHeader::unpack_from_slice(&bytes[0..ImageHeader::packed_bytes()])?;
+        } = ImageHeader::unpack_from_slice(&bytes[0..ImageHeader::packed_bytes_size(None)?])?;
         ensure!(magic == 0x00000803, "the data set is corrupted");
         ensure!(
             bytes.len()
-                == ImageHeader::packed_bytes() + (num_images * num_rows * num_cols) as usize,
+                == ImageHeader::packed_bytes_size(None)?
+                    + (num_images * num_rows * num_cols) as usize,
             "the data set is corrupted"
         );
 
         // decode images
         let images = (0..num_images)
-            .scan(ImageHeader::packed_bytes(), |offset, _| {
+            .scan(ImageHeader::packed_bytes_size(None)?, |offset, _| {
                 let size = (num_rows * num_cols) as usize;
                 let begin_offset = *offset;
                 let end_offset = *offset + size;
@@ -107,15 +108,15 @@ mod mnist_loader {
     fn parse_labels_bytes(bytes: &[u8]) -> Result<Vec<u8>> {
         // decode header
         let LabelHeader { magic, num_labels } =
-            LabelHeader::unpack_from_slice(&bytes[0..LabelHeader::packed_bytes()])?;
+            LabelHeader::unpack_from_slice(&bytes[0..LabelHeader::packed_bytes_size(None)?])?;
         ensure!(magic == 0x00000801, "the data set is corrupted");
         ensure!(
-            bytes.len() == LabelHeader::packed_bytes() + num_labels as usize,
+            bytes.len() == LabelHeader::packed_bytes_size(None)? + num_labels as usize,
             "the data set is corrupted"
         );
 
         // decode labels
-        let begin_offset = LabelHeader::packed_bytes();
+        let begin_offset = LabelHeader::packed_bytes_size(None)?;
         let end_offset = begin_offset + num_labels as usize;
         let labels = Vec::from(&bytes[begin_offset..end_offset]);
 
@@ -126,7 +127,7 @@ mod mnist_loader {
         println!("downloading {}", url);
         let bytes = {
             let mut bytes = vec![];
-            io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
+            io::copy(&mut ureq::get(url).call()?.into_reader(), &mut bytes)?;
             bytes
         };
         let cursor = Cursor::new(&bytes);

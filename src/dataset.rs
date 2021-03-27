@@ -284,7 +284,7 @@ impl Dataset {
                 mem::drop(args); // drop previous permit and reader
                 let semaphore_opt = self.state.open_file_semaphore.clone();
                 let permit = match semaphore_opt {
-                    Some(semaphore) => Some(semaphore.acquire_owned().await),
+                    Some(semaphore) => Some(semaphore.acquire_owned().await.unwrap()),
                     None => None,
                 };
                 let reader = BufReader::new(File::open(&path).await?);

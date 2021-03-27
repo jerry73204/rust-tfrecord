@@ -300,7 +300,7 @@ fn download_tensorflow(url: &str) -> Result<PathBuf> {
 
     // download file
     io::copy(
-        &mut ureq::get(url).call().into_reader(),
+        &mut ureq::get(url).call()?.into_reader(),
         &mut BufWriter::new(File::create(&tar_path)?),
     )?;
 

@@ -119,7 +119,7 @@ mod async_example {
                 .cloned()
                 .map(|url| {
                     let mut bytes = vec![];
-                    io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
+                    io::copy(&mut ureq::get(url).call()?.into_reader(), &mut bytes)?;
                     let image = image::load_from_memory(bytes.as_ref())?;
                     Ok(image)
                 })

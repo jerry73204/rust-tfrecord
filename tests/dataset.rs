@@ -97,7 +97,7 @@ async fn dataset_random_access_test() -> Result<()> {
                     );
 
                     for round in 0..(num_records * 10) {
-                        let example_index = rng.gen_range(0, num_records);
+                        let example_index = rng.gen_range(0..num_records);
                         let example = dataset
                             .get::<Example>(example_index)
                             .await?

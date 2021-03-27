@@ -15,7 +15,7 @@ lazy_static::lazy_static! {
 
         let out_path = data_dir.join(file_name);
         io::copy(
-            &mut ureq::get(url).call().into_reader(),
+            &mut ureq::get(url).call().unwrap().into_reader(),
             &mut BufWriter::new(File::create(&out_path).unwrap()),
         ).unwrap();
 

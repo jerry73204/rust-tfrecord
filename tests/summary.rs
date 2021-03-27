@@ -19,7 +19,7 @@ fn blocking_event_writer() -> Result<()> {
         .map(|url| {
             println!("downloading {}", url);
             let mut bytes = vec![];
-            io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
+            io::copy(&mut ureq::get(url).call()?.into_reader(), &mut bytes)?;
             let image = image::load_from_memory(bytes.as_ref())?;
             Ok(image)
         })
@@ -86,7 +86,7 @@ async fn async_event_writer() -> Result<()> {
             .map(|url| {
                 println!("downloading {}", url);
                 let mut bytes = vec![];
-                io::copy(&mut ureq::get(url).call().into_reader(), &mut bytes)?;
+                io::copy(&mut ureq::get(url).call()?.into_reader(), &mut bytes)?;
                 let image = image::load_from_memory(bytes.as_ref())?;
                 Ok(image)
             })
