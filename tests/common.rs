@@ -60,7 +60,6 @@ lazy_static::lazy_static! {
         "https://farm1.staticflickr.com/72/162225436_fa7abc6a2d_z.jpg",
         "https://farm5.staticflickr.com/4037/4579942190_549048649d_z.jpg",
         "https://farm1.staticflickr.com/152/421839397_f95f1e5f12_z.jpg",
-        "https://farm9.staticflickr.com/8389/8489230096_2fb2838311_z.jpg",
         "https://farm3.staticflickr.com/2123/2282016642_bf8fe494c9_z.jpg",
         "https://farm2.staticflickr.com/1366/566150996_9fac6f9b91_z.jpg",
         "https://farm1.staticflickr.com/173/419814278_76be492b37_z.jpg",
