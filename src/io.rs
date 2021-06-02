@@ -7,6 +7,7 @@ use crate::error::Error;
 #[cfg(feature = "async_")]
 use futures::io::{AsyncReadExt, AsyncWriteExt};
 use std::io::prelude::*;
+use std::io::{Error as IoError, ErrorKind};
 
 /// Low level I/O functions with async/await.
 #[cfg(feature = "async_")]
@@ -39,12 +40,11 @@ pub mod async_ {
     {
         let len_buf = {
             let mut len_buf = [0u8; std::mem::size_of::<u64>()];
-            match reader.read(&mut len_buf).await {
-                Ok(0) => return Ok(None),
-                Ok(n) if n == len_buf.len() => (),
-                Ok(_) => return Err(Error::UnexpectedEofError),
-                Err(error) => return Err(error.into()),
-            };
+            match reader.read_exact(&mut len_buf).await {
+                Err(ref e) if e.kind() == ErrorKind::UnexpectedEof => return Ok(None),
+                Err(e) => return Err(e.into()),
+                _ => (),
+            }
             len_buf
         };
         let len = u64::from_le_bytes(len_buf);
@@ -149,11 +149,10 @@ pub mod blocking {
     {
         let len_buf = {
             let mut len_buf = [0u8; std::mem::size_of::<u64>()];
-            match reader.read(&mut len_buf) {
-                Ok(0) => return Ok(None),
-                Ok(n) if n == len_buf.len() => (),
-                Ok(_) => return Err(Error::UnexpectedEofError),
-                Err(error) => return Err(error.into()),
+            match reader.read_exact(&mut len_buf) {
+                Err(ref e) if e.kind() == ErrorKind::UnexpectedEof => return Ok(None),
+                Err(e) => return Err(e.into()),
+                _ => (),
             }
             len_buf
         };
