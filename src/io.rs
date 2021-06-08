@@ -38,14 +38,12 @@ pub mod async_ {
         R: AsyncReadExt + Unpin,
     {
         let len_buf = {
-            let mut len_buf = [0u8; std::mem::size_of::<u64>()];
-            match reader.read(&mut len_buf).await {
-                Ok(0) => return Ok(None),
-                Ok(n) if n == len_buf.len() => (),
-                Ok(_) => return Err(Error::UnexpectedEofError),
-                Err(error) => return Err(error.into()),
-            };
-            len_buf
+            let len_buf = [0u8; std::mem::size_of::<u64>()];
+            let len_buf = try_read_exact(reader, len_buf).await?;
+            match len_buf {
+                Some(buf) => buf,
+                None => return Ok(None),
+            }
         };
         let len = u64::from_le_bytes(len_buf);
 
@@ -114,6 +112,37 @@ pub mod async_ {
         }
         Ok(())
     }
+
+    async fn try_read_exact<R, B>(reader: &mut R, mut buf: B) -> Result<Option<B>, Error>
+    where
+        R: AsyncReadExt + Unpin,
+        B: AsMut<[u8]>,
+    {
+        let as_mut = buf.as_mut();
+        let mut offset = 0;
+        let len = as_mut.len();
+
+        loop {
+            match reader.read(&mut as_mut[offset..]).await {
+                Ok(0) => {
+                    if offset == len {
+                        return Ok(Some(buf));
+                    } else if offset == 0 {
+                        return Ok(None);
+                    } else {
+                        return Err(Error::UnexpectedEofError);
+                    }
+                }
+                Ok(n) => {
+                    offset += n;
+                    if offset == len {
+                        return Ok(Some(buf));
+                    }
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
+    }
 }
 
 /// Low level blocking I/O functions.
@@ -149,13 +178,11 @@ pub mod blocking {
     {
         let len_buf = {
             let mut len_buf = [0u8; std::mem::size_of::<u64>()];
-            match reader.read(&mut len_buf) {
-                Ok(0) => return Ok(None),
-                Ok(n) if n == len_buf.len() => (),
-                Ok(_) => return Err(Error::UnexpectedEofError),
-                Err(error) => return Err(error.into()),
+            let len_buf = try_read_exact(reader, len_buf)?;
+            match len_buf {
+                Some(buf) => buf,
+                None => return Ok(None),
             }
-            len_buf
         };
         let len = u64::from_le_bytes(len_buf);
         let expect_cksum = {
@@ -224,5 +251,36 @@ pub mod blocking {
             writer.write_all(&cksum_buf)?;
         }
         Ok(())
+    }
+
+    fn try_read_exact<R, B>(reader: &mut R, mut buf: B) -> Result<Option<B>, Error>
+    where
+        R: Read,
+        B: AsMut<[u8]>,
+    {
+        let mut as_mut = buf.as_mut();
+        let mut offset = 0;
+        let len = as_mut.len();
+
+        loop {
+            match reader.read(&mut as_mut[offset..]) {
+                Ok(0) => {
+                    if offset == len {
+                        return Ok(Some(buf));
+                    } else if offset == 0 {
+                        return Ok(None);
+                    } else {
+                        return Err(Error::UnexpectedEofError);
+                    }
+                }
+                Ok(n) => {
+                    offset += n;
+                    if offset == len {
+                        return Ok(Some(buf));
+                    }
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
     }
 }
