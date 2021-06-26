@@ -1,9 +1,9 @@
 //! High level example, feature and many other types.
 
-use atomig::Atomic;
 use noisy_float::types::R64;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use std::sync::RwLock;
 use std::{
     collections::HashMap,
     iter,
@@ -31,13 +31,21 @@ mod histogram {
     ///
     /// The methods of the histogram can be called concurrently.
     #[derive(Debug)]
-    pub struct Histogram {
+    pub struct Histogram(pub(crate) RwLock<State>);
+
+    #[derive(Debug)]
+    pub(crate) struct State {
         pub(crate) buckets: Vec<Bucket>,
-        pub(crate) len: AtomicUsize,
-        pub(crate) min: Atomic<f64>,
-        pub(crate) max: Atomic<f64>,
-        pub(crate) sum: Atomic<f64>,
-        pub(crate) sum_squares: Atomic<f64>,
+        pub(crate) stat: Option<Stat>,
+    }
+
+    #[derive(Debug)]
+    pub(crate) struct Stat {
+        pub(crate) len: usize,
+        pub(crate) min: f64,
+        pub(crate) max: f64,
+        pub(crate) sum: f64,
+        pub(crate) sum_squares: f64,
     }
 
     impl Histogram {
@@ -84,54 +92,59 @@ mod histogram {
                 buckets
             };
 
-            Some(Self {
+            Some(Self(RwLock::new(State {
                 buckets,
-                len: AtomicUsize::new(0),
-                min: Atomic::new(f64::INFINITY),
-                max: Atomic::new(f64::NEG_INFINITY),
-                sum: Atomic::new(0.0),
-                sum_squares: Atomic::new(0.0),
-            })
+                stat: None,
+            })))
         }
 
         /// Get the observed minimum value.
         pub fn min(&self) -> Option<f64> {
-            let value = self.min.load(Ordering::SeqCst);
-            if value == f64::INFINITY {
-                None
-            } else {
-                Some(value)
-            }
+            self.0.read().unwrap().stat.as_ref()?.min.into()
         }
 
         /// Get the observed maximum value.
         pub fn max(&self) -> Option<f64> {
-            let value = self.max.load(Ordering::SeqCst);
-            if value == f64::NEG_INFINITY {
-                None
-            } else {
-                Some(value)
-            }
+            self.0.read().unwrap().stat.as_ref()?.max.into()
         }
 
         /// Get the summation of contained values.
         pub fn sum(&self) -> f64 {
-            self.sum.load(Ordering::SeqCst)
+            self.0
+                .read()
+                .unwrap()
+                .stat
+                .as_ref()
+                .map(|stat| stat.sum)
+                .unwrap_or(0.0)
         }
 
         /// Get the summation of squares of contained values.
         pub fn sum_squares(&self) -> f64 {
-            self.sum_squares.load(Ordering::SeqCst)
+            self.0
+                .read()
+                .unwrap()
+                .stat
+                .as_ref()
+                .map(|stat| stat.sum_squares)
+                .unwrap_or(0.0)
         }
 
         /// Get the number of contained values.
         pub fn len(&self) -> usize {
-            self.len.load(Ordering::SeqCst)
+            self.0
+                .read()
+                .unwrap()
+                .stat
+                .as_ref()
+                .map(|stat| stat.len)
+                .unwrap_or(0)
         }
 
         /// Append a new value.
         pub fn add(&self, value: R64) {
-            let index = match self
+            let mut state = self.0.write().unwrap();
+            let index = match state
                 .buckets
                 .binary_search_by_key(&value, |bucket| bucket.limit)
             {
@@ -139,54 +152,28 @@ mod histogram {
                 Err(index) => index,
             };
 
-            self.buckets[index].count.fetch_add(1, Ordering::SeqCst);
+            state.buckets[index].count.fetch_add(1, Ordering::SeqCst);
 
-            // update len
-            self.len.fetch_add(1, Ordering::SeqCst);
+            let value = value.raw();
 
-            // update min
-            loop {
-                let curr = self.min.load(Ordering::Acquire);
-                let new = curr.min(value.raw());
-                let swapped = self.min.compare_and_swap(curr, new, Ordering::Release);
-                if swapped == curr {
-                    break;
-                }
-            }
-
-            // update max
-            loop {
-                let curr = self.max.load(Ordering::Acquire);
-                let new = curr.max(value.raw());
-                let swapped = self.max.compare_and_swap(curr, new, Ordering::Release);
-                if swapped == curr {
-                    break;
-                }
-            }
-
-            // update sum
-            loop {
-                let curr = self.sum.load(Ordering::Acquire);
-                let new = curr + value.raw();
-                assert!(new.is_finite());
-                let swapped = self.sum.compare_and_swap(curr, new, Ordering::Release);
-                if swapped == curr {
-                    break;
-                }
-            }
-
-            // update sum_square
-            loop {
-                let curr = self.sum_squares.load(Ordering::Acquire);
-                let new = curr + value.raw().powi(2);
-                assert!(new.is_finite());
-                let swapped = self
-                    .sum_squares
-                    .compare_and_swap(curr, new, Ordering::Release);
-                if swapped == curr {
-                    break;
-                }
-            }
+            let new_stat = state
+                .stat
+                .as_ref()
+                .map(|stat| Stat {
+                    len: stat.len + 1,
+                    min: stat.min.min(value),
+                    max: stat.max.max(value),
+                    sum: stat.sum + value,
+                    sum_squares: stat.sum_squares + value.powi(2),
+                })
+                .unwrap_or_else(|| Stat {
+                    len: 1,
+                    min: value,
+                    max: value,
+                    sum: value,
+                    sum_squares: value.powi(2),
+                });
+            state.stat = Some(new_stat);
         }
     }
 

@@ -85,29 +85,36 @@ impl From<&Example> for RawExample {
 
 impl From<Histogram> for HistogramProto {
     fn from(from: Histogram) -> Self {
-        let Histogram {
-            buckets,
-            len,
-            min,
-            max,
-            sum,
-            sum_squares,
-        } = from;
+        let state = from.0.read().unwrap();
 
-        let min = min.load(Ordering::Relaxed);
-        let max = max.load(Ordering::Relaxed);
-        let sum = sum.load(Ordering::Relaxed);
-        let sum_squares = sum_squares.load(Ordering::Relaxed);
-        let len = len.load(Ordering::Relaxed);
-
-        let counts = buckets
+        let counts: Vec<_> = state
+            .buckets
             .iter()
             .map(|bucket| bucket.count.load(Ordering::Relaxed) as f64)
-            .collect::<Vec<_>>();
-        let limits = buckets
+            .collect();
+        let limits: Vec<_> = state
+            .buckets
             .iter()
             .map(|bucket| bucket.limit.raw())
-            .collect::<Vec<_>>();
+            .collect();
+
+        let min = state
+            .stat
+            .as_ref()
+            .map(|stat| stat.min)
+            .unwrap_or(f64::INFINITY);
+        let max = state
+            .stat
+            .as_ref()
+            .map(|stat| stat.max)
+            .unwrap_or(f64::NEG_INFINITY);
+        let sum = state.stat.as_ref().map(|stat| stat.sum).unwrap_or(0.0);
+        let sum_squares = state
+            .stat
+            .as_ref()
+            .map(|stat| stat.sum_squares)
+            .unwrap_or(0.0);
+        let len = state.stat.as_ref().map(|stat| stat.len).unwrap_or(0);
 
         Self {
             min,
