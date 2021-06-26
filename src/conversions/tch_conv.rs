@@ -71,8 +71,8 @@ fn normalized_tensor(tensor: &Tensor) -> Result<Tensor, Error> {
             };
 
             let normalized_tensor = tensor
-                .f_mul1(scale)?
-                .f_add1(offset)?
+                .f_mul_scalar(scale)?
+                .f_add_scalar(offset)?
                 .f_to_kind(Kind::Uint8)?;
 
             normalized_tensor

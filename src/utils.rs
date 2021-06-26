@@ -1,8 +1,10 @@
 use crate::error::Error;
-use crc::crc32;
+use crc::Crc;
+
+pub const CASTAGNOLI: Crc<u32> = Crc::<u32>::new(&crc::CRC_32_ISCSI);
 
 pub fn checksum(buf: &[u8]) -> u32 {
-    let cksum = crc32::checksum_castagnoli(buf);
+    let cksum = CASTAGNOLI.checksum(buf);
     ((cksum >> 15) | (cksum << 17)).wrapping_add(0xa282ead8u32)
 }
 

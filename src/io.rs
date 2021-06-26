@@ -177,7 +177,7 @@ pub mod blocking {
         R: Read,
     {
         let len_buf = {
-            let mut len_buf = [0u8; std::mem::size_of::<u64>()];
+            let len_buf = [0u8; std::mem::size_of::<u64>()];
             let len_buf = try_read_exact(reader, len_buf)?;
             match len_buf {
                 Some(buf) => buf,
@@ -258,7 +258,7 @@ pub mod blocking {
         R: Read,
         B: AsMut<[u8]>,
     {
-        let mut as_mut = buf.as_mut();
+        let as_mut = buf.as_mut();
         let mut offset = 0;
         let len = as_mut.len();
 

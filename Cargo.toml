@@ -13,36 +13,35 @@ readme = "README.md"
 license-file = "LICENSE"
 
 [dependencies]
-thiserror = "1.0.24"
+thiserror = "1.0.25"
 prost = "0.7.0"
-crc = "1.8.1"
-serde = { version = "1.0.125", features = ["derive"], optional = true }
-futures = { version = "0.3.13", optional = true }
+crc = "2.0.0"
+serde = { version = "1.0.126", features = ["derive"], optional = true }
+futures = { version = "0.3.15", optional = true }
 async-std = { version = "1.9.0", features = ["attributes", "unstable"], optional = true }
 num_cpus = { version = "1.13.0", optional = true }
-tokio = { version = "1.4.0", features = ["sync"], optional = true }
+tokio = { version = "1.7.1", features = ["sync"], optional = true }
 static_assertions = { version = "1.1.0", optional = true }
 noisy_float = "0.2.0"
-atomig = "0.2.0"
 image = { version = "0.23.14", optional = true }
-tch = { version = "0.4.0", optional = true }
-ndarray = { version = "0.15.1", optional = true }
+tch = { version = "0.5.0", optional = true }
+ndarray = { version = "0.15.3", optional = true }
 hostname = { version = "0.3.1", optional = true }
 integer-encoding = "3.0.2"
 
 [dev-dependencies]
-serde = { version = "1.0.125", features = ["derive"] }
+serde = { version = "1.0.126", features = ["derive"] }
 lazy_static = "1.4.0"
-ureq = "2.1.0"
+ureq = "2.1.1"
 serde_json = "1.0.64"
-rand = { version = "0.8.3", features = ["getrandom"] }
-rand_distr = "0.4.0"
-approx = "0.4.0"
+rand = { version = "0.8.4", features = ["getrandom"] }
+rand_distr = "0.4.1"
+approx = "0.5.0"
 flate2 = "1.0.20"
 packed_struct = "0.5.0"
 packed_struct_codegen = "0.5.0"
-itertools = "0.10.0"
-anyhow = "1.0.40"
+itertools = "0.10.1"
+anyhow = "1.0.41"
 clap = "3.0.0-beta.2"
 csv = "1.1.6"
 indexmap = "1.6.2"
@@ -50,10 +49,10 @@ indexmap = "1.6.2"
 [build-dependencies]
 glob = "0.3.0"
 prost-build = "0.7.0"
-anyhow = "1.0.40"
+anyhow = "1.0.41"
 lazy_static = "1.4.0"
-ureq = "2.1.0"
-tar = "0.4.33"
+ureq = "2.1.1"
+tar = "0.4.35"
 flate2 = "1.0.20"
 hex = "0.4.3"
 
