@@ -2,28 +2,12 @@
 
 The crate provides the functionality to serialize and deserialize TFRecord data format from TensorFlow.
 
-## Features
-
 - Provide both high level `Example` type as well as low level `Vec<u8>` bytes {,de}serialization.
 - Support **async/await** syntax. It's easy to work with [futures-rs](https://github.com/rust-lang/futures-rs).
 - Interoperability with [serde](https://crates.io/crates/serde), [image](https://crates.io/crates/image), [ndarray](https://crates.io/crates/ndarray) and [tch](https://crates.io/crates/tch).
 - TensorBoard support.
 
-## Usage
-
-### Use this crate in your project
-
-Append this line to your `Cargo.toml`.
-
-```
-tfrecord = "0.5"
-```
-
-### Notice on TensorFlow updates
-
-The crate compiles the pre-generated ProtocolBuffer code from TensorFlow. In case of TensorFlow updates or custom patches, please run the code generation manually, see [Generate ProtocolBuffer code from TensorFlow](#generate-protocolbuffer-code-from-tensorflow) section for details.
-
-### Available Cargo features
+## Cargo Features
 
 **Module features**
 
@@ -212,13 +196,13 @@ To read values from event files used by TensorBoard, you can see the [event read
 
 More examples can be found in [examples](examples) and [tests](tests) directories.
 
-## Generate ProtocolBuffer code from TensorFlow
+## Notice on TensorFlow Updates
 
-The crate relies on ProtocolBuffer documents from TensorFlow. The crate ships pre-generated code from ProtocolBuffer documents by default. Most users don't need to bother with the code generation. The step is needed only in case of TensorFlow updates or your custom patch.
+The crate compiles the pre-generated ProtocolBuffer code from TensorFlow. In case of TensorFlow updates or custom patches, please run the code generation manually, see [Generate ProtocolBuffer code from TensorFlow](#generate-protocolbuffer-code-from-tensorflow) section for details.
 
 The build script accepts several ways to access the TensorFlow source code, controlled by the `TFRECORD_BUILD_METHOD` environment variable. The generated code will be placed under `prebuild_src` directory. See the examples below to understand the usage.
 
-- Build from a source tarball
+### Build from a source tarball
 
 ```sh
 export TFRECORD_BUILD_METHOD="src_file:///home/myname/tensorflow-2.2.0.tar.gz"
@@ -226,7 +210,7 @@ cargo build --release --features serde,generate_protobuf_src  # with serde
 cargo build --release --features generate_protobuf_src        # without serde
 ```
 
-- Build from a source directory
+### Build from a source directory
 
 ```sh
 export TFRECORD_BUILD_METHOD="src_dir:///home/myname/tensorflow-2.2.0"
@@ -234,7 +218,7 @@ cargo build --release --features serde,generate_protobuf_src  # with serde
 cargo build --release --features generate_protobuf_src        # without serde
 ```
 
-- Build from a URL
+### Build from a URL
 
 ```sh
 export TFRECORD_BUILD_METHOD="url://https://github.com/tensorflow/tensorflow/archive/v2.2.0.tar.gz"
@@ -242,7 +226,9 @@ cargo build --release --features serde,generate_protobuf_src  # with serde
 cargo build --release --features generate_protobuf_src        # without serde
 ```
 
-- Build from installed TensorFlow on system. The build script will search `${install_prefix}/include/tensorflow` directory for protobuf documents.
+### Build from installed TensorFlow on system
+
+The build script will search `${install_prefix}/include/tensorflow` directory for protobuf documents.
 
 ```sh
 export TFRECORD_BUILD_METHOD="install_prefix:///usr"
