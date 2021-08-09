@@ -130,6 +130,11 @@ mod histogram {
                 .unwrap_or(0.0)
         }
 
+        /// Check if there is contained values.
+        pub fn is_empty(&self) -> bool {
+            self.len() == 0
+        }
+
         /// Get the number of contained values.
         pub fn len(&self) -> usize {
             self.0
