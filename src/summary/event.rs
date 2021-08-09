@@ -125,11 +125,10 @@ where
     }
 
     /// Build a histogram summary.
-    pub fn build_histogram<H, E>(self, histogram: H) -> Result<Summary, Error>
-    where
-        H: TryInto<HistogramProto, Error = E>,
-        Error: From<E>,
-    {
+    pub fn build_histogram(
+        self,
+        histogram: impl TryInto<HistogramProto, Error = impl Into<Error>>,
+    ) -> Result<Summary, Error> {
         let Self { tag } = self;
 
         let summary = Summary {
@@ -137,18 +136,17 @@ where
                 node_name: "".into(),
                 tag: tag.to_string(),
                 metadata: None,
-                value: Some(ValueEnum::Histo(histogram.try_into()?)),
+                value: Some(ValueEnum::Histo(histogram.try_into().map_err(Into::into)?)),
             }],
         };
         Ok(summary)
     }
 
     /// Build a tensor summary.
-    pub fn build_tensor<S, E>(self, tensor: S) -> Result<Summary, Error>
-    where
-        S: TryInto<TensorProto, Error = E>,
-        Error: From<E>,
-    {
+    pub fn build_tensor(
+        self,
+        tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
+    ) -> Result<Summary, Error> {
         let Self { tag } = self;
 
         let summary = Summary {
@@ -156,18 +154,17 @@ where
                 node_name: "".into(),
                 tag: tag.to_string(),
                 metadata: None,
-                value: Some(ValueEnum::Tensor(tensor.try_into()?)),
+                value: Some(ValueEnum::Tensor(tensor.try_into().map_err(Into::into)?)),
             }],
         };
         Ok(summary)
     }
 
     /// Build an image summary.
-    pub fn build_image<M, E>(self, image: M) -> Result<Summary, Error>
-    where
-        M: TryInto<Image, Error = E>,
-        Error: From<E>,
-    {
+    pub fn build_image(
+        self,
+        image: impl TryInto<Image, Error = impl Into<Error>>,
+    ) -> Result<Summary, Error> {
         let Self { tag } = self;
 
         let summary = Summary {
@@ -175,21 +172,20 @@ where
                 node_name: "".into(),
                 tag: tag.to_string(),
                 metadata: None,
-                value: Some(ValueEnum::Image(image.try_into()?)),
+                value: Some(ValueEnum::Image(image.try_into().map_err(Into::into)?)),
             }],
         };
         Ok(summary)
     }
 
     /// Build a summary with multiple images.
-    pub fn build_image_list<V, E>(self, images: V) -> Result<Summary, Error>
-    where
-        V: TryInfoImageList<Error = E>,
-        Error: From<E>,
-    {
+    pub fn build_image_list(
+        self,
+        images: impl TryInfoImageList<Error = impl Into<Error>>,
+    ) -> Result<Summary, Error> {
         let Self { tag } = self;
 
-        let image_protos = images.try_into_image_list()?;
+        let image_protos = images.try_into_image_list().map_err(Into::into)?;
 
         let values = match image_protos.len() {
             1 => {
@@ -203,7 +199,7 @@ where
                 values
             }
             _ => {
-                let values = image_protos
+                let values: Vec<_> = image_protos
                     .into_iter()
                     .enumerate()
                     .map(|(index, image_proto)| Value {
@@ -212,7 +208,7 @@ where
                         metadata: None,
                         value: Some(ValueEnum::Image(image_proto)),
                     })
-                    .collect::<Vec<_>>();
+                    .collect();
                 values
             }
         };
@@ -222,11 +218,10 @@ where
     }
 
     /// Build an audio summary.
-    pub fn build_audio<A, E>(self, audio: A) -> Result<Summary, Error>
-    where
-        A: TryInto<Audio, Error = E>,
-        Error: From<E>,
-    {
+    pub fn build_audio(
+        self,
+        audio: impl TryInto<Audio, Error = impl Into<Error>>,
+    ) -> Result<Summary, Error> {
         let Self { tag } = self;
 
         let summary = Summary {
@@ -234,7 +229,7 @@ where
                 node_name: "".into(),
                 tag: tag.to_string(),
                 metadata: None,
-                value: Some(ValueEnum::Audio(audio.try_into()?)),
+                value: Some(ValueEnum::Audio(audio.try_into().map_err(Into::into)?)),
             }],
         };
         Ok(summary)

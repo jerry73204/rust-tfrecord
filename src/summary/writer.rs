@@ -28,23 +28,21 @@ impl EventWriterInit {
     }
 
     /// Construct an [EventWriter] by creating a file at specified path.
-    pub fn create<P>(self, path: P) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
-    where
-        P: AsRef<Path>,
-    {
+    pub fn create(
+        self,
+        path: impl AsRef<Path>,
+    ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error> {
         let writer = std::io::BufWriter::new(std::fs::File::create(path)?);
         self.from_writer(writer)
     }
 
     /// Construct an [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
-    pub fn from_prefix<S1>(
+    pub fn from_prefix(
         self,
-        prefix: S1,
+        prefix: impl AsRef<str>,
         file_name_suffix: Option<String>,
     ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
-    where
-        S1: AsRef<str>,
-    {
+where {
         let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
         fs::create_dir_all(&dir_prefix)?;
         let path = dir_prefix.join(file_name);
@@ -66,40 +64,32 @@ impl EventWriterInit {
 
     /// Construct an [EventWriter] by creating a file at specified path.
     #[cfg(feature = "async_")]
-    pub async fn create_async<P>(
+    pub async fn create_async(
         self,
-        path: P,
-    ) -> Result<EventWriter<async_std::io::BufWriter<async_std::fs::File>>, Error>
-    where
-        P: AsRef<async_std::path::Path>,
-    {
+        path: impl AsRef<async_std::path::Path>,
+    ) -> Result<EventWriter<async_std::io::BufWriter<async_std::fs::File>>, Error> {
         let writer = async_std::io::BufWriter::new(async_std::fs::File::create(path).await?);
         self.from_async_writer(writer)
     }
 
     /// Construct an asynchronous [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
     #[cfg(feature = "async_")]
-    pub async fn from_prefix_async<S1>(
+    pub async fn from_prefix_async(
         self,
-        prefix: S1,
+        prefix: impl AsRef<str>,
         file_name_suffix: Option<String>,
-    ) -> Result<EventWriter<async_std::io::BufWriter<async_std::fs::File>>, Error>
-    where
-        S1: AsRef<str>,
-    {
+    ) -> Result<EventWriter<async_std::io::BufWriter<async_std::fs::File>>, Error> {
         let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
         async_std::fs::create_dir_all(&dir_prefix).await?;
         let path = dir_prefix.join(file_name);
         self.create_async(path).await
     }
 
-    fn create_tf_style_path<S1>(
-        prefix: S1,
+    fn create_tf_style_path(
+        prefix: impl AsRef<str>,
         file_name_suffix: Option<String>,
     ) -> Result<(PathBuf, String), Error>
-    where
-        S1: AsRef<str>,
-    {
+where {
         let file_name_suffix = file_name_suffix
             .map(|suffix| suffix.to_string())
             .unwrap_or("".into());
@@ -204,15 +194,12 @@ where
     W: Write,
 {
     /// Write a scalar summary.
-    pub fn write_scalar<T>(
+    pub fn write_scalar(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
         value: f32,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-    {
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_scalar(value)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -223,17 +210,12 @@ where
     }
 
     /// Write a histogram summary.
-    pub fn write_histogram<T, H, E>(
+    pub fn write_histogram(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        histogram: H,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        H: TryInto<HistogramProto, Error = E>,
-        Error: From<E>,
-    {
+        histogram: impl TryInto<HistogramProto, Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -244,17 +226,12 @@ where
     }
 
     /// Write a tensor summary.
-    pub fn write_tensor<T, S, E>(
+    pub fn write_tensor(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        tensor: S,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        S: TryInto<TensorProto, Error = E>,
-        Error: From<E>,
-    {
+        tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -265,17 +242,12 @@ where
     }
 
     /// Write an image summary.
-    pub fn write_image<T, M, E>(
+    pub fn write_image(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        image: M,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        M: TryInto<Image, Error = E>,
-        Error: From<E>,
-    {
+        image: impl TryInto<Image, Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_image(image)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -286,17 +258,12 @@ where
     }
 
     /// Write a summary with multiple images.
-    pub fn write_image_list<T, V, E>(
+    pub fn write_image_list(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        images: V,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        V: TryInfoImageList<Error = E>,
-        Error: From<E>,
-    {
+        images: impl TryInfoImageList<Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_image_list(images)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -307,17 +274,12 @@ where
     }
 
     /// Write an audio summary.
-    pub fn write_audio<T, A, E>(
+    pub fn write_audio(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        audio: A,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        A: TryInto<Audio, Error = E>,
-        Error: From<E>,
-    {
+        audio: impl TryInto<Audio, Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_audio(audio)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -327,9 +289,8 @@ where
         Ok(())
     }
 
-    // pub fn write_graph<T, E>(&mut self, tag: T, event_init: EventInit) -> Result<(), Error>
-    // where
-    //     T: ToString,
+    // pub fn write_graph<>(&mut self, tag: impl ToString, event_init: EventInit) -> Result<(), Error>
+    //
     // {
     //     todo!();
     // }
@@ -356,15 +317,12 @@ where
     W: AsyncWriteExt + Unpin,
 {
     /// Write a scalar summary asynchronously.
-    pub async fn write_scalar_async<T>(
+    pub async fn write_scalar_async(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
         value: f32,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-    {
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_scalar(value)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -375,17 +333,12 @@ where
     }
 
     /// Write a histogram summary asynchronously.
-    pub async fn write_histogram_async<T, H, E>(
+    pub async fn write_histogram_async(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        histogram: H,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        H: TryInto<HistogramProto, Error = E>,
-        Error: From<E>,
-    {
+        histogram: impl TryInto<HistogramProto, Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_histogram(histogram)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -396,17 +349,12 @@ where
     }
 
     /// Write a tensor summary asynchronously.
-    pub async fn write_tensor_async<T, S, E>(
+    pub async fn write_tensor_async(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        tensor: S,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        S: TryInto<TensorProto, Error = E>,
-        Error: From<E>,
-    {
+        tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_tensor(tensor)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -417,17 +365,12 @@ where
     }
 
     /// Write an image summary asynchronously.
-    pub async fn write_image_async<T, M, E>(
+    pub async fn write_image_async(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        image: M,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        M: TryInto<Image, Error = E>,
-        Error: From<E>,
-    {
+        image: impl TryInto<Image, Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_image(image)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -438,17 +381,12 @@ where
     }
 
     /// Write a summary with multiple images asynchronously.
-    pub async fn write_image_list_async<T, V, E>(
+    pub async fn write_image_list_async(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        images: V,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        V: TryInfoImageList<Error = E>,
-        Error: From<E>,
-    {
+        images: impl TryInfoImageList<Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_image_list(images)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -459,17 +397,12 @@ where
     }
 
     /// Write an audio summary asynchronously.
-    pub async fn write_audio_async<T, A, E>(
+    pub async fn write_audio_async(
         &mut self,
-        tag: T,
+        tag: impl ToString,
         event_init: impl Into<EventInit>,
-        audio: A,
-    ) -> Result<(), Error>
-    where
-        T: ToString,
-        A: TryInto<Audio, Error = E>,
-        Error: From<E>,
-    {
+        audio: impl TryInto<Audio, Error = impl Into<Error>>,
+    ) -> Result<(), Error> {
         let summary = SummaryInit { tag }.build_audio(audio)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -479,9 +412,8 @@ where
         Ok(())
     }
 
-    // pub async fn write_graph<T, E>(&mut self, tag: T, event_init: EventInit) -> Result<(), Error>
-    // where
-    //     T: ToString,
+    // pub async fn write_graph<>(&mut self, tag: impl ToString, event_init: EventInit) -> Result<(), Error>
+    //
     // {
     //     todo!();
     // }

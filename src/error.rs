@@ -1,6 +1,5 @@
 //! Error types and error handling utilities.
 
-use prost::{DecodeError, EncodeError};
 use std::convert::Infallible;
 
 /// The error type for this crate.
@@ -8,39 +7,40 @@ use std::convert::Infallible;
 pub enum Error {
     #[error("checksum mismatch error: expect {expect:}, but found {found:}")]
     ChecksumMismatchError { expect: String, found: String },
-    #[error("unexpected eof")]
+    #[error("unexpected EOF")]
     UnexpectedEofError,
     #[error("unicode error: {desc:}")]
     UnicodeError { desc: String },
-    #[error("errored to decode example: {error:?}")]
-    ExampleDecodeError { error: DecodeError },
-    #[error("errored to encode example: {error:?}")]
-    ExampleEncodeError { error: EncodeError },
-    #[error("I/O error: {error:?}")]
-    IoError { error: std::io::Error },
+    #[error("errored to decode example: {0}")]
+    ExampleDecodeError(prost::DecodeError),
+    #[error("errored to encode example: {0}")]
+    ExampleEncodeError(prost::EncodeError),
+    #[error("I/O error: {0}")]
+    IoError(std::io::Error),
     #[error("conversion error: {desc:}")]
     ConversionError { desc: String },
     #[error("invalid arguments: {desc:}")]
     InvalidArgumentsError { desc: String },
-    #[error("tch error: {desc:}")]
-    TchError { desc: String },
+    #[cfg(feature = "with-tch")]
+    #[error("tch error: {0}")]
+    TchError(tch::TchError),
 }
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {
-        Self::IoError { error }
+        Self::IoError(error)
     }
 }
 
-impl From<EncodeError> for Error {
-    fn from(error: EncodeError) -> Self {
-        Self::ExampleEncodeError { error }
+impl From<prost::EncodeError> for Error {
+    fn from(error: prost::EncodeError) -> Self {
+        Self::ExampleEncodeError(error)
     }
 }
 
-impl From<DecodeError> for Error {
-    fn from(error: DecodeError) -> Self {
-        Self::ExampleDecodeError { error }
+impl From<prost::DecodeError> for Error {
+    fn from(error: prost::DecodeError) -> Self {
+        Self::ExampleDecodeError(error)
     }
 }
 
@@ -53,8 +53,6 @@ impl From<Infallible> for Error {
 #[cfg(feature = "with-tch")]
 impl From<tch::TchError> for Error {
     fn from(error: tch::TchError) -> Self {
-        Self::TchError {
-            desc: format!("{:?}", error),
-        }
+        Self::TchError(error)
     }
 }
