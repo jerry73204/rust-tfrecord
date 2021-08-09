@@ -3,12 +3,14 @@
 use noisy_float::types::R64;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::sync::RwLock;
 use std::{
     collections::HashMap,
     iter,
     ops::Neg,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        RwLock,
+    },
 };
 
 /// The high level example, which is a collections of named features.
