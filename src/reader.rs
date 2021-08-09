@@ -16,7 +16,7 @@ use crate::{
     protos::{Event, Example as RawExample},
     types::Example,
 };
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 use futures::{io::AsyncRead, stream::Stream};
 use std::{io::prelude::*, marker::PhantomData, path::Path};
 
@@ -29,7 +29,7 @@ pub type ExampleReader<R> = RecordReader<Example, R>;
 /// Alias to [RecordReader] which output record type is [Event](Event).
 pub type EventReader<R> = RecordReader<Event, R>;
 
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 pub use async_::*;
 pub use blocking::*;
 
@@ -125,7 +125,7 @@ mod blocking {
     }
 }
 
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 mod async_ {
     use super::*;
 

@@ -15,7 +15,7 @@ use crate::{
     },
     writer::{RecordWriter, RecordWriterInit},
 };
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 use futures::io::AsyncWriteExt;
 use std::{
     convert::TryInto,

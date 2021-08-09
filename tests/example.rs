@@ -26,7 +26,7 @@ fn blocking_reader_test() -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 #[async_std::test]
 async fn async_stream_test() -> Result<()> {
     // bytes
@@ -103,7 +103,7 @@ fn blocking_writer_test() -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 #[async_std::test]
 async fn async_writer_test() -> Result<()> {
     let output_path = DATA_DIR.join("async_writer_output.tfrecord");

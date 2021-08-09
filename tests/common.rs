@@ -1,5 +1,5 @@
 pub use anyhow::{ensure, format_err, Error, Result};
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 pub use futures::stream::TryStreamExt;
 #[cfg(feature = "serde")]
 pub use prost::Message;
@@ -13,7 +13,7 @@ pub use std::{
     thread,
     time::{Duration, SystemTime},
 };
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 pub use tfrecord::RecordStreamInit;
 pub use tfrecord::{
     BytesReader, BytesWriter, Example, ExampleReader, ExampleWriter, Feature, RawExample,

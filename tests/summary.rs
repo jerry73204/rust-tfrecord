@@ -73,7 +73,7 @@ fn blocking_event_writer() -> Result<()> {
     feature = "with-image",
     feature = "with-tch",
     feature = "with-ndarray",
-    feature = "async_"
+    feature = "async"
 ))]
 #[async_std::test]
 async fn async_event_writer() -> Result<()> {

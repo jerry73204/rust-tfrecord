@@ -4,12 +4,12 @@
 //! It is not intended for common users, while we encourage using high level API.
 
 use crate::error::Error;
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 use futures::io::{AsyncReadExt, AsyncWriteExt};
 use std::io::prelude::*;
 
 /// Low level I/O functions with async/await.
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 pub mod async_ {
     use super::*;
 

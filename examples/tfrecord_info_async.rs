@@ -1,8 +1,4 @@
-// NOTE
-// The feature gate #![cfg(feature = "async_")] does not work here.
-// We use the ugly hack to switch source code depending on the "async_" feature.
-
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 mod async_example {
     use futures::stream::TryStreamExt;
     use std::{
@@ -77,13 +73,13 @@ mod async_example {
     }
 }
 
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 #[async_std::main]
 async fn main() -> Result<(), tfrecord::Error> {
     async_example::_main().await
 }
 
-#[cfg(not(feature = "async_"))]
+#[cfg(not(feature = "async"))]
 fn main() {
-    panic!(r#"please enable the "async_" feature to run this example"#);
+    panic!(r#"please enable the "async" feature to run this example"#);
 }

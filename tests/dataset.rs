@@ -3,7 +3,7 @@ mod common;
 use common::*;
 use rand::Rng;
 
-#[cfg(feature = "async_")]
+#[cfg(all(feature = "async", feature = "dataset"))]
 #[async_std::test]
 async fn dataset_stream_test() -> Result<()> {
     let num_workers = num_cpus::get();
@@ -68,7 +68,7 @@ async fn dataset_stream_test() -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "async_")]
+#[cfg(all(feature = "async", feature = "dataset"))]
 #[async_std::test]
 async fn dataset_random_access_test() -> Result<()> {
     let num_workers = num_cpus::get();

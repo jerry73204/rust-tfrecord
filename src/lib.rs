@@ -36,7 +36,7 @@ pub use error::Error;
 pub use markers::{GenericRecord, HistogramProtoElement, TensorProtoElement};
 pub use protos::{Event, Example as RawExample, Summary};
 
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 pub use reader::RecordStreamInit;
 pub use reader::{
     BytesReader, EventReader, ExampleReader, RawExampleReader, RecordReader, RecordReaderInit,

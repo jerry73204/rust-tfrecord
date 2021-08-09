@@ -50,7 +50,7 @@ where {
     }
 
     /// Construct an [EventWriter] from a type with [AsyncWriteExt] trait.
-    #[cfg(feature = "async_")]
+    #[cfg(feature = "async")]
     pub fn from_async_writer<W>(self, writer: W) -> Result<EventWriter<W>, Error>
     where
         W: AsyncWriteExt,
@@ -63,7 +63,7 @@ where {
     }
 
     /// Construct an [EventWriter] by creating a file at specified path.
-    #[cfg(feature = "async_")]
+    #[cfg(feature = "async")]
     pub async fn create_async(
         self,
         path: impl AsRef<async_std::path::Path>,
@@ -73,7 +73,7 @@ where {
     }
 
     /// Construct an asynchronous [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
-    #[cfg(feature = "async_")]
+    #[cfg(feature = "async")]
     pub async fn from_prefix_async(
         self,
         prefix: impl AsRef<str>,
@@ -311,7 +311,7 @@ where
     }
 }
 
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 impl<W> EventWriter<W>
 where
     W: AsyncWriteExt + Unpin,

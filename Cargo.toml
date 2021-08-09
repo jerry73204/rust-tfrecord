@@ -57,10 +57,10 @@ flate2 = "1.0.20"
 hex = "0.4.3"
 
 [features]
-full = ["async_", "dataset", "summary", "with-tch", "with-image", "with-ndarray", "with-serde"]
-async_ = ["futures", "async-std"]
+full = ["async", "dataset", "summary", "with-tch", "with-image", "with-ndarray", "with-serde"]
+async = ["futures", "async-std"]
 generate_protobuf_src = []
-dataset = ["async_", "num_cpus", "tokio", "static_assertions"]
+dataset = ["async", "num_cpus", "tokio", "static_assertions"]
 summary = ["hostname"]
 doc-only = ["tch/doc-only"]
 with-tch = ["tch", "with-image"]

@@ -8,7 +8,7 @@
 //! are [RecordWriter] writing specific record types.
 
 use crate::{error::Error, markers::GenericRecord, protos::Example as RawExample, types::Example};
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 use futures::io::AsyncWriteExt;
 use std::{io::Write, marker::PhantomData, path::Path};
 
@@ -55,7 +55,7 @@ impl RecordWriterInit {
     /// Construct a [RecordWriter] from a type with [AsyncWriteExt] trait.
     ///
     /// The constructed [RecordWriter] enables the asynchronous [send_async](RecordWriter::send_async) method.
-    #[cfg(feature = "async_")]
+    #[cfg(feature = "async")]
     pub fn from_async_writer<T, W>(writer: W) -> Result<RecordWriter<T, W>, Error>
     where
         T: GenericRecord,
@@ -70,7 +70,7 @@ impl RecordWriterInit {
     /// Construct a [RecordWriter] by creating a file at specified path.
     ///
     /// The constructed [RecordWriter] enables the asynchronous [send_async](RecordWriter::send_async) method.
-    #[cfg(feature = "async_")]
+    #[cfg(feature = "async")]
     pub async fn create_async<T, P>(
         path: P,
     ) -> Result<RecordWriter<T, async_std::io::BufWriter<async_std::fs::File>>, Error>
@@ -118,7 +118,7 @@ where
     }
 }
 
-#[cfg(feature = "async_")]
+#[cfg(feature = "async")]
 impl<T, W> RecordWriter<T, W>
 where
     T: GenericRecord,
