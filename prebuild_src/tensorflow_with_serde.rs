@@ -261,8 +261,8 @@ pub struct Example {
 //     have the same size.  The same holds for this FeatureList across multiple
 //     examples.
 //   - For sequence modeling, e.g.:
-//        http://colah.github.io/posts/2015-08-Understanding-LSTMs/
-//        https://github.com/tensorflow/nmt
+//        <http://colah.github.io/posts/2015-08-Understanding-LSTMs/>
+//        <https://github.com/tensorflow/nmt>
 //     the feature lists represent a sequence of frames.
 //     In this scenario, all FeatureLists in a SequenceExample have the same
 //     number of Feature messages, so that the ith element in each FeatureList
@@ -476,21 +476,6 @@ pub enum DataType {
     DtUint32Ref = 122,
     DtUint64Ref = 123,
 }
-/// For identifying the underlying type of a variant. For variants, the types
-/// listed here are a subset of the types in the variant type registry,
-/// corresponding to commonly used variants which must occasionally be
-/// special-cased.
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum SpecializedType {
-    /// Invalid/unknown specialized type.
-    StInvalid = 0,
-    /// "tensorflow::TensorList" in the variant type registry.
-    StTensorList = 1,
-    /// "tensorflow::data::Optional" in the variant type registry.
-    StOptional = 2,
-}
 /// Protocol buffer representing a handle to a tensorflow resource. Handles are
 /// not valid across executions, but can be serialized back and forth from within
 /// a single run.
@@ -572,7 +557,7 @@ pub struct TensorProto {
     /// DT_DOUBLE.
     #[prost(double, repeated, tag="6")]
     pub double_val: ::prost::alloc::vec::Vec<f64>,
-    /// DT_INT32, DT_INT16, DT_INT8, DT_UINT8.
+    /// DT_INT32, DT_INT16, DT_UINT16, DT_INT8, DT_UINT8.
     #[prost(int32, repeated, tag="7")]
     pub int_val: ::prost::alloc::vec::Vec<i32>,
     /// DT_STRING
@@ -773,7 +758,7 @@ pub mod attr_value {
     }
 }
 /// A list of attr names and their values. The whole list is attached
-/// with a string name.  E.g., MatMul[T=float].
+/// with a string name.  E.g., MatMul\[T=float\].
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NameAttrList {
@@ -790,7 +775,7 @@ pub struct NameAttrList {
 /// common ApiDefs which it can either replace or modify.
 ///
 /// We separate the API definition from the OpDef so we can evolve the
-/// API while remaining backwards compatible when interpretting old
+/// API while remaining backwards compatible when interpreting old
 /// graphs.  Overrides go in an "api_def.pbtxt" file with a text-format
 /// ApiDefs message.
 ///
@@ -1089,13 +1074,250 @@ pub struct DeviceAttributes {
     /// String representation of the physical device that this device maps to.
     #[prost(string, tag="7")]
     pub physical_device_desc: ::prost::alloc::string::String,
+    /// A physical device ID for use in XLA DeviceAssignments, unique across
+    /// clients in a multi-client setup. Set to -1 if unavailable, non-negative
+    /// otherwise.
+    #[prost(int64, tag="8")]
+    pub xla_global_id: i64,
+}
+/// Highly experimental and very likely to change.
+/// This encoding uses tags instead of dedicated messages for regularity. In
+/// particular the encoding imposes no restrictions on what the parameters of any
+/// type should be, which in particular needs to be true for type symbols.
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FullTypeDef {
+    /// The principal type represented by this object. This may be a concrete type
+    /// (Tensor, Dataset) a type variable (used for dependent types) a type
+    /// symbol (Any, Union). See FullTypeId for details.
+    #[prost(enumeration="FullTypeId", tag="1")]
+    pub type_id: i32,
+    #[prost(message, repeated, tag="2")]
+    pub args: ::prost::alloc::vec::Vec<FullTypeDef>,
+    /// Literal values of this type object, if the the type admits one.
+    /// For example, a type variable admits a string attribute - its name.
+    /// Shape-related types may admit int attributes - their static shape values.
+    /// Fields for more data types to be added as needed.
+    #[prost(oneof="full_type_def::Attr", tags="3, 4")]
+    pub attr: ::core::option::Option<full_type_def::Attr>,
+}
+/// Nested message and enum types in `FullTypeDef`.
+pub mod full_type_def {
+    /// Literal values of this type object, if the the type admits one.
+    /// For example, a type variable admits a string attribute - its name.
+    /// Shape-related types may admit int attributes - their static shape values.
+    /// Fields for more data types to be added as needed.
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Attr {
+        #[prost(string, tag="3")]
+        S(::prost::alloc::string::String),
+        /// TODO(mdan): list/tensor, map? Need to reconcile with TFT_RECORD, etc.
+        #[prost(int64, tag="4")]
+        I(i64),
+    }
+}
+/// Experimental. Represents the complete type information of a TensorFlow value.
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum FullTypeId {
+    /// The default represents an uninitialized values.
+    TftUnset = 0,
+    // Type symbols. Used to construct more complex type expressions like
+    // algebraic data types.
+
+    /// Type variables may serve as placeholder for any other type ID in type
+    /// templates.
+    ///
+    /// Examples:
+    ///   TFT_DATASET\[TFT_VAR["T"]\] is a Dataset returning a type indicated by "T".
+    ///   TFT_TENSOR\[TFT_VAR["T"]\] is a Tensor of n element type indicated by "T".
+    ///   TFT_TENSOR\[TFT_VAR["T"]\], TFT_TENSOR\[TFT_VAR["T"]\] are two tensors of
+    ///     identical element types.
+    ///   TFT_TENSOR\[TFT_VAR["P"]\], TFT_TENSOR\[TFT_VAR["Q"]\] are two tensors of
+    ///     potentially different element types.
+    ///
+    TftVar = 1,
+    /// Wildcard type. Describes a parameter of unknown type. In TensorFlow, that
+    /// can mean either a "Top" type (accepts any type), or a dynamically typed
+    /// object whose type is unknown in context.
+    /// Important: "unknown" does not necessarily mean undeterminable!
+    TftAny = 2,
+    /// The algebraic product type. This is an algebraic type that may be used just
+    /// for logical grouping. Not to confused with TFT_TUPLE which describes a
+    /// concrete object of several elements.
+    ///
+    /// Example:
+    ///   TFT_DATASET\[TFT_PRODUCT[TFT_TENSOR[TFT_INT32\], TFT_TENSOR\[TFT_FLOAT64]]\]
+    ///     is a Dataset producing two tensors, an integer one and a float one.
+    ///
+    TftProduct = 3,
+    /// Represents a named field, with the name stored in the attribute.
+    ///
+    /// Parametrization:
+    ///   TFT_NAMED\[<type>\]{<name>}
+    ///   * <type> is the type of the field
+    ///   * <name> is the field name, as string (thpugh can theoretically be an int
+    ///     as well)
+    ///
+    /// Example:
+    ///   TFT_RECORD[
+    ///     TFT_NAMED\[TFT_TENSOR[TFT_INT32]\]{'foo'},
+    ///     TFT_NAMED\[TFT_TENSOR[TFT_FLOAT32]\]{'bar'},
+    ///   ]
+    ///     is a structure with two fields, an int tensor "foo" and a float tensor
+    ///     "bar".
+    TftNamed = 4,
+    /// Callable types describe functions and ops.
+    ///
+    /// Parametrization:
+    ///   TFT_CALLABLE[<arg type>, <return type>]
+    ///   * <arg type> is the type of the arguments; TFT_PRODUCT represents
+    ///   multiple
+    ///     arguments.
+    ///   * <return type> is the return type; TFT_PRODUCT represents multiple
+    ///     return values (that means that callables returning multiple things
+    ///     don't necessarily return a single tuple).
+    ///
+    /// Example:
+    ///   TFT_CALLABLE[
+    ///     TFT_ANY,
+    ///     TFT_PRODUCT\[TFT_TENSOR[TFT_INT32\], TFT_TENSOR\[TFT_FLOAT64]\],
+    ///   ]
+    ///     is a callable with unspecified (for now) input arguments, and
+    ///     two return values of type tensor.
+    ///
+    TftCallable = 100,
+    // Concrete type IDs, representing "proper" data types that can describe
+    // runtime TensorFlow objects.
+
+    /// The usual Tensor. This is a parametric type.
+    ///
+    /// Parametrization:
+    ///   TFT_TENSOR[<element type>, <shape type>]
+    ///   * <element type> is currently limited to one of the element types
+    ///     defined below.
+    ///   * <shape type> is not yet defined, and may only be TFT_UNKNOWN for now.
+    ///
+    /// A TFT_SHAPE type will be defined in the future.
+    ///
+    /// Example:
+    ///   TFT_TENSOR[TFT_INT32, TFT_UNKNOWN]
+    ///     is a Tensor of int32 element type and unknown shape.
+    ///
+    /// TODO(mdan): Define TFT_SHAPE and add more examples.
+    TftTensor = 1000,
+    /// Array (or tensorflow::TensorList in the variant type registry).
+    /// Note: this is not to be confused with the deprecated `TensorArray*` ops
+    /// which are not supported by FullType.
+    /// This type represents a random-access list whose elements can be
+    /// described by a single type. Although immutable, Array is expected to
+    /// support efficient mutation semantics (i.e. element update) in the
+    /// user-facing API.
+    /// The element type may be generic or even TFT_ANY for a heterogenous list.
+    ///
+    /// Parametrization:
+    ///   TFT_ARRAY[<element type>]
+    ///   * <element type> may be any concrete type.
+    ///
+    /// Examples:
+    ///   TFT_ARRAY\[TFT_TENSOR[TFT_INT32]\] is a TensorArray holding int32 Tensors
+    ///     of any shape.
+    ///   TFT_ARRAY\[TFT_TENSOR[TFT_UNKNOWN]\] is a TensorArray holding Tensors of
+    ///     mixed element types.
+    ///   TFT_ARRAY\[TFT_UNKNOWN\] is a TensorArray holding any element type.
+    ///   TFT_ARRAY[] is equivalent to TFT_ARRAY\[TFT_UNKNOWN\].
+    ///   TFT_ARRAY\[TFT_ARRAY[]\] is an array or arrays (of unknown types).
+    TftArray = 1001,
+    /// Optional (or tensorflow::OptionalVariant in the variant type registry).
+    /// This type represents a value that may either hold an element of a single
+    /// specified type, or nothing at all.
+    ///
+    /// Parametrization:
+    ///   TFT_OPTIONAL[<element type>]
+    ///   * <element type> may be any concrete type.
+    ///
+    /// Examples:
+    ///   TFT_OPTIONAL\[TFT_TENSOR[TFT_INT32]\] is an Optional holding an int32
+    ///     Tensor of any shape.
+    TftOptional = 1002,
+    /// Literal types describe compile-time constant values.
+    /// Literal types may also participate in dependent types.
+    ///
+    /// Parametrization:
+    ///   TFT_LITERAL[<value type>]{<value>}
+    ///   * <value type> may be any concrete type compatible that can hold <value>
+    ///   * <value> is the type's attribute, and holds the actual literal value
+    ///
+    /// Examples:
+    ///   TFT_LITERAL\[TFT_INT32\]{1} is the compile-time constant 1.
+    TftLiteral = 1003,
+    /// Datasets created by tf.data ops and APIs. Datasets have generator/iterable
+    /// semantics, that is, one can construct an iterator from them. Like
+    /// Array, they are considered to return elements that can be described
+    /// by a single type. Unlike Array, they do not support random access or
+    /// mutation, and can potentially produce an infinite number of elements.
+    /// A datasets can produce logical structures (e.g. multiple elements). This
+    /// is expressed using TFT_PRODUCT.
+    ///
+    ///
+    /// Parametrization: TFT_ARRAY[<element type>].
+    ///   * <element type> may be a concrete type or a type symbol. It represents
+    ///     the data type of the elements produced by the dataset.
+    ///
+    /// Examples:
+    ///   TFT_DATSET\[TFT_TENSOR[TFT_INT32]\] is a Dataset producing single int32
+    ///     Tensors of unknown shape.
+    ///   TFT_DATSET\[TFT_PRODUCT[TFT_TENSOR[TFT_INT32\], TFT_TENSOR\[TFT_FLOAT32]\] is
+    ///     a Dataset producing pairs of Tensors, one integer and one float.
+    /// Note: The high ID number is to prepare for the eventuality that Datasets
+    /// will be supported by user types in the future.
+    TftDataset = 10102,
+    /// A mutex lock tensor, produced by tf.raw_ops.MutexLock.
+    /// Unlike strict execution models, where ownership of a lock is denoted by
+    /// "running after the lock has been acquired", in non-strict mode, lock
+    /// ownership is in the true sense: "the op argument representing the lock is
+    /// available".
+    /// Mutex locks are the dynamic counterpart of control dependencies.
+    /// TODO(mdan): Properly document this thing.
+    ///
+    /// Parametrization: TFT_MUTEX_LOCK[].
+    TftMutexLock = 10202,
+    // Type attributes. These always appear in the parametrization of a type,
+    // never alone. For example, there is no such thing as a "bool" TensorFlow
+    // object (for now).
+
+    /// The bool element type.
+    /// TODO(mdan): Quantized types, legacy representations (e.g. ref)
+    TftBool = 200,
+    /// Integer element types.
+    TftUint8 = 201,
+    TftUint16 = 202,
+    TftUint32 = 203,
+    TftUint64 = 204,
+    TftInt8 = 205,
+    TftInt16 = 206,
+    TftInt32 = 207,
+    TftInt64 = 208,
+    /// Floating-point element types.
+    TftHalf = 209,
+    TftFloat = 210,
+    TftDouble = 211,
+    TftBfloat16 = 215,
+    /// Complex element types.
+    /// TODO(mdan): Represent as TFT_COMPLEX\[TFT_DOUBLE\] instead?
+    TftComplex64 = 212,
+    TftComplex128 = 213,
+    /// The string element type.
+    TftString = 214,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NodeDef {
     /// The name given to this operator. Used for naming inputs,
     /// logging, visualization, etc.  Unique within a single GraphDef.
-    /// Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_>./]*".
+    /// Must match the regexp "\[A-Za-z0-9.][A-Za-z0-9_>./\]*".
     #[prost(string, tag="1")]
     pub name: ::prost::alloc::string::String,
     /// The operation name.  There may be custom parameters in attrs.
@@ -1117,9 +1339,9 @@ pub struct NodeDef {
     ///
     /// PARTIAL_SPEC ::= ("/" CONSTRAINT) *
     /// CONSTRAINT ::= ("job:" JOB_NAME)
-    ///              | ("replica:" [1-9][0-9]*)
-    ///              | ("task:" [1-9][0-9]*)
-    ///              | ("device:" [A-Za-z]* ":" ([1-9][0-9]* | "*") )
+    ///              | ("replica:" \[1-9][0-9\]*)
+    ///              | ("task:" \[1-9][0-9\]*)
+    ///              | ("device:" \[A-Za-z\]* ":" (\[1-9][0-9\]* | "*") )
     ///
     /// Valid values for this string include:
     /// * "/job:worker/replica:0/task:1/device:GPU:3"  (full specification)
@@ -1138,7 +1360,7 @@ pub struct NodeDef {
     /// NodeDefs easier to interpret on their own.  However, if
     /// an attr with a default is not specified in this list, the
     /// default will be used.
-    /// The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
+    /// The "names" (keys) must match the regexp "\[a-z][a-z0-9_\]+" (and
     /// one of the names from the corresponding OpDef's attr field).
     /// The values must have a type matching the corresponding OpDef
     /// attr's type field.
@@ -1148,6 +1370,12 @@ pub struct NodeDef {
     /// This stores debug information associated with the node.
     #[prost(message, optional, tag="6")]
     pub experimental_debug_info: ::core::option::Option<node_def::ExperimentalDebugInfo>,
+    /// The complete type of this node. Experimental and subject to change.
+    /// Currently, the field only contains the return types of the node. That will
+    /// extend in the future to contain the entire signature of the node, as a
+    /// function type.
+    #[prost(message, optional, tag="7")]
+    pub experimental_type: ::core::option::Option<FullTypeDef>,
 }
 /// Nested message and enum types in `NodeDef`.
 pub mod node_def {
@@ -1181,7 +1409,7 @@ pub mod node_def {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OpDef {
     /// Op names starting with an underscore are reserved for internal use.
-    /// Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9>_]*".
+    /// Names should be CamelCase and match the regexp "\[A-Z][a-zA-Z0-9>_\]*".
     #[prost(string, tag="1")]
     pub name: ::prost::alloc::string::String,
     /// Description of the input(s).
@@ -1255,6 +1483,11 @@ pub struct OpDef {
     /// for Assign, etc.
     #[prost(bool, tag="19")]
     pub allows_uninitialized_input: bool,
+    /// Indicates whether the op implementation uses distributed communication.
+    /// If True, the op is allowed to return errors for network disconnection and
+    /// trigger TF network failure handling logics.
+    #[prost(bool, tag="21")]
+    pub is_distributed_communication: bool,
 }
 /// Nested message and enum types in `OpDef`.
 pub mod op_def {
@@ -1262,7 +1495,7 @@ pub mod op_def {
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ArgDef {
-        /// Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
+        /// Name for the input/output.  Should match the regexp "\[a-z][a-z0-9_\]*".
         #[prost(string, tag="1")]
         pub name: ::prost::alloc::string::String,
         /// Human readable description.
@@ -1298,6 +1531,17 @@ pub mod op_def {
         /// For outputs: if true, outputs are refs, otherwise they are not.
         #[prost(bool, tag="16")]
         pub is_ref: bool,
+        /// Experimental. Full type declaration for this argument.
+        /// The full type specification combines type, type_attr, type_list_attr,
+        /// etc. into a unified representation.
+        /// This declaration may contain non-concrete types (for example,
+        /// Tensor<TypeVar<'T'>> is a valid type declaration.
+        ///
+        /// Note: this is a transient field. The long-term aim is to represent the
+        /// entire OpDef as a single type: a callable. In that context, this field is
+        /// just the type of a single argument.
+        #[prost(message, optional, tag="17")]
+        pub experimental_full_type: ::core::option::Option<super::FullTypeDef>,
     }
     /// Description of the graph-construction-time configuration of this
     /// Op.  That is to say, this describes the attr fields that will
@@ -1307,7 +1551,7 @@ pub mod op_def {
     pub struct AttrDef {
         /// A descriptive name for the argument.  May be used, e.g. by the
         /// Python client, as a keyword argument name, and so should match
-        /// the regexp "[a-z][a-z0-9_]+".
+        /// the regexp "\[a-z][a-z0-9_\]+".
         #[prost(string, tag="1")]
         pub name: ::prost::alloc::string::String,
         /// One of the type names from attr_value.proto ("string", "list(string)",
@@ -1369,6 +1613,8 @@ pub struct FunctionDefLibrary {
     pub function: ::prost::alloc::vec::Vec<FunctionDef>,
     #[prost(message, repeated, tag="2")]
     pub gradient: ::prost::alloc::vec::Vec<GradientDef>,
+    #[prost(message, repeated, tag="3")]
+    pub registered_gradients: ::prost::alloc::vec::Vec<RegisteredGradient>,
 }
 /// A function can be instantiated when the runtime can bind every attr
 /// with a value. When a GraphDef has a call to a function, it must
@@ -1390,7 +1636,7 @@ pub struct FunctionDef {
     pub arg_attr: ::std::collections::HashMap<u32, function_def::ArgAttrs>,
     /// Unique IDs for each resource argument, used to track aliasing resources. If
     /// Argument A and Argument B alias each other, then
-    /// resource_arg_unique_ids[A.index] == resource_arg_unique_ids[B.index].
+    /// resource_arg_unique_ids\[A.index\] == resource_arg_unique_ids\[B.index\].
     ///
     /// If this field is empty, none of the arguments could alias; otherwise, every
     /// resource argument should have an entry in this field.
@@ -1487,6 +1733,20 @@ pub struct GradientDef {
     #[prost(string, tag="2")]
     pub gradient_func: ::prost::alloc::string::String,
 }
+/// RegisteredGradient stores a gradient function that is registered in the
+/// gradients library and used in the ops of a function in the function library.
+/// Unlike GradientDef, these gradients are identified by op type, and not
+/// directly linked to any function.
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RegisteredGradient {
+    /// The gradient function's name.
+    #[prost(string, tag="1")]
+    pub gradient_func: ::prost::alloc::string::String,
+    /// The gradient function's registered op type.
+    #[prost(string, tag="2")]
+    pub registered_op_type: ::prost::alloc::string::String,
+}
 /// Version information for a piece of serialized data
 ///
 /// There are different types of versions for each type of data
@@ -1540,8 +1800,8 @@ pub struct GraphDef {
     ///     { "/google/vision", { ... }}
     ///     { "/org_foo/module_bar", { ... }}
     ///     map<string, FunctionDefLib> named_lib;
-    ///   * If node[i].op is the name of one function in "library",
-    ///     node[i] is deemed as a function call. Otherwise, node[i].op
+    ///   * If node\[i\].op is the name of one function in "library",
+    ///     node\[i\] is deemed as a function call. Otherwise, node\[i\].op
     ///     must be a primitive operation supported by the runtime.
     ///
     ///
