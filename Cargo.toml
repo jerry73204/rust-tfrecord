@@ -13,47 +13,47 @@ readme = "README.md"
 license-file = "LICENSE"
 
 [dependencies]
-thiserror = "1.0.26"
-prost = "0.8.0"
-crc = "2.0.0"
-serde = { version = "1.0.127", features = ["derive"], optional = true }
-futures = { version = "0.3.16", optional = true }
-async-std = { version = "1.9.0", features = ["attributes", "unstable"], optional = true }
+thiserror = "1.0.30"
+prost = "0.9.0"
+crc = "2.1.0"
+serde = { version = "1.0.130", features = ["derive"], optional = true }
+futures = { version = "0.3.17", optional = true }
+async-std = { version = "1.10.0", features = ["attributes", "unstable"], optional = true }
 num_cpus = { version = "1.13.0", optional = true }
-tokio = { version = "1.9.0", features = ["sync"], optional = true }
+tokio = { version = "1.13.0", features = ["sync"], optional = true }
 static_assertions = { version = "1.1.0", optional = true }
 noisy_float = "0.2.0"
 image = { version = "0.23.14", optional = true }
-tch = { version = "0.5.0", optional = true }
+tch = { version = "0.6.1", optional = true }
 ndarray = { version = "0.15.3", optional = true }
 hostname = { version = "0.3.1", optional = true }
 integer-encoding = "3.0.2"
 
 [dev-dependencies]
-serde = { version = "1.0.127", features = ["derive"] }
+serde = { version = "1.0.130", features = ["derive"] }
 lazy_static = "1.4.0"
-ureq = "2.1.1"
-serde_json = "1.0.66"
+ureq = "2.3.0"
+serde_json = "1.0.70"
 rand = { version = "0.8.4", features = ["getrandom"] }
-rand_distr = "0.4.1"
+rand_distr = "0.4.2"
 approx = "0.5.0"
-flate2 = "1.0.20"
-packed_struct = "0.6.0"
-packed_struct_codegen = "0.6.0"
+flate2 = "1.0.22"
+packed_struct = "0.10.0"
+packed_struct_codegen = "0.10.0"
 itertools = "0.10.1"
-anyhow = "1.0.42"
-clap = "3.0.0-beta.2"
+anyhow = "1.0.45"
 csv = "1.1.6"
 indexmap = "1.7.0"
+structopt = "0.3.25"
 
 [build-dependencies]
 glob = "0.3.0"
-prost-build = "0.8.0"
-anyhow = "1.0.42"
+prost-build = "0.9.0"
+anyhow = "1.0.45"
 lazy_static = "1.4.0"
-ureq = "2.1.1"
-tar = "0.4.35"
-flate2 = "1.0.20"
+ureq = "2.3.0"
+tar = "0.4.37"
+flate2 = "1.0.22"
 hex = "0.4.3"
 
 [features]

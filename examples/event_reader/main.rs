@@ -1,23 +1,23 @@
 use anyhow::Result;
-use clap::Clap;
 use csv::Writer;
 use indexmap::IndexSet;
 use serde::Serialize;
 use std::path::PathBuf;
+use structopt::StructOpt;
 use tfrecord::{
     protos::{event::What, summary::value::Value::SimpleValue, Summary},
     EventReader, RecordReaderInit,
 };
 
-#[derive(Clap)]
+#[derive(StructOpt)]
 struct Args {
-    #[clap(long, short, default_value = "./sample_event")]
+    #[structopt(long, short, default_value = "./sample_event")]
     event: String,
 
-    #[clap(long, short)]
+    #[structopt(long, short)]
     tags: Option<Vec<String>>,
 
-    #[clap(long, short, default_value = "./output")]
+    #[structopt(long, short, default_value = "./output")]
     output: PathBuf,
 }
 
@@ -47,7 +47,7 @@ fn main() -> Result<()> {
         event: event_file,
         tags: query_tags,
         output: output_dir,
-    } = Args::parse();
+    } = Args::from_args();
     let reader: EventReader<_> = RecordReaderInit::default().open(&event_file)?;
     std::fs::create_dir_all(&output_dir)?;
 
