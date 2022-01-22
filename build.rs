@@ -4,13 +4,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const TENSORFLOW_VERSION: &str =
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tensorflow_version"));
-const DEFAULT_TENSORFLOW_URL: &str = concat!(
-    "https://github.com/tensorflow/tensorflow/archive/v",
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tensorflow_version")),
-    ".tar.gz"
-);
 const BUILD_METHOD_ENV: &str = "TFRECORD_BUILD_METHOD";
 
 lazy_static::lazy_static! {
@@ -59,17 +52,24 @@ use codegen::*;
 #[cfg(feature = "generate_protobuf_src")]
 mod codegen {
     use super::*;
-    use std::env::VarError;
-
     use anyhow::{bail, format_err, Context, Error, Result};
     use flate2::read::GzDecoder;
     use std::{
         env,
+        env::VarError,
         fs::{self, File},
         io::{self, BufReader, BufWriter},
         path::{Path, PathBuf},
     };
     use tar::Archive;
+
+    const TENSORFLOW_VERSION: &str =
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tensorflow_version"));
+    const DEFAULT_TENSORFLOW_URL: &str = concat!(
+        "https://github.com/tensorflow/tensorflow/archive/v",
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tensorflow_version")),
+        ".tar.gz"
+    );
 
     #[derive(Debug, Clone)]
     pub enum BuildMethod {
