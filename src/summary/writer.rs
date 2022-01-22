@@ -1,4 +1,23 @@
-use super::*;
+use super::event::EventInit;
+use crate::{
+    error::Error,
+    markers::TryInfoImageList,
+    protos::{
+        summary::{Audio, Image},
+        Event, HistogramProto, Summary, TensorProto,
+    },
+    writer::{RecordWriter, RecordWriterInit},
+};
+#[cfg(feature = "async")]
+use futures::io::AsyncWriteExt;
+use std::{
+    convert::TryInto,
+    fs,
+    io::Write,
+    path::{Path, PathBuf, MAIN_SEPARATOR},
+    string::ToString,
+    time::SystemTime,
+};
 
 /// The event writer initializer.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -197,7 +216,7 @@ where
         event_init: impl Into<EventInit>,
         value: f32,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_scalar(value)?;
+        let summary = Summary::from_scalar(tag, value)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
@@ -213,7 +232,7 @@ where
         event_init: impl Into<EventInit>,
         histogram: impl TryInto<HistogramProto, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_histogram(histogram)?;
+        let summary = Summary::from_histogram(tag, histogram)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
@@ -229,7 +248,7 @@ where
         event_init: impl Into<EventInit>,
         tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_tensor(tensor)?;
+        let summary = Summary::from_tensor(tag, tensor)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
@@ -245,7 +264,7 @@ where
         event_init: impl Into<EventInit>,
         image: impl TryInto<Image, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_image(image)?;
+        let summary = Summary::from_image(tag, image)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
@@ -261,7 +280,7 @@ where
         event_init: impl Into<EventInit>,
         images: impl TryInfoImageList<Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_image_list(images)?;
+        let summary = Summary::from_image_list(tag, images)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
@@ -277,7 +296,7 @@ where
         event_init: impl Into<EventInit>,
         audio: impl TryInto<Audio, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_audio(audio)?;
+        let summary = Summary::from_audio(tag, audio)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
@@ -320,7 +339,7 @@ where
         event_init: impl Into<EventInit>,
         value: f32,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_scalar(value)?;
+        let summary = Summary::from_scalar(tag, value)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
@@ -336,7 +355,7 @@ where
         event_init: impl Into<EventInit>,
         histogram: impl TryInto<HistogramProto, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_histogram(histogram)?;
+        let summary = Summary::from_histogram(tag, histogram)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
@@ -352,7 +371,7 @@ where
         event_init: impl Into<EventInit>,
         tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_tensor(tensor)?;
+        let summary = Summary::from_tensor(tag, tensor)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
@@ -368,7 +387,7 @@ where
         event_init: impl Into<EventInit>,
         image: impl TryInto<Image, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_image(image)?;
+        let summary = Summary::from_image(tag, image)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
@@ -384,7 +403,7 @@ where
         event_init: impl Into<EventInit>,
         images: impl TryInfoImageList<Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_image_list(images)?;
+        let summary = Summary::from_image_list(tag, images)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
@@ -400,7 +419,7 @@ where
         event_init: impl Into<EventInit>,
         audio: impl TryInto<Audio, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
-        let summary = SummaryInit { tag }.build_audio(audio)?;
+        let summary = Summary::from_audio(tag, audio)?;
         let event = event_init.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {

@@ -42,7 +42,7 @@ pub use reader::{
     BytesReader, EventReader, ExampleReader, RawExampleReader, RecordReader, RecordReaderInit,
 };
 #[cfg(feature = "summary")]
-pub use summary::{EventInit, EventWriter, EventWriterInit, SummaryInit};
+pub use summary::{EventInit, EventWriter, EventWriterInit};
 pub use types::{Example, Feature, Histogram};
 pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter, RecordWriterInit};
 
