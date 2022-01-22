@@ -48,9 +48,7 @@ mod with_image {
                 ColorType::Rgb16 => ColorSpace::Rgb,
                 ColorType::Rgba16 => ColorSpace::Rgba,
                 _ => {
-                    return Err(Error::ConversionError {
-                        desc: "color space is not supported".into(),
-                    });
+                    return Err(Error::conversion("color space is not supported"));
                 }
             };
             Ok(color_space)
@@ -71,9 +69,7 @@ mod with_image {
                 ImageRgba8(buffer) => Self::try_from(buffer)?,
                 ImageBgra8(buffer) => Self::try_from(buffer)?,
                 _ => {
-                    return Err(Error::ConversionError {
-                        desc: "unsupported image type".to_string(),
-                    });
+                    return Err(Error::conversion("unsupported image type"));
                 }
             };
             Ok(image)
@@ -108,9 +104,8 @@ mod with_image {
                 color_hint,
                 ..
             } = *from;
-            let color_type = color_hint.ok_or_else(|| Error::ConversionError {
-                desc: "color_hint must not be None".into(),
-            })?;
+            let color_type =
+                color_hint.ok_or_else(|| Error::conversion("color_hint must not be None"))?;
             let colorspace = ColorSpace::try_from(color_type)?;
             let samples = (0..height)
                 .flat_map(|y| (0..width).flat_map(move |x| (0..channels).map(move |c| (y, x, c))))
@@ -121,9 +116,7 @@ mod with_image {
                 let mut cursor = Cursor::new(vec![]);
                 PngEncoder::new(&mut cursor)
                     .encode(&samples, width, height, color_type)
-                    .map_err(|err| Error::ConversionError {
-                        desc: format!("{:?}", err),
-                    })?;
+                    .map_err(|err| Error::conversion(format!("{:?}", err)))?;
                 cursor.into_inner()
             };
 
@@ -202,7 +195,7 @@ mod with_tch {
 
         fn deref(&self) -> &Self::Target {
             match self {
-                TensorRef::Owned(tensor) => &tensor,
+                TensorRef::Owned(tensor) => tensor,
                 TensorRef::Ref(tensor) => tensor,
             }
         }
@@ -268,13 +261,7 @@ mod with_tch {
             // CHW to HWC
             let hwc_tensor = match from.order {
                 O::HWC => from.tensor.shallow_clone(),
-                O::CHW => {
-                    from.tensor
-                        .f_permute(&[1, 2, 0])
-                        .map_err(|err| Error::ConversionError {
-                            desc: format!("tch error: {:?}", err),
-                        })?
-                }
+                O::CHW => from.tensor.f_permute(&[1, 2, 0])?,
             };
             let (nh, nw, _nc) = hwc_tensor.size3().unwrap();
 
@@ -295,9 +282,7 @@ mod with_tch {
                 let mut cursor = Cursor::new(vec![]);
                 PngEncoder::new(&mut cursor)
                     .encode(&samples, nw as u32, nh as u32, color_type)
-                    .map_err(|err| Error::ConversionError {
-                        desc: format!("{:?}", err),
-                    })?;
+                    .map_err(|err| Error::conversion(format!("{:?}", err)))?;
                 cursor.into_inner()
             };
 
@@ -338,9 +323,10 @@ mod with_tch {
                     .f_to_kind(Kind::Uint8)?
             }
             _ => {
-                return Err(Error::ConversionError {
-                    desc: format!("the tensor with kind {:?} cannot converted to image", kind),
-                });
+                return Err(Error::conversion(format!(
+                    "the tensor with kind {:?} cannot converted to image",
+                    kind
+                )));
             }
         };
 

@@ -117,7 +117,7 @@ where
                 } else if offset == 0 {
                     return Ok(None);
                 } else {
-                    return Err(Error::UnexpectedEofError);
+                    return Err(Error::UnexpectedEof);
                 }
             }
             Ok(n) => {

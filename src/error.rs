@@ -1,14 +1,14 @@
 //! Error types and error handling utilities.
 
-use std::convert::Infallible;
+use std::{borrow::Cow, convert::Infallible};
 
 /// The error type for this crate.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("checksum mismatch error: expect {expect:}, but found {found:}")]
-    ChecksumMismatchError { expect: String, found: String },
+    ChecksumMismatch { expect: String, found: String },
     #[error("unexpected EOF")]
-    UnexpectedEofError,
+    UnexpectedEof,
     #[error("unicode error: {desc:}")]
     UnicodeError { desc: String },
     #[error("errored to decode example: {0}")]
@@ -18,12 +18,18 @@ pub enum Error {
     #[error("I/O error: {0}")]
     IoError(std::io::Error),
     #[error("conversion error: {desc:}")]
-    ConversionError { desc: String },
+    ConversionError { desc: Cow<'static, str> },
     #[error("invalid arguments: {desc:}")]
-    InvalidArgumentsError { desc: String },
+    InvalidArgumentsError { desc: Cow<'static, str> },
     #[cfg(feature = "with-tch")]
     #[error("tch error: {0}")]
     TchError(tch::TchError),
+}
+
+impl Error {
+    pub(crate) fn conversion(desc: impl Into<Cow<'static, str>>) -> Self {
+        Self::ConversionError { desc: desc.into() }
+    }
 }
 
 impl From<std::io::Error> for Error {

@@ -115,6 +115,7 @@ impl From<Histogram> for HistogramProto {
 }
 
 impl HistogramProto {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_iter<T, I>(iter: I) -> Self
     where
         T: ToPrimitive,
@@ -131,10 +132,8 @@ impl HistogramProto {
         let histogram = Histogram::default();
         iter.into_iter()
             .try_for_each(|value| -> Result<(), Error> {
-                let value =
-                    <R64 as NumCast>::from(value).ok_or_else(|| Error::ConversionError {
-                        desc: "non-finite value found".into(),
-                    })?;
+                let value = <R64 as NumCast>::from(value)
+                    .ok_or_else(|| Error::conversion("non-finite value found"))?;
                 histogram.add(value);
                 Ok(())
             })?;
@@ -267,9 +266,8 @@ mod with_ndarray {
         fn try_from(from: &ArrayBase<S, D>) -> Result<Self, Self::Error> {
             let histogram = Histogram::default();
             let values_iter = from.iter().cloned().map(|value| {
-                R64::try_new(value).ok_or_else(|| Error::ConversionError {
-                    desc: "non-finite floating value found".into(),
-                })
+                R64::try_new(value)
+                    .ok_or_else(|| Error::conversion("non-finite floating value found"))
             });
 
             for result in values_iter {
@@ -318,10 +316,9 @@ mod with_tch {
             tensor_to_vec!($tensor, $ty)
                 .into_iter()
                 .map(|value| {
-                    let value =
-                        <R64 as NumCast>::from(value).ok_or_else(|| Error::ConversionError {
-                            desc: "non-finite floating point value found".into(),
-                        })?;
+                    let value = <R64 as NumCast>::from(value).ok_or_else(|| {
+                        Error::conversion("non-finite floating point value found")
+                    })?;
                     Ok(value)
                 })
                 .collect::<Result<Vec<_>, Error>>()
@@ -343,9 +340,10 @@ mod with_tch {
                 Kind::Float => tensor_to_r64_vec!(from, f32)?,
                 Kind::Double => tensor_to_r64_vec!(from, f64)?,
                 _ => {
-                    return Err(Error::ConversionError {
-                        desc: format!("unsupported tensor kind {:?}", kind),
-                    })
+                    return Err(Error::conversion(format!(
+                        "unsupported tensor kind {:?}",
+                        kind
+                    )))
                 }
             };
 

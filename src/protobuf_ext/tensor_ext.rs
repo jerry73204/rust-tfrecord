@@ -14,7 +14,7 @@ impl TensorProto {
         S: IntoShape,
         T: TensorProtoElement,
     {
-        let dims = shape.into_shape();
+        let dims = shape.to_shape();
         if numel(&dims) != data.len() {
             todo!();
         }
@@ -43,7 +43,7 @@ impl TensorProto {
         S: IntoShape,
         T: AsRef<[u8]>,
     {
-        let dims = shape.into_shape();
+        let dims = shape.to_shape();
         if numel(&dims) != data.len() {
             todo!();
         }
@@ -105,21 +105,21 @@ mod elem {
     impl_to_le_bytes!(f64, DataType::DtDouble);
 }
 
-pub use into_shape::*;
-mod into_shape {
+pub use to_shape::*;
+mod to_shape {
     use super::*;
     use num::Unsigned;
     use num_traits::{NumCast, ToPrimitive};
 
     pub trait IntoShape {
-        fn into_shape(&self) -> Vec<Dim>;
+        fn to_shape(&self) -> Vec<Dim>;
     }
 
     impl<T> IntoShape for &[T]
     where
         T: Copy + Unsigned + ToPrimitive,
     {
-        fn into_shape(&self) -> Vec<Dim> {
+        fn to_shape(&self) -> Vec<Dim> {
             self.iter()
                 .map(|&sz| {
                     let size = <i64 as NumCast>::from(sz).expect("size is too large");
@@ -136,8 +136,8 @@ mod into_shape {
     where
         T: Copy + Unsigned + ToPrimitive,
     {
-        fn into_shape(&self) -> Vec<Dim> {
-            self.as_slice().into_shape()
+        fn to_shape(&self) -> Vec<Dim> {
+            self.as_slice().to_shape()
         }
     }
 
@@ -145,7 +145,7 @@ mod into_shape {
     where
         T: Copy + Unsigned + ToPrimitive,
     {
-        fn into_shape(&self) -> Vec<Dim> {
+        fn to_shape(&self) -> Vec<Dim> {
             self.iter()
                 .map(|&sz| {
                     let size = <i64 as NumCast>::from(sz).expect("size is too large");
@@ -162,8 +162,8 @@ mod into_shape {
     where
         S: IntoShape,
     {
-        fn into_shape(&self) -> Vec<Dim> {
-            (*self).into_shape()
+        fn to_shape(&self) -> Vec<Dim> {
+            (*self).to_shape()
         }
     }
 }
@@ -391,9 +391,10 @@ mod with_tch {
                 Kind::Float => tensor_to_proto!(from, f32),
                 Kind::Double => tensor_to_proto!(from, f64),
                 _ => {
-                    return Err(Error::ConversionError {
-                        desc: format!("unsupported tensor kind {:?}", kind),
-                    })
+                    return Err(Error::conversion(format!(
+                        "unsupported tensor kind {:?}",
+                        kind
+                    )))
                 }
             }
         }

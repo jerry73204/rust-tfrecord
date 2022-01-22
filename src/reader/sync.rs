@@ -39,12 +39,11 @@ where
     pub fn from_reader(reader: R, config: RecordReaderConfig) -> Self {
         let RecordReaderConfig { check_integrity } = config;
 
-        let record_reader = Self {
+        Self {
             reader: Some(reader),
             check_integrity,
             _phantom: PhantomData,
-        };
-        record_reader
+        }
     }
 }
 

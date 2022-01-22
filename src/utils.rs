@@ -13,7 +13,7 @@ pub fn verify_checksum(buf: &[u8], expect: u32) -> Result<(), Error> {
     if expect == found {
         Ok(())
     } else {
-        Err(Error::ChecksumMismatchError {
+        Err(Error::ChecksumMismatch {
             expect: format!("{:#010x}", expect),
             found: format!("{:#010x}", found),
         })
