@@ -1,7 +1,7 @@
 use anyhow::{bail, format_err, Context, Error, Result};
 use flate2::read::GzDecoder;
 use std::{
-    env::{self, VarError},
+    env,
     fs::{self, File},
     io::{self, BufReader, BufWriter},
     path::{Path, PathBuf},
@@ -203,8 +203,7 @@ fn compile_protobuf(dir: impl AsRef<Path>) -> Result<()> {
                 .join("*.proto")
                 .to_str()
                 .unwrap(),
-        )?
-        .into_iter();
+        )?;
         let framework_iter = glob::glob(
             dir.join("tensorflow")
                 .join("core")
@@ -212,8 +211,7 @@ fn compile_protobuf(dir: impl AsRef<Path>) -> Result<()> {
                 .join("*.proto")
                 .to_str()
                 .unwrap(),
-        )?
-        .into_iter();
+        )?;
         let util_iter = std::iter::once(Ok(dir
             .join("tensorflow")
             .join("core")

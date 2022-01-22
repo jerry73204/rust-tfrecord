@@ -88,11 +88,8 @@ where {
     fn create_tf_style_path(
         prefix: impl AsRef<str>,
         file_name_suffix: Option<String>,
-    ) -> Result<(PathBuf, String), Error>
-where {
-        let file_name_suffix = file_name_suffix
-            .map(|suffix| suffix.to_string())
-            .unwrap_or("".into());
+    ) -> Result<(PathBuf, String), Error> {
+        let file_name_suffix = file_name_suffix.unwrap_or_else(|| "".into());
         let prefix = {
             let prefix = prefix.as_ref();
             if prefix.is_empty() {

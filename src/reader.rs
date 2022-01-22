@@ -111,7 +111,7 @@ mod blocking {
             let bytes_opt: Option<Result<_, _>> =
                 crate::io::blocking::try_read_record(reader, self.check_integrity).transpose();
 
-            if let None = bytes_opt {
+            if bytes_opt.is_none() {
                 self.reader_opt = None;
             }
 

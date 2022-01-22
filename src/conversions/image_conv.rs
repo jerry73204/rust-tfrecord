@@ -76,7 +76,7 @@ where
     fn try_from(from: &ImageBuffer<P, C>) -> Result<Self, Self::Error> {
         let components_iter = from
             .pixels()
-            .flat_map(|pixel| pixel.channels().iter().cloned().collect::<Vec<_>>())
+            .flat_map(|pixel| pixel.channels().iter().cloned())
             .map(|component| {
                 R64::try_new(component.to_f64()).ok_or_else(|| Error::ConversionError {
                     desc: "non-finite value found".into(),
@@ -266,7 +266,7 @@ impl TryFrom<&DynamicImage> for Image {
             ImageBgra8(buffer) => Self::try_from(buffer)?,
             _ => {
                 return Err(Error::ConversionError {
-                    desc: format!("unsupported image type"),
+                    desc: "unsupported image type".to_string(),
                 });
             }
         };

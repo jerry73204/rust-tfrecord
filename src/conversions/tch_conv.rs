@@ -70,12 +70,10 @@ fn normalized_tensor(tensor: &Tensor) -> Result<Tensor, Error> {
                 (scale, offset)
             };
 
-            let normalized_tensor = tensor
+            tensor
                 .f_mul_scalar(scale)?
                 .f_add_scalar(offset)?
-                .f_to_kind(Kind::Uint8)?;
-
-            normalized_tensor
+                .f_to_kind(Kind::Uint8)?
         }
         _ => {
             return Err(Error::ConversionError {

@@ -9,7 +9,7 @@ pub fn checksum(buf: &[u8]) -> u32 {
 }
 
 pub fn verify_checksum(buf: &[u8], expect: u32) -> Result<(), Error> {
-    let found = checksum(&buf);
+    let found = checksum(buf);
     if expect == found {
         Ok(())
     } else {

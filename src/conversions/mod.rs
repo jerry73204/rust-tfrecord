@@ -131,7 +131,7 @@ where
                 .expect("please report bug")
                 .as_ref()
                 .iter()
-                .fold(1, |prod, val| prod * val),
+                .product(),
             "please report bug"
         );
     }

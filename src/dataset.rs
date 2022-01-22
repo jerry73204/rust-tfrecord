@@ -78,7 +78,7 @@ impl DatasetInit {
         let mut paths = dir
             .read_dir()
             .await?
-            .map(|result| result.map_err(|err| Error::from(err)))
+            .map(|result| result.map_err(Error::from))
             .try_filter_map(|entry| async move {
                 if !entry.metadata().await?.is_file() {
                     return Ok(None);
@@ -131,7 +131,7 @@ impl DatasetInit {
         let max_open_files = max_open_files.map(|num| num.get());
         let max_workers = max_workers
             .map(|num| num.get())
-            .unwrap_or_else(|| num_cpus::get());
+            .unwrap_or_else(num_cpus::get);
         let open_file_semaphore = max_open_files.map(|num| Arc::new(Semaphore::new(num)));
 
         // build record index
@@ -163,12 +163,10 @@ impl DatasetInit {
                             });
 
                             // add semaphore permission
-                            let stream = stream.map_ok(move |index| {
+                            stream.map_ok(move |index| {
                                 let permit_clone = permit.clone();
                                 (permit_clone, index)
-                            });
-
-                            stream
+                            })
                         };
 
                         Result::<_, Error>::Ok(index_stream)

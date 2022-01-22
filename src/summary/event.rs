@@ -48,12 +48,12 @@ impl EventInit {
         }
     }
 
-    fn to_parts(self) -> (f64, i64) {
+    fn to_parts(&self) -> (f64, i64) {
         let Self {
             wall_time: wall_time_opt,
             step,
-        } = self;
-        let wall_time = wall_time_opt.unwrap_or_else(|| Self::get_wall_time());
+        } = *self;
+        let wall_time = wall_time_opt.unwrap_or_else(Self::get_wall_time);
         (wall_time, step)
     }
 
