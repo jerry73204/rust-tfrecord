@@ -200,30 +200,27 @@ More examples can be found in [examples](examples) and [tests](tests) directorie
 
 The crate compiles the pre-generated ProtocolBuffer code from TensorFlow. In case of TensorFlow updates or custom patches, please run the code generation manually, see [Generate ProtocolBuffer code from TensorFlow](#generate-protocolbuffer-code-from-tensorflow) section for details.
 
-The build script accepts several ways to access the TensorFlow source code, controlled by the `TFRECORD_BUILD_METHOD` environment variable. The generated code will be placed under `prebuild_src` directory. See the examples below to understand the usage.
+The build script accepts several ways to access the TensorFlow source code specified by `TFRECORD_BUILD_METHOD` environment variable. The generated code is placed under `prebuild_src` directory. See the examples below and change `X.Y.Z` to actual TensorFlow version.
 
 ### Build from a source tarball
 
 ```sh
-export TFRECORD_BUILD_METHOD="src_file:///home/myname/tensorflow-2.2.0.tar.gz"
-cargo build --release --features serde,generate_protobuf_src  # with serde
-cargo build --release --features generate_protobuf_src        # without serde
+export TFRECORD_BUILD_METHOD="src_file:///home/myname/tensorflow-X.Y.Z.tar.gz"
+cargo build --release --features generate_protobuf_src
 ```
 
 ### Build from a source directory
 
 ```sh
-export TFRECORD_BUILD_METHOD="src_dir:///home/myname/tensorflow-2.2.0"
-cargo build --release --features serde,generate_protobuf_src  # with serde
-cargo build --release --features generate_protobuf_src        # without serde
+export TFRECORD_BUILD_METHOD="src_dir:///home/myname/tensorflow-X.Y.Z"
+cargo build --release --features generate_protobuf_src
 ```
 
 ### Build from a URL
 
 ```sh
-export TFRECORD_BUILD_METHOD="url://https://github.com/tensorflow/tensorflow/archive/v2.2.0.tar.gz"
-cargo build --release --features serde,generate_protobuf_src  # with serde
-cargo build --release --features generate_protobuf_src        # without serde
+export TFRECORD_BUILD_METHOD="url://https://github.com/tensorflow/tensorflow/archive/vX.Y.Z.tar.gz"
+cargo build --release --features generate_protobuf_src
 ```
 
 ### Build from installed TensorFlow on system
@@ -232,8 +229,7 @@ The build script will search `${install_prefix}/include/tensorflow` directory fo
 
 ```sh
 export TFRECORD_BUILD_METHOD="install_prefix:///usr"
-cargo build --release --features serde,generate_protobuf_src  # with serde
-cargo build --release --features generate_protobuf_src        # without serde
+cargo build --release --features generate_protobuf_src
 ```
 
 ## License
