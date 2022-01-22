@@ -3,7 +3,7 @@ use std::{
     io::{self, BufWriter},
     path::PathBuf,
 };
-use tfrecord::{Error, ExampleReader, Feature, RecordReaderInit};
+use tfrecord::{Error, ExampleIter, Feature};
 
 lazy_static::lazy_static! {
     pub static ref INPUT_TFRECORD_PATH: PathBuf = {
@@ -30,7 +30,7 @@ lazy_static::lazy_static! {
 
 fn main() -> Result<(), Error> {
     // use init pattern to construct the tfrecord reader
-    let reader: ExampleReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
+    let reader = ExampleIter::open(&*INPUT_TFRECORD_PATH, Default::default())?;
 
     // print header
     println!("example_no\tfeature_no\tname\ttype\tsize");

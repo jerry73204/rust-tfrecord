@@ -1,8 +1,12 @@
-use super::{
-    summary::{value, Audio, Image, Value},
-    HistogramProto, Summary, TensorProto,
+use super::IntoHistogram;
+use crate::{
+    error::Error,
+    markers::TryInfoImageList,
+    protobuf::{
+        summary::{value, Audio, Image, Value},
+        Summary, TensorProto,
+    },
 };
-use crate::{error::Error, markers::TryInfoImageList};
 
 impl Summary {
     /// Build a scalar summary.
@@ -21,16 +25,14 @@ impl Summary {
     /// Build a histogram summary.
     pub fn from_histogram(
         tag: impl ToString,
-        histogram: impl TryInto<HistogramProto, Error = impl Into<Error>>,
+        histogram: impl IntoHistogram,
     ) -> Result<Summary, Error> {
         let summary = Summary {
             value: vec![Value {
                 node_name: "".into(),
                 tag: tag.to_string(),
                 metadata: None,
-                value: Some(value::Value::Histo(
-                    histogram.try_into().map_err(Into::into)?,
-                )),
+                value: Some(value::Value::Histo(histogram.try_into_histogram()?)),
             }],
         };
         Ok(summary)

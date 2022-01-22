@@ -306,13 +306,13 @@ where
     futures::stream::try_unfold((reader, check_integrity), |args| async move {
         let (mut reader, check_integrity) = args;
 
-        let len = match crate::io::async_::try_read_len(&mut reader, check_integrity).await? {
+        let len = match crate::io::r#async::try_read_len(&mut reader, check_integrity).await? {
             Some(len) => len,
             None => return Ok(None),
         };
 
         let offset = reader.seek(SeekFrom::Current(0)).await?;
-        crate::io::async_::try_read_record_data(&mut reader, len, check_integrity).await?;
+        crate::io::r#async::try_read_record_data(&mut reader, len, check_integrity).await?;
 
         let index = (offset, len);
         let args = (reader, check_integrity);
@@ -325,7 +325,7 @@ where
     R: AsyncReadExt + AsyncSeekExt + Unpin,
 {
     reader.seek(SeekFrom::Start(offset)).await?;
-    let bytes = crate::io::async_::try_read_record_data(reader, len, false).await?;
+    let bytes = crate::io::r#async::try_read_record_data(reader, len, false).await?;
 
     Ok(bytes)
 }

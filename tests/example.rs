@@ -1,188 +1,102 @@
 mod common;
 
 use common::*;
+use tfrecord::{BytesIter, Example, ExampleIter, RawExample, RawExampleIter, RecordWriter};
 
 #[test]
-fn blocking_reader_test() -> Result<()> {
+fn reader_test() {
     // bytes
     {
-        let reader: BytesReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
-        reader.collect::<Result<Vec<Vec<u8>>, _>>()?;
+        let reader = BytesIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
+        reader.collect::<Result<Vec<Vec<u8>>, _>>().unwrap();
     }
 
     // raw examples
     {
-        let reader: RawExampleReader<_> =
-            RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
-        reader.collect::<Result<Vec<RawExample>, _>>()?;
+        let reader = RawExampleIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
+        reader.collect::<Result<Vec<RawExample>, _>>().unwrap();
     }
 
     // examples
     {
-        let reader: ExampleReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
-        reader.collect::<Result<Vec<Example>, _>>()?;
+        let reader = ExampleIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
+        reader.collect::<Result<Vec<Example>, _>>().unwrap();
     }
-
-    Ok(())
-}
-
-#[cfg(feature = "async")]
-#[async_std::test]
-async fn async_stream_test() -> Result<()> {
-    // bytes
-    {
-        let stream = RecordStreamInit::default()
-            .bytes_open(&*INPUT_TFRECORD_PATH)
-            .await?;
-        stream.try_collect::<Vec<Vec<u8>>>().await?;
-    }
-
-    // raw examples
-    {
-        let stream = RecordStreamInit::default()
-            .raw_examples_open(&*INPUT_TFRECORD_PATH)
-            .await?;
-        stream.try_collect::<Vec<RawExample>>().await?;
-    }
-
-    // examples
-    {
-        let stream = RecordStreamInit::default()
-            .examples_open(&*INPUT_TFRECORD_PATH)
-            .await?;
-        stream.try_collect::<Vec<Example>>().await?;
-    }
-
-    Ok(())
 }
 
 #[test]
-fn blocking_writer_test() -> Result<()> {
+fn writer_test() {
     let output_path = DATA_DIR.join("blocking_writer_output.tfrecord");
 
     // bytes
     {
-        let reader: BytesReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
-        let mut writer: BytesWriter<_> = RecordWriterInit::create(&output_path)?;
+        let reader = BytesIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
+        let mut writer: RecordWriter<Vec<u8>, BufWriter<File>> =
+            RecordWriter::create(&output_path).unwrap();
 
         for result in reader {
-            let bytes = result?;
-            writer.send(bytes)?;
+            let bytes = result.unwrap();
+            writer.send(bytes).unwrap();
         }
 
-        std::fs::remove_file(&output_path)?;
+        std::fs::remove_file(&output_path).unwrap();
     }
 
     // raw examples
     {
-        let reader: RawExampleReader<_> =
-            RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
-        let mut writer: RawExampleWriter<_> = RecordWriterInit::create(&output_path)?;
+        let reader = RawExampleIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
+        let mut writer: RecordWriter<RawExample, BufWriter<File>> =
+            RecordWriter::create(&output_path).unwrap();
 
         for result in reader {
-            let raw_example = result?;
-            writer.send(raw_example)?;
+            let raw_example = result.unwrap();
+            writer.send(raw_example).unwrap();
         }
 
-        std::fs::remove_file(&output_path)?;
+        std::fs::remove_file(&output_path).unwrap();
     }
 
     // examples
     {
-        let reader: ExampleReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
-        let mut writer: ExampleWriter<_> = RecordWriterInit::create(&output_path)?;
+        let reader = ExampleIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
+        let mut writer: RecordWriter<
+            std::collections::HashMap<String, tfrecord::Feature>,
+            BufWriter<File>,
+        > = RecordWriter::create(&output_path).unwrap();
 
         for result in reader {
-            let example = result?;
-            writer.send(example)?;
+            let example = result.unwrap();
+            writer.send(example).unwrap();
         }
 
-        std::fs::remove_file(&output_path)?;
+        std::fs::remove_file(&output_path).unwrap();
     }
-
-    Ok(())
-}
-
-#[cfg(feature = "async")]
-#[async_std::test]
-async fn async_writer_test() -> Result<()> {
-    let output_path = DATA_DIR.join("async_writer_output.tfrecord");
-
-    // bytes
-    {
-        let stream = RecordStreamInit::default()
-            .bytes_open(&*INPUT_TFRECORD_PATH)
-            .await?;
-        let writer: BytesWriter<_> = RecordWriterInit::create_async(&output_path).await?;
-
-        stream
-            .try_fold(writer, |mut writer, bytes| async {
-                writer.send_async(bytes).await?;
-                Ok(writer)
-            })
-            .await?;
-
-        async_std::fs::remove_file(&output_path).await?;
-    }
-
-    // raw examples
-    {
-        let stream = RecordStreamInit::default()
-            .raw_examples_open(&*INPUT_TFRECORD_PATH)
-            .await?;
-        let writer: RawExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
-
-        stream
-            .try_fold(writer, |mut writer, example| async {
-                writer.send_async(example).await?;
-                Ok(writer)
-            })
-            .await?;
-
-        async_std::fs::remove_file(&output_path).await?;
-    }
-
-    // examples
-    {
-        let stream = RecordStreamInit::default()
-            .examples_open(&*INPUT_TFRECORD_PATH)
-            .await?;
-        let writer: ExampleWriter<_> = RecordWriterInit::create_async(&output_path).await?;
-
-        stream
-            .try_fold(writer, |mut writer, example| async {
-                writer.send_async(example).await?;
-                Ok(writer)
-            })
-            .await?;
-
-        async_std::fs::remove_file(&output_path).await?;
-    }
-
-    Ok(())
 }
 
 #[cfg(feature = "serde")]
 #[test]
-fn serde_test() -> Result<()> {
+fn serde_test() {
     {
-        let reader: BytesReader<_> = RecordReaderInit::default().open(&*INPUT_TFRECORD_PATH)?;
+        use tfrecord::Example;
+
+        let reader = BytesIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
         reader
             .map(|result| {
-                let bytes = result?;
-                let raw_example = RawExample::decode(bytes.as_slice())?;
-                let example = Example::from(&raw_example);
+                let bytes = result.unwrap();
+                let raw_example = RawExample::decode(bytes.as_slice()).unwrap();
+                let example = Example::from(raw_example.clone());
 
                 // assert for RawExample
-                let _: RawExample = serde_json::from_str(&serde_json::to_string(&raw_example)?)?;
+                let _: RawExample =
+                    serde_json::from_str(&serde_json::to_string(&raw_example).unwrap()).unwrap();
 
                 // assert for Example
-                let _: Example = serde_json::from_str(&serde_json::to_string(&example)?)?;
+                let _: Example =
+                    serde_json::from_str(&serde_json::to_string(&example).unwrap()).unwrap();
 
                 Result::Ok(())
             })
-            .collect::<Result<Vec<_>>>()?;
+            .collect::<Result<Vec<_>>>()
+            .unwrap();
     }
-
-    Ok(())
 }

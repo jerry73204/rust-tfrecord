@@ -6,7 +6,7 @@ mod async_example {
         io::{self, BufWriter},
         path::PathBuf,
     };
-    use tfrecord::{Error, Feature, RecordStreamInit};
+    use tfrecord::{Error, ExampleStream, Feature};
 
     lazy_static::lazy_static! {
         pub static ref INPUT_TFRECORD_PATH: PathBuf = {
@@ -33,9 +33,7 @@ mod async_example {
 
     pub async fn _main() -> Result<(), Error> {
         // use init pattern to construct the tfrecord stream
-        let stream = RecordStreamInit::default()
-            .examples_open(&*INPUT_TFRECORD_PATH)
-            .await?;
+        let stream = ExampleStream::open(&*INPUT_TFRECORD_PATH, Default::default()).await?;
 
         // print header
         println!("example_no\tfeature_no\tname\ttype\tsize");

@@ -1,9 +1,9 @@
-use crate::protos::{event::What, Event, Summary};
+use crate::protobuf::{event::What, Event, Summary};
 use std::time::SystemTime;
 
 /// A [Event] initializer.
 #[derive(Debug, Clone, PartialEq)]
-pub struct EventInit {
+pub struct EventMeta {
     /// The wall clock time in microseconds.
     ///
     /// If the field is set to `None`, it sets to current system time when the event is built.
@@ -12,7 +12,7 @@ pub struct EventInit {
     pub step: i64,
 }
 
-impl EventInit {
+impl EventMeta {
     /// Create a initializer with global step and wall time.
     pub fn new(step: i64, wall_time: f64) -> Self {
         Self {
@@ -54,32 +54,24 @@ impl EventInit {
             wall_time: wall_time_opt,
             step,
         } = *self;
-        let wall_time = wall_time_opt.unwrap_or_else(Self::get_wall_time);
+        let wall_time = wall_time_opt.unwrap_or_else(wall_time_now);
         (wall_time, step)
-    }
-
-    fn get_wall_time() -> f64 {
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos() as f64
-            / 1.0e9
     }
 }
 
-impl From<i64> for EventInit {
+impl From<i64> for EventMeta {
     fn from(step: i64) -> Self {
         Self::with_step(step)
     }
 }
 
-impl From<(i64, f64)> for EventInit {
+impl From<(i64, f64)> for EventMeta {
     fn from((step, wall_time): (i64, f64)) -> Self {
         Self::new(step, wall_time)
     }
 }
 
-impl From<(i64, SystemTime)> for EventInit {
+impl From<(i64, SystemTime)> for EventMeta {
     fn from((step, time): (i64, SystemTime)) -> Self {
         Self::new(
             step,
@@ -89,4 +81,12 @@ impl From<(i64, SystemTime)> for EventInit {
                 / 1.0e9,
         )
     }
+}
+
+fn wall_time_now() -> f64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos() as f64
+        / 1.0e9
 }

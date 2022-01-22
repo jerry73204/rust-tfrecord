@@ -5,8 +5,8 @@ use serde::Serialize;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tfrecord::{
-    protos::{event::What, summary::value::Value::SimpleValue, Summary},
-    EventReader, RecordReaderInit,
+    protobuf::{event::What, summary::value::Value::SimpleValue, Summary},
+    EventIter,
 };
 
 #[derive(StructOpt)]
@@ -48,7 +48,7 @@ fn main() -> Result<()> {
         tags: query_tags,
         output: output_dir,
     } = Args::from_args();
-    let reader: EventReader<_> = RecordReaderInit::default().open(&event_file)?;
+    let reader = EventIter::open(&event_file, Default::default())?;
     std::fs::create_dir_all(&output_dir)?;
 
     let history: Vec<TagData> = reader

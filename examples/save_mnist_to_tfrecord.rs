@@ -4,18 +4,18 @@ use itertools::izip;
 use packed_struct::prelude::*;
 use packed_struct_codegen::PackedStruct;
 use std::io::{self, prelude::*, Cursor};
-use tfrecord::{Example, ExampleWriter, Feature, RecordWriterInit};
+use tfrecord::{Example, ExampleWriter, Feature, RecordWriter};
 
-const IMAGES_URL: &'static str = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
-const LABELS_URL: &'static str = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
-const OUTPUT_FILE: &'static str = "mnist.tfrecord";
+const IMAGES_URL: &str = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
+const LABELS_URL: &str = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
+const OUTPUT_FILE: &str = "mnist.tfrecord";
 
 fn main() -> Result<()> {
     // download and decode data set
     let (images, labels) = mnist_loader::load_mnist()?;
 
     // writer to tfrecord file
-    let mut writer: ExampleWriter<_> = RecordWriterInit::create(OUTPUT_FILE)?;
+    let mut writer: ExampleWriter<_> = RecordWriter::create(OUTPUT_FILE)?;
 
     for (image, label) in izip!(images, labels) {
         // build example

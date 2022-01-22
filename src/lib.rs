@@ -19,11 +19,11 @@
 #[cfg(feature = "dataset")]
 pub mod dataset;
 
-mod conversions;
 pub mod error;
 pub mod io;
 pub mod markers;
-pub mod protos;
+pub mod protobuf;
+pub mod protobuf_ext;
 pub mod reader;
 pub mod summary;
 pub mod types;
@@ -33,18 +33,18 @@ pub mod writer;
 // re-exports
 
 pub use error::Error;
-pub use markers::{GenericRecord, HistogramProtoElement, TensorProtoElement};
-pub use protos::{Event, Example as RawExample, Summary};
+pub use markers::GenericRecord;
+pub use protobuf::{Event, Example as RawExample, Summary};
 
-#[cfg(feature = "async")]
-pub use reader::RecordStreamInit;
 pub use reader::{
-    BytesReader, EventReader, ExampleReader, RawExampleReader, RecordReader, RecordReaderInit,
+    BytesIter, EventIter, ExampleIter, RawExampleIter, RecordIter, RecordReaderConfig,
 };
+#[cfg(feature = "async")]
+pub use reader::{BytesStream, EventStream, ExampleStream, RawExampleStream, RecordStream};
 #[cfg(feature = "summary")]
-pub use summary::{EventInit, EventWriter, EventWriterInit};
+pub use summary::{EventMeta, EventWriter, EventWriterInit};
 pub use types::{Example, Feature, Histogram};
-pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter, RecordWriterInit};
+pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter};
 
 #[cfg(feature = "dataset")]
 pub use dataset::{Dataset, DatasetInit};

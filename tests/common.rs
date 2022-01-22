@@ -13,16 +13,6 @@ pub use std::{
     thread,
     time::{Duration, SystemTime},
 };
-#[cfg(feature = "async")]
-pub use tfrecord::RecordStreamInit;
-pub use tfrecord::{
-    BytesReader, BytesWriter, Example, ExampleReader, ExampleWriter, Feature, RawExample,
-    RawExampleReader, RawExampleWriter, RecordReaderInit, RecordWriterInit,
-};
-#[cfg(feature = "dataset")]
-pub use tfrecord::{Dataset, DatasetInit};
-#[cfg(feature = "summary")]
-pub use tfrecord::{EventInit, EventWriterInit};
 
 lazy_static::lazy_static! {
     pub static ref INPUT_TFRECORD_PATH: PathBuf = {

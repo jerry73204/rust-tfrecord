@@ -1,12 +1,13 @@
-use super::event::EventInit;
+use super::event::EventMeta;
 use crate::{
     error::Error,
     markers::TryInfoImageList,
-    protos::{
+    protobuf::{
         summary::{Audio, Image},
-        Event, HistogramProto, Summary, TensorProto,
+        Event, Summary, TensorProto,
     },
-    writer::{RecordWriter, RecordWriterInit},
+    protobuf_ext::IntoHistogram,
+    writer::RecordWriter,
 };
 #[cfg(feature = "async")]
 use futures::io::AsyncWriteExt;
@@ -42,7 +43,7 @@ impl EventWriterInit {
 
         Ok(EventWriter {
             auto_flush,
-            events_writer: RecordWriterInit::from_writer(writer)?,
+            events_writer: RecordWriter::from_writer(writer)?,
         })
     }
 
@@ -60,8 +61,7 @@ impl EventWriterInit {
         self,
         prefix: impl AsRef<str>,
         file_name_suffix: Option<String>,
-    ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error>
-where {
+    ) -> Result<EventWriter<std::io::BufWriter<std::fs::File>>, Error> {
         let (dir_prefix, file_name) = Self::create_tf_style_path(prefix, file_name_suffix)?;
         fs::create_dir_all(&dir_prefix)?;
         let path = dir_prefix.join(file_name);
@@ -72,12 +72,12 @@ where {
     #[cfg(feature = "async")]
     pub fn from_async_writer<W>(self, writer: W) -> Result<EventWriter<W>, Error>
     where
-        W: AsyncWriteExt,
+        W: AsyncWriteExt + Unpin,
     {
         let Self { auto_flush } = self;
         Ok(EventWriter {
             auto_flush,
-            events_writer: RecordWriterInit::from_async_writer(writer)?,
+            events_writer: RecordWriter::from_async_writer(writer)?,
         })
     }
 
@@ -172,32 +172,30 @@ where {
 /// directory to build a [EventWriter].
 ///
 /// ```rust
-/// #![cfg(feature = "full")]
+/// # async_std::task::block_on(async move {
 /// use anyhow::Result;
 /// use std::time::SystemTime;
 /// use tch::{kind::FLOAT_CPU, Tensor};
 /// use tfrecord::EventWriterInit;
 ///
-/// fn main() -> Result<()> {
-///     let mut writer = EventWriterInit::default()
-///         .from_prefix("log_dir/myprefix-", None)
-///         .unwrap();
+/// let mut writer = EventWriterInit::default()
+///     .from_prefix("log_dir/myprefix-", None)
+///     .unwrap();
 ///
-///     // step = 0, scalar = 3.14
-///     writer.write_scalar("my_scalar", 0, 3.14)?;
+/// // step = 0, scalar = 3.14
+/// writer.write_scalar("my_scalar", 0, 3.14)?;
 ///
-///     // step = 1, specified wall time, histogram of [1, 2, 3, 4]
-///     writer.write_histogram("my_histogram", (1, SystemTime::now()), vec![1, 2, 3, 4])?;
+/// // step = 1, specified wall time, histogram of [1, 2, 3, 4]
+/// writer.write_histogram("my_histogram", (1, SystemTime::now()), vec![1, 2, 3, 4])?;
 ///
-///     // step = 2, specified raw UNIX time in nanoseconds, random tensor of shape [8, 3, 16, 16]
-///     writer.write_tensor(
-///         "my_tensor",
-///         (2, 1.594449514712264e+18),
-///         Tensor::randn(&[8, 3, 16, 16], FLOAT_CPU),
-///     )?;
-///
-///     Ok(())
-/// }
+/// // step = 2, specified raw UNIX time in nanoseconds, random tensor of shape [8, 3, 16, 16]
+/// writer.write_tensor(
+///     "my_tensor",
+///     (2, 1.594449514712264e+18),
+///     Tensor::randn(&[8, 3, 16, 16], FLOAT_CPU),
+/// )?;
+/// # anyhow::Ok(())
+/// # }).unwrap();
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct EventWriter<W> {
@@ -213,11 +211,11 @@ where
     pub fn write_scalar(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         value: f32,
     ) -> Result<(), Error> {
         let summary = Summary::from_scalar(tag, value)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -229,11 +227,11 @@ where
     pub fn write_histogram(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
-        histogram: impl TryInto<HistogramProto, Error = impl Into<Error>>,
+        event_meta: impl Into<EventMeta>,
+        histogram: impl IntoHistogram,
     ) -> Result<(), Error> {
         let summary = Summary::from_histogram(tag, histogram)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -245,11 +243,11 @@ where
     pub fn write_tensor(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
         let summary = Summary::from_tensor(tag, tensor)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -261,11 +259,11 @@ where
     pub fn write_image(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         image: impl TryInto<Image, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
         let summary = Summary::from_image(tag, image)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -277,11 +275,11 @@ where
     pub fn write_image_list(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         images: impl TryInfoImageList<Error = impl Into<Error>>,
     ) -> Result<(), Error> {
         let summary = Summary::from_image_list(tag, images)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -293,11 +291,11 @@ where
     pub fn write_audio(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         audio: impl TryInto<Audio, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
         let summary = Summary::from_audio(tag, audio)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -305,7 +303,7 @@ where
         Ok(())
     }
 
-    // pub fn write_graph<>(&mut self, tag: impl ToString, event_init: EventInit) -> Result<(), Error>
+    // pub fn write_graph<>(&mut self, tag: impl ToString, event_meta: EventMeta) -> Result<(), Error>
     //
     // {
     //     todo!();
@@ -336,11 +334,11 @@ where
     pub async fn write_scalar_async(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         value: f32,
     ) -> Result<(), Error> {
         let summary = Summary::from_scalar(tag, value)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -352,11 +350,11 @@ where
     pub async fn write_histogram_async(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
-        histogram: impl TryInto<HistogramProto, Error = impl Into<Error>>,
+        event_meta: impl Into<EventMeta>,
+        histogram: impl IntoHistogram,
     ) -> Result<(), Error> {
         let summary = Summary::from_histogram(tag, histogram)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -368,11 +366,11 @@ where
     pub async fn write_tensor_async(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
         let summary = Summary::from_tensor(tag, tensor)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -384,11 +382,11 @@ where
     pub async fn write_image_async(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         image: impl TryInto<Image, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
         let summary = Summary::from_image(tag, image)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -400,11 +398,11 @@ where
     pub async fn write_image_list_async(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         images: impl TryInfoImageList<Error = impl Into<Error>>,
     ) -> Result<(), Error> {
         let summary = Summary::from_image_list(tag, images)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -416,11 +414,11 @@ where
     pub async fn write_audio_async(
         &mut self,
         tag: impl ToString,
-        event_init: impl Into<EventInit>,
+        event_meta: impl Into<EventMeta>,
         audio: impl TryInto<Audio, Error = impl Into<Error>>,
     ) -> Result<(), Error> {
         let summary = Summary::from_audio(tag, audio)?;
-        let event = event_init.into().build_with_summary(summary);
+        let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -428,7 +426,7 @@ where
         Ok(())
     }
 
-    // pub async fn write_graph<>(&mut self, tag: impl ToString, event_init: EventInit) -> Result<(), Error>
+    // pub async fn write_graph<>(&mut self, tag: impl ToString, event_meta: EventMeta) -> Result<(), Error>
     //
     // {
     //     todo!();
