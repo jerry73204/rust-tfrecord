@@ -30,6 +30,10 @@ impl Error {
     pub(crate) fn conversion(desc: impl Into<Cow<'static, str>>) -> Self {
         Self::ConversionError { desc: desc.into() }
     }
+
+    pub(crate) fn invalid_argument(desc: impl Into<Cow<'static, str>>) -> Self {
+        Self::ConversionError { desc: desc.into() }
+    }
 }
 
 impl From<std::io::Error> for Error {

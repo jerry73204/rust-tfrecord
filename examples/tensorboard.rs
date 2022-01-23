@@ -5,7 +5,7 @@ mod example {
     use rand::seq::SliceRandom;
     use rand_distr::{Distribution, Normal};
     use std::{f32::consts::PI, io, path::PathBuf, thread, time::Duration};
-    use tfrecord::EventWriterInit;
+    use tfrecord::EventWriter;
 
     lazy_static::lazy_static! {
         pub static ref IMAGE_URLS: &'static [&'static str] = &[
@@ -51,9 +51,7 @@ mod example {
         let images = download_images()?;
 
         // initialize writer
-        let path_prefix = get_path_prefix();
-        let path_suffix = None;
-        let mut writer = EventWriterInit::default().from_prefix(path_prefix, path_suffix)?;
+        let mut writer = EventWriter::from_prefix(get_path_prefix(), "", Default::default())?;
         let mut rng = rand::thread_rng();
 
         // loop

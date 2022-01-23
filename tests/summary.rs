@@ -10,7 +10,7 @@ mod common;
 use common::*;
 use rand::seq::SliceRandom;
 use rand_distr::Distribution;
-use tfrecord::{EventMeta, EventWriterInit};
+use tfrecord::{EventMeta, EventWriter};
 
 #[test]
 fn event_writer() -> Result<()> {
@@ -34,7 +34,7 @@ fn event_writer() -> Result<()> {
         .into_os_string()
         .into_string()
         .unwrap();
-    let mut writer = EventWriterInit::default().from_prefix(prefix, None)?;
+    let mut writer = EventWriter::from_prefix(prefix, "", Default::default())?;
     let mut rng = rand::thread_rng();
 
     // loop

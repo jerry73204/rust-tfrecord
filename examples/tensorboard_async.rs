@@ -5,7 +5,7 @@ mod async_example {
     use rand::seq::SliceRandom;
     use rand_distr::{Distribution, Normal};
     use std::{f32::consts::PI, io, path::PathBuf, time::Duration};
-    use tfrecord::EventWriterInit;
+    use tfrecord::EventWriter;
 
     lazy_static::lazy_static! {
         pub static ref IMAGE_URLS: &'static [&'static str] = &[
@@ -51,11 +51,8 @@ mod async_example {
         let images = download_images().await?;
 
         // init writer
-        let path_prefix = get_path_prefix();
-        let path_suffix = None;
-        let mut writer = EventWriterInit::default()
-            .from_prefix_async(path_prefix, path_suffix)
-            .await?;
+        let mut writer =
+            EventWriter::from_prefix_async(get_path_prefix(), "", Default::default()).await?;
         let mut rng = rand::thread_rng();
 
         // loop

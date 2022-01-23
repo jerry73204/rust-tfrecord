@@ -42,7 +42,7 @@ pub use reader::{
 #[cfg(feature = "async")]
 pub use reader::{BytesStream, EventStream, ExampleStream, RawExampleStream, RecordStream};
 #[cfg(feature = "summary")]
-pub use summary::{EventMeta, EventWriter, EventWriterInit};
+pub use summary::{EventMeta, EventWriter, EventWriterConfig};
 pub use types::{Example, Feature, Histogram};
 pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter};
 

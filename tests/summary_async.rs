@@ -11,7 +11,7 @@ mod common;
 use common::*;
 use rand::seq::SliceRandom;
 use rand_distr::Distribution;
-use tfrecord::{EventMeta, EventWriterInit};
+use tfrecord::{EventMeta, EventWriter};
 
 #[async_std::test]
 async fn async_event_writer() -> Result<()> {
@@ -39,9 +39,7 @@ async fn async_event_writer() -> Result<()> {
         .into_os_string()
         .into_string()
         .unwrap();
-    let mut writer = EventWriterInit::default()
-        .from_prefix_async(prefix, None)
-        .await?;
+    let mut writer = EventWriter::from_prefix_async(prefix, "", Default::default()).await?;
     let mut rng = rand::thread_rng();
 
     // loop
