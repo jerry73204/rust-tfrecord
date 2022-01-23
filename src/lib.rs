@@ -1,6 +1,6 @@
 //! The crate provides the functionality to serialize and deserialize TFRecord data format from TensorFlow.
 //!
-//! The crate provides several cargo features that you can conditionally compile modules.
+//! # Cargo Features
 //!
 //! Optional features:
 //! - `full`: Enable all features.
@@ -11,6 +11,41 @@
 //! - `with-tch`: Enable [tch](https://crates.io/crates/tch) types support.
 //! - `with-image`: Enable [image](https://crates.io/crates/image) types support.
 //! - `with-ndarray`: Enable [ndarray](https://crates.io/crates/ndarray) types support.
+//!
+//! # Manualy ProtocolBuffer Code Generation
+//!
+//! The crate compiles the pre-generated ProtocolBuffer code from TensorFlow. In the case of TensorFlow version update, you may generate the code manually. It accepts several ways to access the TensorFlow source code specified by `TFRECORD_BUILD_METHOD` environment variable. The generated code is placed under `prebuild_src` directory. See the examples below and change `X.Y.Z` to actual TensorFlow version.
+//!
+//! ## Build from a source tarball
+//!
+//! ```sh
+//! export TFRECORD_BUILD_METHOD="src_file:///home/myname/tensorflow-X.Y.Z.tar.gz"
+//! cargo build --release --features generate_protobuf_src
+//! ```
+//!
+//! ## Build from a source directory
+//!
+//! ```sh
+//! export TFRECORD_BUILD_METHOD="src_dir:///home/myname/tensorflow-X.Y.Z"
+//! cargo build --release --features generate_protobuf_src
+//! ```
+//!
+//! ## Build from a URL
+//!
+//! ```sh
+//! export TFRECORD_BUILD_METHOD="url://https://github.com/tensorflow/tensorflow/archive/vX.Y.Z.tar.gz"
+//! cargo build --release --features generate_protobuf_src
+//! ```
+//!
+//! ## Build from installed TensorFlow on system
+//!
+//! The build script will search `${install_prefix}/include/tensorflow` directory for protobuf documents.
+//!
+//! ```sh
+//! export TFRECORD_BUILD_METHOD="install_prefix:///usr"
+//! cargo build --release --features generate_protobuf_src
+//! ```
+
 
 // mods
 
