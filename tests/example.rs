@@ -1,6 +1,8 @@
 mod common;
 
 use common::*;
+use prost::Message as _;
+use std::{fs::File, io::BufWriter};
 use tfrecord::{BytesIter, Example, ExampleIter, RawExample, RawExampleIter, RecordWriter};
 
 #[test]

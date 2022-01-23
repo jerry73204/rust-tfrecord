@@ -3,6 +3,7 @@
 mod common;
 
 use common::*;
+use futures::stream::{StreamExt as _, TryStreamExt as _};
 use tfrecord::{Example, Feature};
 
 #[async_std::test]

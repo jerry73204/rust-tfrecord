@@ -1,33 +1,22 @@
 use anyhow::Result;
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
+use std::env;
 
+const PROTOBUF_FILE_W_SERDE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "prebuild_src",
+    "tensorflow_with_serde.rs"
+);
+const PROTOBUF_FILE_WO_SERDE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "prebuild_src",
+    "tensorflow_without_serde.rs"
+);
 const BUILD_METHOD_ENV: &str = "TFRECORD_BUILD_METHOD";
-
-lazy_static::lazy_static! {
-    static ref OUT_DIR: PathBuf = {
-        PathBuf::from(env::var("OUT_DIR").unwrap())
-    };
-    static ref GENERATED_PROTOBUF_FILE: PathBuf = {
-        OUT_DIR.join("tensorflow.rs")
-    };
-    static ref PROTOBUF_SRC_W_SERDE: PathBuf = {
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("prebuild_src").join("tensorflow_with_serde.rs")
-    };
-    static ref PROTOBUF_FILE_WO_SERDE: PathBuf = {
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("prebuild_src").join("tensorflow_without_serde.rs")
-    };
-}
 
 fn main() -> Result<()> {
     // re-run conditions
-    println!(
-        "cargo:rerun-if-changed={}",
-        PROTOBUF_FILE_WO_SERDE.display()
-    );
-    println!("cargo:rerun-if-changed={}", PROTOBUF_SRC_W_SERDE.display());
+    println!("cargo:rerun-if-changed={}", PROTOBUF_FILE_WO_SERDE);
+    println!("cargo:rerun-if-changed={}", PROTOBUF_FILE_W_SERDE);
     println!("cargo:rerun-if-env-changed={}", BUILD_METHOD_ENV);
 
     #[cfg(feature = "generate_protobuf_src")]
@@ -54,8 +43,8 @@ mod codegen {
     use super::*;
     use anyhow::{bail, format_err, Context, Error, Result};
     use flate2::read::GzDecoder;
+    use once_cell::sync::Lazy;
     use std::{
-        env,
         env::VarError,
         fs::{self, File},
         io::{self, BufReader, BufWriter},
@@ -63,6 +52,8 @@ mod codegen {
     };
     use tar::Archive;
 
+    static OUT_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from(env::var("OUT_DIR").unwrap()));
+    static GENERATED_PROTOBUF_FILE: Lazy<PathBuf> = Lazy::new(|| (*OUT_DIR).join("tensorflow.rs"));
     const TENSORFLOW_VERSION: &str =
         include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tensorflow_version"));
     const DEFAULT_TENSORFLOW_URL: &str = concat!(
@@ -237,7 +228,7 @@ the environment variable "{}" must be set with the following format.
         // without serde
         {
             prost_build::compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
-            fs::create_dir_all(PROTOBUF_FILE_WO_SERDE.parent().unwrap())?;
+            fs::create_dir_all(Path::new(PROTOBUF_FILE_WO_SERDE).parent().unwrap())?;
             fs::copy(&*GENERATED_PROTOBUF_FILE, &*PROTOBUF_FILE_WO_SERDE)?;
         }
 
@@ -246,8 +237,8 @@ the environment variable "{}" must be set with the following format.
             prost_build::Config::new()
                 .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
                 .compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
-            fs::create_dir_all(PROTOBUF_SRC_W_SERDE.parent().unwrap())?;
-            fs::copy(&*GENERATED_PROTOBUF_FILE, &*PROTOBUF_SRC_W_SERDE)?;
+            fs::create_dir_all(Path::new(PROTOBUF_FILE_W_SERDE).parent().unwrap())?;
+            fs::copy(&*GENERATED_PROTOBUF_FILE, &*PROTOBUF_FILE_W_SERDE)?;
         }
 
         Ok(())

@@ -3,6 +3,7 @@
 mod common;
 
 use common::*;
+use futures::stream::TryStreamExt as _;
 use tfrecord::{
     BytesStream, BytesWriter, Example, ExampleStream, ExampleWriter, RawExample, RawExampleStream,
     RawExampleWriter,
