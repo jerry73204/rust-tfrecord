@@ -30,7 +30,7 @@ impl EventMeta {
     }
 
     /// Build an empty event.
-    pub fn build_empty(self) -> Event {
+    pub fn build_empty(&self) -> Event {
         let (wall_time, step) = self.to_parts();
         Event {
             wall_time,
@@ -39,8 +39,8 @@ impl EventMeta {
         }
     }
 
-    /// Build an event with summary.
-    pub fn build_with_summary(self, summary: Summary) -> Event {
+    /// Build an event with a summary.
+    pub fn build_with_summary(&self, summary: Summary) -> Event {
         let (wall_time, step) = self.to_parts();
         Event {
             wall_time,
