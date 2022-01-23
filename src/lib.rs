@@ -4,11 +4,9 @@
 //!
 //! Optional features:
 //! - `full`: Enable all features.
-//! - `async_`: Enable async/await feature.
-//! - `dataset`: Enable the dataset API.
-//! - `summary`: Enable the summary and event API, which is mainly targeted for TensorBoard.
+//! - `async`: Enable async/await feature.
 //!
-//! Third-party supports:
+//! Third-party crate supports:
 //! - `with-serde`: Enable interoperability with [serde](https://crates.io/crates/serde) to serialize and deserialize example types.
 //! - `with-tch`: Enable [tch](https://crates.io/crates/tch) types support.
 //! - `with-image`: Enable [image](https://crates.io/crates/image) types support.
@@ -17,23 +15,25 @@
 // mods
 
 pub mod error;
+pub mod event;
+pub mod event_writer;
 pub mod indexer;
 pub mod io;
 pub mod markers;
 pub mod protobuf;
 pub mod protobuf_ext;
-pub mod reader;
-pub mod summary;
+pub mod record_reader;
+pub mod record_writer;
 pub mod types;
 mod utils;
-pub mod writer;
 
 // re-exports
 
 pub use error::{Error, Result};
+pub use event::*;
+pub use event_writer::*;
 pub use markers::GenericRecord;
 pub use protobuf::{Event, Example as RawExample, Summary};
-pub use reader::*;
-pub use summary::*;
+pub use record_reader::*;
+pub use record_writer::*;
 pub use types::*;
-pub use writer::*;

@@ -18,13 +18,11 @@ use std::{
 };
 
 pub type BytesStream<R> = RecordStream<Vec<u8>, R>;
-
 pub type RawExampleStream<R> = RecordStream<RawExample, R>;
-
 pub type ExampleStream<R> = RecordStream<Example, R>;
-
 pub type EventStream<R> = RecordStream<Event, R>;
 
+/// Stream of record `T` from reader `R`.
 #[pin_project]
 pub struct RecordStream<T, R>
 where
@@ -41,12 +39,7 @@ where
     T: GenericRecord,
     R: AsyncRead,
 {
-    /// Build a stream from a reader type with [AsyncRead] trait.
-    ///
-    /// Specify the output type while calling this method. For example,
-    /// `from_reader<Example, _>()`, or you can use [bytes_from_reader](RecordStreamInit::bytes_from_reader),
-    /// [raw_examples_from_reader](RecordStreamInit::raw_examples_from_reader) and
-    /// [examples_from_reader](RecordStreamInit::examples_from_reader) aliases.
+    /// Load records from a reader type with [AsyncRead] trait.
     pub fn from_reader(reader: R, config: RecordReaderConfig) -> Self
     where
         R: 'static + Unpin + Send,
@@ -71,12 +64,7 @@ impl<T> RecordStream<T, BufReader<File>>
 where
     T: GenericRecord,
 {
-    /// Build a stream from a path.
-    ///
-    /// Specify the output type while calling this method. For example,
-    /// `open<Example, _>()`, or you can use [bytes_open](RecordStreamInit::bytes_open),
-    /// [raw_examples_open](RecordStreamInit::raw_examples_open) and
-    /// [examples_open](RecordStreamInit::examples_open) aliases.
+    /// Load records from a file.
     pub async fn open<P>(path: P, config: RecordReaderConfig) -> Result<Self>
     where
         T: GenericRecord,

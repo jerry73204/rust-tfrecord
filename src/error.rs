@@ -2,6 +2,7 @@
 
 use std::{borrow::Cow, convert::Infallible};
 
+/// The result with error type defaults to [Error].
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// The error type for this crate.

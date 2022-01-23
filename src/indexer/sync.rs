@@ -30,11 +30,7 @@ impl RecordIndex {
     }
 }
 
-/// Open TFRecord files by a path prefix.
-///
-/// If the path ends with "/", it searchs for all files under the directory.
-/// Otherwise, it lists the files with the path prefix.
-/// The enumerated paths will be sorted in alphabetical order.
+/// Load record indexes from files specified by a prefix.
 pub fn load_prefix<'a, P>(
     prefix: P,
     config: RecordIndexerConfig,
@@ -77,10 +73,7 @@ where
     Ok(indexes)
 }
 
-/// Open TFRecord files by a set of path.
-///
-/// It assumes every path is a TFRecord file, otherwise it returns error.
-/// The order of the paths affects the order of record indexes..
+/// Load record indexes from file paths.
 pub fn load_paths<'a, P, I>(
     paths: I,
     config: RecordIndexerConfig,
@@ -104,6 +97,7 @@ where
         .flatten()
 }
 
+/// Load record indexes from a file.
 pub fn load_file<'a, P>(
     file: P,
     config: RecordIndexerConfig,
@@ -125,6 +119,7 @@ where
     Ok(iter)
 }
 
+/// Load record indexes from a reader.
 pub fn load_reader<R>(
     reader: R,
     config: RecordIndexerConfig,

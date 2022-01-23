@@ -1,3 +1,5 @@
+//! Extension to ProtocolBuffer types.
+
 mod example_ext;
 mod feature_ext;
 mod histogram_ext;

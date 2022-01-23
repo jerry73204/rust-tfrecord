@@ -1,3 +1,5 @@
+//! Summary record writer.
+
 mod sync;
 pub use sync::*;
 

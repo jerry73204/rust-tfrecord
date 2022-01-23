@@ -3,7 +3,11 @@ use std::mem;
 use crate::error::{Error, Result};
 use futures::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-/// async/await version analogous to blocking [try_read_record](super::blocking::try_read_record).
+/// Try to extract raw bytes of a record from a generic reader.
+///
+/// It reads the record length and data from a generic reader,
+/// and verifies the checksum if requested.
+/// If the end of file is reached, it returns `Ok(None)`.
 pub async fn try_read_record<R>(reader: &mut R, check_integrity: bool) -> Result<Option<Vec<u8>>>
 where
     R: AsyncRead + Unpin,
@@ -16,7 +20,9 @@ where
     Ok(Some(data))
 }
 
-/// async/await version analogous to blocking [try_read_len](super::blocking::try_read_len).
+/// Try to read the record length from a generic reader.
+///
+/// It is internally called by [try_read_record]. It returns `Ok(None)` if reaching the end of file.
 pub async fn try_read_len<R>(reader: &mut R, check_integrity: bool) -> Result<Option<usize>>
 where
     R: AsyncRead + Unpin,
@@ -44,7 +50,9 @@ where
     Ok(Some(len as usize))
 }
 
-/// async/await version analogous to blocking [try_read_record_data](super::blocking::try_read_record_data).
+/// Read the record raw bytes with given length from a generic reader.
+///
+/// It is internally called by [try_read_record].
 pub async fn try_read_record_data<R>(
     reader: &mut R,
     len: usize,
@@ -70,7 +78,7 @@ where
     Ok(buf)
 }
 
-/// async/await version analogous to blocking [try_write_record](super::blocking::try_write_record).
+/// Write the raw record bytes to a generic writer.
 pub async fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<()>
 where
     W: AsyncWrite + Unpin,

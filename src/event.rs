@@ -1,19 +1,21 @@
+//! Summary and event types.
+
 use crate::protobuf::{event::What, Event, Summary};
 use std::time::SystemTime;
 
-/// A [Event] initializer.
+/// [Event] metadata.
 #[derive(Debug, Clone, PartialEq)]
 pub struct EventMeta {
     /// The wall clock time in microseconds.
     ///
-    /// If the field is set to `None`, it sets to current system time when the event is built.
+    /// If the field is set to `None`, it sets to current EPOCH time when the event is built.
     pub wall_time: Option<f64>,
     /// The global step.
     pub step: i64,
 }
 
 impl EventMeta {
-    /// Create a initializer with global step and wall time.
+    /// Create from a global step and a wall time.
     pub fn new(step: i64, wall_time: f64) -> Self {
         Self {
             wall_time: Some(wall_time),
@@ -21,7 +23,7 @@ impl EventMeta {
         }
     }
 
-    /// Create a initializer with global step and without wall time.
+    /// Create from global step but without wall time.
     pub fn with_step(step: i64) -> Self {
         Self {
             wall_time: None,

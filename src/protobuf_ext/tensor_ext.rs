@@ -71,7 +71,7 @@ mod elem {
     use super::*;
     use bytemuck::Pod;
 
-    /// The marker trait that can be converted to elements of [TensorProto](crate::protobuf::TensorProto).
+    /// Element types of [TensorProto](crate::protobuf::TensorProto).
     pub trait TensorProtoElement
     where
         Self: Pod,
@@ -111,6 +111,12 @@ mod to_shape {
     use num::Unsigned;
     use num_traits::{NumCast, ToPrimitive};
 
+    /// Conversion to `Vec<Dim>` type.
+    ///
+    /// The trait is implemented on the following types with `T` is an unsigned integer type:
+    /// - slice `&[T]`
+    /// - array `[T; N]`
+    /// - `Vec<T>`
     pub trait IntoShape {
         fn to_shape(&self) -> Vec<Dim>;
     }

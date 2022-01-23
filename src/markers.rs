@@ -7,12 +7,14 @@ use crate::{
 };
 use prost::Message;
 
-/// The trait marks the type that can be serailized to or deserialized from TFRecord raw bytes.
+/// Mark types the is serailized to or deserialized from TFRecord format.
 pub trait GenericRecord
 where
     Self: Sized,
 {
+    /// Deserialze from bytes in TFRecord format.
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error>;
+    /// Serialze to bytes in TFRecord format.
     fn to_bytes(record: Self) -> Result<Vec<u8>, Error>;
 }
 

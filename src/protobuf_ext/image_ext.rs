@@ -1,4 +1,4 @@
-// color type
+/// Enumerations of color spaces in [Image](crate::protobuf::summary::Image)'s colorspace field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
 pub enum ColorSpace {
@@ -11,6 +11,7 @@ pub enum ColorSpace {
 }
 
 impl ColorSpace {
+    /// Get number of channels for the color space.
     pub fn num_channels(&self) -> usize {
         match self {
             ColorSpace::Luma => 1,
@@ -178,12 +179,16 @@ mod with_tch {
         };
     }
 
+    /// The order of 3-dimensional channel dimension.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub enum TchChannelOrder {
+        /// Channel first, or channel-height-width.
         CHW,
+        /// Channel lats, or height-width-channel.
         HWC,
     }
 
+    /// Enumeration of owned or borrowed [Tensor].
     #[derive(Debug, PartialEq)]
     pub enum TensorRef<'a> {
         Owned(Tensor),
@@ -213,6 +218,7 @@ mod with_tch {
         }
     }
 
+    /// [tch]'s [Tensor] with additional image properties.
     #[derive(Debug, PartialEq)]
     pub struct TchTensorAsImage<'a> {
         color_space: ColorSpace,

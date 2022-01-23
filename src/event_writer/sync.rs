@@ -1,14 +1,14 @@
 use super::EventWriterConfig;
 use crate::{
     error::{Error, Result},
+    event::EventMeta,
     markers::TryInfoImageList,
     protobuf::{
         summary::{Audio, Image},
         Event, Summary, TensorProto,
     },
     protobuf_ext::IntoHistogram,
-    summary::event::EventMeta,
-    writer::RecordWriter,
+    record_writer::RecordWriter,
 };
 use std::{
     borrow::Cow,
@@ -88,7 +88,7 @@ impl<W> EventWriter<W>
 where
     W: Write,
 {
-    /// Build from a writer with [AsyncWrite] trait.
+    /// Build from a writer with [Write] trait.
     pub fn from_writer(writer: W, config: EventWriterConfig) -> Result<Self>
     where
         W: Write,

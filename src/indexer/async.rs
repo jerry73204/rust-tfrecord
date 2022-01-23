@@ -17,6 +17,7 @@ use futures::{
 use std::{borrow::Cow, future::Future, io::SeekFrom, sync::Arc};
 
 impl RecordIndex {
+    /// Load the record data for the index.
     pub async fn load_async<T>(&self) -> Result<T>
     where
         T: GenericRecord,
@@ -33,6 +34,7 @@ impl RecordIndex {
     }
 }
 
+/// Load record indexes from files specified by a prefix.
 pub async fn load_prefix_async<'a, P>(
     prefix: P,
     config: RecordIndexerConfig,
@@ -47,6 +49,7 @@ where
     Ok(stream)
 }
 
+/// Generate futures that load record indexes from files specified by a prefix.
 pub async fn load_prefix_futures<'a, P>(
     prefix: P,
     config: RecordIndexerConfig,
@@ -89,6 +92,7 @@ where
     Ok(stream)
 }
 
+/// Load record indexes from file paths.
 pub fn load_paths_async<'a, P, I>(
     paths: I,
     config: RecordIndexerConfig,
@@ -102,6 +106,7 @@ where
         .try_flatten()
 }
 
+/// Generate futures that load record indexes from file paths.
 pub fn load_paths_futures<'a, P, I>(
     paths: I,
     config: RecordIndexerConfig,
@@ -115,6 +120,7 @@ where
         .map(move |path| load_file_async(path, config.clone()))
 }
 
+/// Load record indexes from a file.
 pub async fn load_file_async<'a, P>(
     file: P,
     config: RecordIndexerConfig,
@@ -137,6 +143,7 @@ where
     Ok(stream)
 }
 
+/// Load record indexes from a reader.
 pub fn load_reader_async<R>(
     reader: R,
     config: RecordIndexerConfig,

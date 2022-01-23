@@ -1,14 +1,14 @@
 use super::EventWriterConfig;
 use crate::{
     error::{Error, Result},
+    event::EventMeta,
     markers::TryInfoImageList,
     protobuf::{
         summary::{Audio, Image},
         Event, Summary, TensorProto,
     },
     protobuf_ext::IntoHistogram,
-    summary::event::EventMeta,
-    writer::RecordAsyncWriter,
+    record_writer::RecordAsyncWriter,
 };
 use async_std::{fs::File, io::BufWriter, path::Path};
 use futures::io::AsyncWrite;

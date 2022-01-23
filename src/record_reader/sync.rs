@@ -13,13 +13,11 @@ use std::{
 };
 
 pub type BytesIter<R> = RecordIter<Vec<u8>, R>;
-
 pub type RawExampleIter<R> = RecordIter<RawExample, R>;
-
 pub type ExampleIter<R> = RecordIter<Example, R>;
-
 pub type EventIter<R> = RecordIter<Event, R>;
 
+/// Iterator of record `T` from reader `R`.
 pub struct RecordIter<T, R>
 where
     T: GenericRecord,
@@ -35,7 +33,7 @@ where
     T: GenericRecord,
     R: Read,
 {
-    /// Construct a [RecordReader] from a reader type implementing [Read](std::io::Read).
+    /// Read records from a reader implementing [Read](std::io::Read).
     pub fn from_reader(reader: R, config: RecordReaderConfig) -> Self {
         let RecordReaderConfig { check_integrity } = config;
 
@@ -51,7 +49,7 @@ impl<T> RecordIter<T, BufReader<File>>
 where
     T: GenericRecord,
 {
-    /// Construct a [RecordReader] from a path.
+    /// Read records from a file.
     pub fn open<P>(path: P, config: RecordReaderConfig) -> Result<Self>
     where
         P: AsRef<Path>,
