@@ -5,8 +5,8 @@ mod common;
 use common::*;
 use futures::stream::TryStreamExt as _;
 use tfrecord::{
-    BytesStream, BytesWriter, Example, ExampleStream, ExampleWriter, RawExample, RawExampleStream,
-    RawExampleWriter,
+    BytesAsyncWriter, BytesStream, Example, ExampleAsyncWriter, ExampleStream, RawExample,
+    RawExampleAsyncWriter, RawExampleStream,
 };
 
 #[async_std::test]
@@ -45,11 +45,11 @@ async fn async_writer_test() {
         let stream = BytesStream::open(&*INPUT_TFRECORD_PATH, Default::default())
             .await
             .unwrap();
-        let writer = BytesWriter::create_async(&output_path).await.unwrap();
+        let writer = BytesAsyncWriter::create(&output_path).await.unwrap();
 
         stream
             .try_fold(writer, |mut writer, bytes| async {
-                writer.send_async(bytes).await.unwrap();
+                writer.send(bytes).await.unwrap();
                 Ok(writer)
             })
             .await
@@ -63,11 +63,11 @@ async fn async_writer_test() {
         let stream = RawExampleStream::open(&*INPUT_TFRECORD_PATH, Default::default())
             .await
             .unwrap();
-        let writer = RawExampleWriter::create_async(&output_path).await.unwrap();
+        let writer = RawExampleAsyncWriter::create(&output_path).await.unwrap();
 
         stream
             .try_fold(writer, |mut writer, example| async {
-                writer.send_async(example).await.unwrap();
+                writer.send(example).await.unwrap();
                 Ok(writer)
             })
             .await
@@ -81,11 +81,11 @@ async fn async_writer_test() {
         let stream = ExampleStream::open(&*INPUT_TFRECORD_PATH, Default::default())
             .await
             .unwrap();
-        let writer = ExampleWriter::create_async(&output_path).await.unwrap();
+        let writer = ExampleAsyncWriter::create(&output_path).await.unwrap();
 
         stream
             .try_fold(writer, |mut writer, example| async {
-                writer.send_async(example).await.unwrap();
+                writer.send(example).await.unwrap();
                 Ok(writer)
             })
             .await
