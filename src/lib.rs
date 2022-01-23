@@ -16,10 +16,8 @@
 
 // mods
 
-#[cfg(feature = "dataset")]
-pub mod dataset;
-
 pub mod error;
+pub mod indexer;
 pub mod io;
 pub mod markers;
 pub mod protobuf;
@@ -41,10 +39,6 @@ pub use reader::{
 };
 #[cfg(feature = "async")]
 pub use reader::{BytesStream, EventStream, ExampleStream, RawExampleStream, RecordStream};
-#[cfg(feature = "summary")]
 pub use summary::{EventMeta, EventWriter, EventWriterConfig};
 pub use types::{Example, Feature, Histogram};
 pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter};
-
-#[cfg(feature = "dataset")]
-pub use dataset::{Dataset, DatasetInit};

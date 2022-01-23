@@ -6,11 +6,11 @@ mod r#async;
 #[cfg(feature = "async")]
 pub use r#async::*;
 
-use crate::{error::Error, protobuf::Event, writer::RecordWriter};
+use crate::{error::Error, protobuf::Event, utils, writer::RecordWriter};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
-    path::{Path, PathBuf, MAIN_SEPARATOR},
+    path::PathBuf,
     string::ToString,
     time::SystemTime,
 };
@@ -81,15 +81,16 @@ where
         return Err(Error::invalid_argument("the prefix must not be empty"));
     }
 
-    let (dir, file_name_prefix): (&Path, &OsStr) = if prefix.ends_with(MAIN_SEPARATOR) {
-        let dir = Path::new(prefix.as_ref());
-        (dir, OsStr::new(""))
-    } else {
-        let prefix = Path::new(prefix.as_ref());
-        let file_name_prefix = prefix.file_name().unwrap_or_else(|| OsStr::new(""));
-        let dir = prefix.parent().unwrap(); // TODO
-        (dir, file_name_prefix)
-    };
+    // let (dir, file_name_prefix): (&Path, &OsStr) = if prefix.ends_with(MAIN_SEPARATOR) {
+    //     let dir = Path::new(prefix.as_ref());
+    //     (dir, OsStr::new(""))
+    // } else {
+    //     let prefix = Path::new(prefix.as_ref());
+    //     let file_name_prefix = prefix.file_name().unwrap_or_else(|| OsStr::new(""));
+    //     let dir = prefix.parent().unwrap(); // TODO
+    //     (dir, file_name_prefix)
+    // };
+    let (dir, file_name_prefix) = utils::split_prefix(prefix);
 
     let timestamp = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -97,7 +98,7 @@ where
         .as_micros();
     let host_name = hostname::get()?;
     let file_name: OsString = [
-        file_name_prefix,
+        &file_name_prefix,
         OsStr::new(".out.tfevents."),
         OsStr::new(timestamp.to_string().as_str()),
         OsStr::new("."),

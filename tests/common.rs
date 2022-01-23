@@ -1,6 +1,6 @@
 pub use anyhow::{ensure, format_err, Error, Result};
 #[cfg(feature = "async")]
-pub use futures::stream::TryStreamExt;
+pub use futures::stream::{StreamExt as _, TryStreamExt as _};
 #[cfg(feature = "serde")]
 pub use prost::Message;
 pub use rand::rngs::OsRng;
