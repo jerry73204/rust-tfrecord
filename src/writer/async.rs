@@ -1,7 +1,10 @@
 #![cfg(feature = "async")]
 
 use super::RecordWriter;
-use crate::{error::Error, markers::GenericRecord};
+use crate::{
+    error::{Error, Result},
+    markers::GenericRecord,
+};
 use async_std::{fs::File, io::BufWriter, path::Path};
 use futures::{io::AsyncWriteExt, sink, sink::Sink};
 use std::marker::PhantomData;
@@ -13,7 +16,7 @@ where
     /// Construct a [RecordWriter] by creating a file at specified path.
     ///
     /// The constructed [RecordWriter] enables the asynchronous [send_async](RecordWriter::send_async) method.
-    pub async fn create_async<P>(path: P) -> Result<Self, Error>
+    pub async fn create_async<P>(path: P) -> Result<Self>
     where
         P: AsRef<Path>,
     {
@@ -30,7 +33,7 @@ where
     /// Construct a [RecordWriter] from a writer with [AsyncWrite] trait.
     ///
     /// The constructed [RecordWriter] enables the asynchronous [send_async](RecordWriter::send_async) method.
-    pub fn from_async_writer(writer: W) -> Result<Self, Error> {
+    pub fn from_async_writer(writer: W) -> Result<Self> {
         Ok(Self {
             writer,
             _phantom: PhantomData,
@@ -38,14 +41,14 @@ where
     }
 
     /// Write a record.
-    pub async fn send_async(&mut self, record: T) -> Result<(), Error> {
+    pub async fn send_async(&mut self, record: T) -> Result<()> {
         let bytes = T::to_bytes(record)?;
         crate::io::r#async::try_write_record(&mut self.writer, bytes).await?;
         Ok(())
     }
 
     /// Flush the output stream asynchronously.
-    pub async fn flush_async(&mut self) -> Result<(), Error> {
+    pub async fn flush_async(&mut self) -> Result<()> {
         self.writer.flush().await?;
         Ok(())
     }

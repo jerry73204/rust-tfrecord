@@ -2,15 +2,15 @@
 
 use std::{borrow::Cow, convert::Infallible};
 
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// The error type for this crate.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("checksum mismatch error: expect {expect:}, but found {found:}")]
-    ChecksumMismatch { expect: String, found: String },
-    #[error("unexpected EOF")]
+    #[error("checksum mismatch error: expect {expect:#010x}, but found {found:#010x}")]
+    ChecksumMismatch { expect: u32, found: u32 },
+    #[error("unexpected end of file")]
     UnexpectedEof,
-    #[error("unicode error: {desc:}")]
-    UnicodeError { desc: String },
     #[error("errored to decode example: {0}")]
     ExampleDecodeError(prost::DecodeError),
     #[error("errored to encode example: {0}")]

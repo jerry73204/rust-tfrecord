@@ -32,7 +32,7 @@ pub mod writer;
 
 // re-exports
 
-pub use error::Error;
+pub use error::{Error, Result};
 pub use markers::GenericRecord;
 pub use protobuf::{Event, Example as RawExample, Summary};
 

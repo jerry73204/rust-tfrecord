@@ -1,6 +1,6 @@
 use super::{EventWriter, EventWriterConfig};
 use crate::{
-    error::Error,
+    error::{Error, Result},
     markers::TryInfoImageList,
     protobuf::{
         summary::{Audio, Image},
@@ -16,7 +16,7 @@ use std::{borrow::Cow, convert::TryInto, string::ToString};
 
 impl EventWriter<BufWriter<File>> {
     /// Construct an [EventWriter] by creating a file at specified path.
-    pub async fn create_async<P>(path: P, config: EventWriterConfig) -> Result<Self, Error>
+    pub async fn create_async<P>(path: P, config: EventWriterConfig) -> Result<Self>
     where
         P: AsRef<Path>,
     {
@@ -29,7 +29,7 @@ impl EventWriter<BufWriter<File>> {
         prefix: P,
         file_name_suffix: S,
         config: EventWriterConfig,
-    ) -> Result<Self, Error>
+    ) -> Result<Self>
     where
         P: Into<Cow<'a, str>>,
         S: Into<Cow<'b, str>>,
@@ -46,7 +46,7 @@ where
     W: AsyncWrite + Unpin,
 {
     /// Construct an [EventWriter] from a type with [AsyncWriteExt] trait.
-    pub fn from_async_writer(writer: W, config: EventWriterConfig) -> Result<Self, Error> {
+    pub fn from_async_writer(writer: W, config: EventWriterConfig) -> Result<Self> {
         let EventWriterConfig { auto_flush } = config;
         Ok(Self {
             auto_flush,
@@ -60,7 +60,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         value: f32,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_scalar(tag, value)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -76,7 +76,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         histogram: impl IntoHistogram,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_histogram(tag, histogram)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -92,7 +92,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_tensor(tag, tensor)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -108,7 +108,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         image: impl TryInto<Image, Error = impl Into<Error>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_image(tag, image)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -124,7 +124,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         images: impl TryInfoImageList<Error = impl Into<Error>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_image_list(tag, images)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -140,7 +140,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         audio: impl TryInto<Audio, Error = impl Into<Error>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_audio(tag, audio)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send_async(event).await?;
@@ -151,7 +151,7 @@ where
     }
 
     /// Write a custom event asynchronously.
-    pub async fn write_event_async(&mut self, event: Event) -> Result<(), Error> {
+    pub async fn write_event_async(&mut self, event: Event) -> Result<()> {
         self.events_writer.send_async(event).await?;
         if self.auto_flush {
             self.events_writer.flush_async().await?;
@@ -160,7 +160,7 @@ where
     }
 
     /// Flush this output stream asynchronously.
-    pub async fn flush_async(&mut self) -> Result<(), Error> {
+    pub async fn flush_async(&mut self) -> Result<()> {
         self.events_writer.flush_async().await?;
         Ok(())
     }

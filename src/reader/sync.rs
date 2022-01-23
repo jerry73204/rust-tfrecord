@@ -1,6 +1,6 @@
 use super::RecordReaderConfig;
 use crate::{
-    error::Error,
+    error::Result,
     markers::GenericRecord,
     protobuf::{Event, Example as RawExample},
     types::Example,
@@ -52,7 +52,7 @@ where
     T: GenericRecord,
 {
     /// Construct a [RecordReader] from a path.
-    pub fn open<P>(path: P, config: RecordReaderConfig) -> Result<Self, Error>
+    pub fn open<P>(path: P, config: RecordReaderConfig) -> Result<Self>
     where
         P: AsRef<Path>,
     {
@@ -67,11 +67,11 @@ where
     T: GenericRecord,
     R: Read,
 {
-    type Item = Result<T, Error>;
+    type Item = Result<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let reader = self.reader.as_mut()?;
-        let bytes: Option<Result<_, _>> =
+        let bytes: Option<Result<_>> =
             crate::io::sync::try_read_record(reader, self.check_integrity).transpose();
 
         if bytes.is_none() {

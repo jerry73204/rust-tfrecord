@@ -1,6 +1,6 @@
 use super::RecordReaderConfig;
 use crate::{
-    error::Error,
+    error::{Error, Result},
     markers::GenericRecord,
     protobuf::{Event, Example as RawExample},
     types::Example,
@@ -77,7 +77,7 @@ where
     /// `open<Example, _>()`, or you can use [bytes_open](RecordStreamInit::bytes_open),
     /// [raw_examples_open](RecordStreamInit::raw_examples_open) and
     /// [examples_open](RecordStreamInit::examples_open) aliases.
-    pub async fn open<P>(path: P, config: RecordReaderConfig) -> Result<Self, Error>
+    pub async fn open<P>(path: P, config: RecordReaderConfig) -> Result<Self>
     where
         T: GenericRecord,
         P: AsRef<Path>,
@@ -93,7 +93,7 @@ where
     T: GenericRecord,
     R: AsyncRead,
 {
-    type Item = Result<T, Error>;
+    type Item = Result<T>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         self.project().stream.poll_next(cx)

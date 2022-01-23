@@ -1,13 +1,10 @@
 use std::mem;
 
-use crate::error::Error;
+use crate::error::{Error, Result};
 use futures::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 /// async/await version analogous to blocking [try_read_record](super::blocking::try_read_record).
-pub async fn try_read_record<R>(
-    reader: &mut R,
-    check_integrity: bool,
-) -> Result<Option<Vec<u8>>, Error>
+pub async fn try_read_record<R>(reader: &mut R, check_integrity: bool) -> Result<Option<Vec<u8>>>
 where
     R: AsyncRead + Unpin,
 {
@@ -20,7 +17,7 @@ where
 }
 
 /// async/await version analogous to blocking [try_read_len](super::blocking::try_read_len).
-pub async fn try_read_len<R>(reader: &mut R, check_integrity: bool) -> Result<Option<usize>, Error>
+pub async fn try_read_len<R>(reader: &mut R, check_integrity: bool) -> Result<Option<usize>>
 where
     R: AsyncRead + Unpin,
 {
@@ -52,7 +49,7 @@ pub async fn try_read_record_data<R>(
     reader: &mut R,
     len: usize,
     check_integrity: bool,
-) -> Result<Vec<u8>, Error>
+) -> Result<Vec<u8>>
 where
     R: AsyncRead + Unpin,
 {
@@ -74,7 +71,7 @@ where
 }
 
 /// async/await version analogous to blocking [try_write_record](super::blocking::try_write_record).
-pub async fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<(), Error>
+pub async fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<()>
 where
     W: AsyncWrite + Unpin,
 {
@@ -100,7 +97,7 @@ where
     Ok(())
 }
 
-async fn try_read_exact<R, B>(reader: &mut R, mut buf: B) -> Result<Option<B>, Error>
+async fn try_read_exact<R, B>(reader: &mut R, mut buf: B) -> Result<Option<B>>
 where
     R: AsyncRead + Unpin,
     B: AsMut<[u8]>,

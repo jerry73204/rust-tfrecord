@@ -1,6 +1,6 @@
 use super::{EventWriter, EventWriterConfig};
 use crate::{
-    error::Error,
+    error::{Error, Result},
     markers::TryInfoImageList,
     protobuf::{
         summary::{Audio, Image},
@@ -22,7 +22,7 @@ use std::{
 
 impl EventWriter<BufWriter<File>> {
     /// Construct an [EventWriter] by creating a file at specified path.
-    pub fn create<P>(path: P, config: EventWriterConfig) -> Result<Self, Error>
+    pub fn create<P>(path: P, config: EventWriterConfig) -> Result<Self>
     where
         P: AsRef<Path>,
     {
@@ -35,7 +35,7 @@ impl EventWriter<BufWriter<File>> {
         prefix: P,
         file_name_suffix: S,
         config: EventWriterConfig,
-    ) -> Result<EventWriter<BufWriter<File>>, Error>
+    ) -> Result<EventWriter<BufWriter<File>>>
     where
         P: Into<Cow<'a, str>>,
         S: Into<Cow<'b, str>>,
@@ -52,7 +52,7 @@ where
     W: Write,
 {
     /// Construct an [EventWriter] from a type with [Write] trait.
-    pub fn from_writer(writer: W, config: EventWriterConfig) -> Result<Self, Error>
+    pub fn from_writer(writer: W, config: EventWriterConfig) -> Result<Self>
     where
         W: Write,
     {
@@ -70,7 +70,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         value: f32,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_scalar(tag, value)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -86,7 +86,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         histogram: impl IntoHistogram,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_histogram(tag, histogram)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -102,7 +102,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         tensor: impl TryInto<TensorProto, Error = impl Into<Error>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_tensor(tag, tensor)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -118,7 +118,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         image: impl TryInto<Image, Error = impl Into<Error>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_image(tag, image)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -134,7 +134,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         images: impl TryInfoImageList<Error = impl Into<Error>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_image_list(tag, images)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -150,7 +150,7 @@ where
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
         audio: impl TryInto<Audio, Error = impl Into<Error>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let summary = Summary::from_audio(tag, audio)?;
         let event = event_meta.into().build_with_summary(summary);
         self.events_writer.send(event)?;
@@ -167,7 +167,7 @@ where
     // }
 
     /// Write a custom event.
-    pub fn write_event(&mut self, event: Event) -> Result<(), Error> {
+    pub fn write_event(&mut self, event: Event) -> Result<()> {
         self.events_writer.send(event)?;
         if self.auto_flush {
             self.events_writer.flush()?;
@@ -176,7 +176,7 @@ where
     }
 
     /// Flush this output stream.
-    pub fn flush(&mut self) -> Result<(), Error> {
+    pub fn flush(&mut self) -> Result<()> {
         self.events_writer.flush()?;
         Ok(())
     }

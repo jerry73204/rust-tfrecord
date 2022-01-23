@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{Error, Result};
 use std::io::prelude::*;
 
 /// Try to extract raw bytes of a record from a generic reader.
@@ -6,7 +6,7 @@ use std::io::prelude::*;
 /// It reads the record length and data from a generic reader,
 /// and verifies the checksum if requested.
 /// If the end of file is reached, it returns `Ok(None)`.
-pub fn try_read_record<R>(reader: &mut R, check_integrity: bool) -> Result<Option<Vec<u8>>, Error>
+pub fn try_read_record<R>(reader: &mut R, check_integrity: bool) -> Result<Option<Vec<u8>>>
 where
     R: Read,
 {
@@ -21,7 +21,7 @@ where
 /// Try to read the record length from a generic reader.
 ///
 /// It is internally called by [try_read_record]. It returns `Ok(None)` if reaching the end of file.
-pub fn try_read_len<R>(reader: &mut R, check_integrity: bool) -> Result<Option<usize>, Error>
+pub fn try_read_len<R>(reader: &mut R, check_integrity: bool) -> Result<Option<usize>>
 where
     R: Read,
 {
@@ -50,11 +50,7 @@ where
 /// Read the record raw bytes with given length from a generic reader.
 ///
 /// It is internally called by [try_read_record].
-pub fn try_read_record_data<R>(
-    reader: &mut R,
-    len: usize,
-    check_integrity: bool,
-) -> Result<Vec<u8>, Error>
+pub fn try_read_record_data<R>(reader: &mut R, len: usize, check_integrity: bool) -> Result<Vec<u8>>
 where
     R: Read,
 {
@@ -76,7 +72,7 @@ where
 }
 
 /// Write the raw record bytes to a generic writer.
-pub fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<(), Error>
+pub fn try_write_record<W>(writer: &mut W, bytes: Vec<u8>) -> Result<()>
 where
     W: Write,
 {
@@ -102,7 +98,7 @@ where
     Ok(())
 }
 
-fn try_read_exact<R, B>(reader: &mut R, mut buf: B) -> Result<Option<B>, Error>
+fn try_read_exact<R, B>(reader: &mut R, mut buf: B) -> Result<Option<B>>
 where
     R: Read,
     B: AsMut<[u8]>,

@@ -5,7 +5,10 @@
 //! The module is available when the `dataset` feature is enabled.
 //! The [Dataset] type can be constructed using [DatasetInit] initializer.
 
-use crate::{error::Error, markers::GenericRecord};
+use crate::{
+    error::{Error, Result},
+    markers::GenericRecord,
+};
 use async_std::{
     fs::File,
     io::BufReader,
@@ -57,7 +60,7 @@ impl DatasetInit {
     /// If the path ends with "/", it searchs for all files under the directory.
     /// Otherwise, it lists the files with the path prefix.
     /// The enumerated paths will be sorted in alphabetical order.
-    pub async fn from_prefix(self, prefix: &str) -> Result<Dataset, Error> {
+    pub async fn from_prefix(self, prefix: &str) -> Result<Dataset> {
         // get parent dir and file name prefix
         let prefix_path: &Path = prefix.as_ref();
 
@@ -85,13 +88,7 @@ impl DatasetInit {
                 }
 
                 let path = entry.path();
-                let file_name =
-                    entry
-                        .file_name()
-                        .into_string()
-                        .map_err(|_| Error::UnicodeError {
-                            desc: format!(r#"the file path "{}" is not Unicode"#, path.display()),
-                        })?;
+                let file_name = entry.file_name().into_string().unwrap(); // TODO
 
                 match file_name_prefix_opt {
                     Some(file_name_prefix) => {
@@ -118,7 +115,7 @@ impl DatasetInit {
     ///
     /// It assumes every path is a TFRecord file, otherwise it returns error.
     /// The order of the paths affects the order of record indexes..
-    pub async fn from_paths<P>(self, paths: &[P]) -> Result<Dataset, Error>
+    pub async fn from_paths<P>(self, paths: &[P]) -> Result<Dataset>
     where
         P: AsRef<Path>,
     {
@@ -235,7 +232,7 @@ impl Dataset {
     /// Get an example by an index number.
     ///
     /// It returns `None` if the index number is greater than or equal to [num_records](Dataset::num_records).
-    pub async fn get<T>(&mut self, index: usize) -> Result<Option<T>, Error>
+    pub async fn get<T>(&mut self, index: usize) -> Result<Option<T>>
     where
         T: GenericRecord,
     {
@@ -267,7 +264,7 @@ impl Dataset {
         })
     }
 
-    async fn open_file<P>(&mut self, path: P) -> Result<&mut BufReader<File>, Error>
+    async fn open_file<P>(&mut self, path: P) -> Result<&mut BufReader<File>>
     where
         P: AsRef<Path>,
     {
@@ -320,7 +317,7 @@ where
     })
 }
 
-async fn try_read_record_at<R>(reader: &mut R, offset: u64, len: usize) -> Result<Vec<u8>, Error>
+async fn try_read_record_at<R>(reader: &mut R, offset: u64, len: usize) -> Result<Vec<u8>>
 where
     R: AsyncReadExt + AsyncSeekExt + Unpin,
 {
