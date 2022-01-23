@@ -1,5 +1,6 @@
-use super::RecordWriter;
-use crate::{error::Result, markers::GenericRecord};
+use crate::{
+    error::Result, markers::GenericRecord, protobuf::Example as RawExample, types::Example,
+};
 use std::{
     fs::File,
     io::{BufWriter, Write},
@@ -7,13 +8,30 @@ use std::{
     path::Path,
 };
 
+/// Alias to [RecordWriter] which input record type [Vec<u8>](Vec).
+pub type BytesWriter<W> = RecordWriter<Vec<u8>, W>;
+
+/// Alias to [RecordWriter] which input record type [RawExample].
+pub type RawExampleWriter<W> = RecordWriter<RawExample, W>;
+
+/// Alias to [RecordWriter] which input record type [Example].
+pub type ExampleWriter<W> = RecordWriter<Example, W>;
+
+/// The record writer.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RecordWriter<T, W>
+where
+    T: GenericRecord,
+{
+    writer: W,
+    _phantom: PhantomData<T>,
+}
+
 impl<T> RecordWriter<T, BufWriter<File>>
 where
     T: GenericRecord,
 {
-    /// Construct a [RecordWriter] by creating a file at specified path.
-    ///
-    /// The constructed [RecordWriter] enables the blocking [send](RecordWriter::send) method.
+    /// Build a writer writing to a new file.
     pub fn create<P>(path: P) -> Result<Self>
     where
         P: AsRef<Path>,
@@ -28,9 +46,7 @@ where
     T: GenericRecord,
     W: Write,
 {
-    /// Construct a [RecordWriter] from a type with [Write] trait.
-    ///
-    /// The constructed [RecordWriter] enables the blocking [send](RecordWriter::send) method.
+    /// Build a writer from a writer with [Write] trait.
     pub fn from_writer(writer: W) -> Result<Self> {
         Ok(Self {
             writer,

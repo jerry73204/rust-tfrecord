@@ -33,12 +33,7 @@ pub mod writer;
 pub use error::{Error, Result};
 pub use markers::GenericRecord;
 pub use protobuf::{Event, Example as RawExample, Summary};
-
-pub use reader::{
-    BytesIter, EventIter, ExampleIter, RawExampleIter, RecordIter, RecordReaderConfig,
-};
-#[cfg(feature = "async")]
-pub use reader::{BytesStream, EventStream, ExampleStream, RawExampleStream, RecordStream};
-pub use summary::{EventMeta, EventWriter, EventWriterConfig};
-pub use types::{Example, Feature, Histogram};
-pub use writer::{BytesWriter, ExampleWriter, RawExampleWriter, RecordWriter};
+pub use reader::*;
+pub use summary::*;
+pub use types::*;
+pub use writer::*;

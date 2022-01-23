@@ -1,4 +1,4 @@
-use super::{EventWriter, EventWriterConfig};
+use super::EventWriterConfig;
 use crate::{
     error::{Error, Result},
     markers::TryInfoImageList,
@@ -8,24 +8,67 @@ use crate::{
     },
     protobuf_ext::IntoHistogram,
     summary::event::EventMeta,
-    writer::RecordWriter,
+    writer::RecordAsyncWriter,
 };
 use async_std::{fs::File, io::BufWriter, path::Path};
 use futures::io::AsyncWrite;
 use std::{borrow::Cow, convert::TryInto, string::ToString};
 
-impl EventWriter<BufWriter<File>> {
-    /// Construct an [EventWriter] by creating a file at specified path.
-    pub async fn create_async<P>(path: P, config: EventWriterConfig) -> Result<Self>
+/// The event writer.
+///
+/// It provies `write_scalar`, `write_image` methods, etc.
+///
+/// It can be built from a writer using [from_writer](EventAsyncWriter::from_writer), or write a new file
+/// specified by path prefix using [from_writer](EventAsyncWriter::from_prefix).
+///
+/// ```rust
+/// # async_std::task::block_on(async move {
+/// use anyhow::Result;
+/// use std::time::SystemTime;
+/// use tch::{kind::FLOAT_CPU, Tensor};
+/// use tfrecord::EventAsyncWriter;
+///
+/// let mut writer = EventAsyncWriter::from_prefix("log_dir/myprefix-", "", Default::default())
+///     .await
+///     .unwrap();
+///
+/// // step = 0, scalar = 3.14
+/// writer.write_scalar("my_scalar", 0, 3.14).await?;
+///
+/// // step = 1, specified wall time, histogram of [1, 2, 3, 4]
+/// writer
+///     .write_histogram("my_histogram", (1, SystemTime::now()), vec![1, 2, 3, 4])
+///     .await?;
+///
+/// // step = 2, specified raw UNIX time in nanoseconds, random tensor of shape [8, 3, 16, 16]
+/// writer
+///     .write_tensor(
+///         "my_tensor",
+///         (2, 1.594449514712264e+18),
+///         Tensor::randn(&[8, 3, 16, 16], FLOAT_CPU),
+///     )
+///     .await?;
+/// # anyhow::Ok(())
+/// # }).unwrap();
+/// ```
+#[derive(Debug, Clone, PartialEq)]
+pub struct EventAsyncWriter<W> {
+    auto_flush: bool,
+    events_writer: RecordAsyncWriter<Event, W>,
+}
+
+impl EventAsyncWriter<BufWriter<File>> {
+    /// Build a writer writing events to a file.
+    pub async fn create<P>(path: P, config: EventWriterConfig) -> Result<Self>
     where
         P: AsRef<Path>,
     {
         let writer = BufWriter::new(File::create(path).await?);
-        Self::from_async_writer(writer, config)
+        Self::from_writer(writer, config)
     }
 
-    /// Construct an asynchronous [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
-    pub async fn from_prefix_async<'a, 'b, P, S>(
+    /// Build a writer writing events to a file, which path is specified by a path prefix and file name suffix.
+    pub async fn from_prefix<'a, 'b, P, S>(
         prefix: P,
         file_name_suffix: S,
         config: EventWriterConfig,
@@ -37,25 +80,25 @@ impl EventWriter<BufWriter<File>> {
         let (dir_prefix, file_name) = super::create_tf_style_path(prefix, file_name_suffix)?;
         async_std::fs::create_dir_all(&dir_prefix).await?;
         let path = dir_prefix.join(file_name);
-        Self::create_async(path, config).await
+        Self::create(path, config).await
     }
 }
 
-impl<W> EventWriter<W>
+impl<W> EventAsyncWriter<W>
 where
     W: AsyncWrite + Unpin,
 {
-    /// Construct an [EventWriter] from a type with [AsyncWriteExt] trait.
-    pub fn from_async_writer(writer: W, config: EventWriterConfig) -> Result<Self> {
+    /// Build from a writer with [AsyncWrite] trait.
+    pub fn from_writer(writer: W, config: EventWriterConfig) -> Result<Self> {
         let EventWriterConfig { auto_flush } = config;
         Ok(Self {
             auto_flush,
-            events_writer: RecordWriter::from_async_writer(writer)?,
+            events_writer: RecordAsyncWriter::from_writer(writer)?,
         })
     }
 
     /// Write a scalar summary asynchronously.
-    pub async fn write_scalar_async(
+    pub async fn write_scalar(
         &mut self,
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
@@ -63,15 +106,15 @@ where
     ) -> Result<()> {
         let summary = Summary::from_scalar(tag, value)?;
         let event = event_meta.into().build_with_summary(summary);
-        self.events_writer.send_async(event).await?;
+        self.events_writer.send(event).await?;
         if self.auto_flush {
-            self.events_writer.flush_async().await?;
+            self.events_writer.flush().await?;
         }
         Ok(())
     }
 
     /// Write a histogram summary asynchronously.
-    pub async fn write_histogram_async(
+    pub async fn write_histogram(
         &mut self,
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
@@ -79,15 +122,15 @@ where
     ) -> Result<()> {
         let summary = Summary::from_histogram(tag, histogram)?;
         let event = event_meta.into().build_with_summary(summary);
-        self.events_writer.send_async(event).await?;
+        self.events_writer.send(event).await?;
         if self.auto_flush {
-            self.events_writer.flush_async().await?;
+            self.events_writer.flush().await?;
         }
         Ok(())
     }
 
     /// Write a tensor summary asynchronously.
-    pub async fn write_tensor_async(
+    pub async fn write_tensor(
         &mut self,
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
@@ -95,15 +138,15 @@ where
     ) -> Result<()> {
         let summary = Summary::from_tensor(tag, tensor)?;
         let event = event_meta.into().build_with_summary(summary);
-        self.events_writer.send_async(event).await?;
+        self.events_writer.send(event).await?;
         if self.auto_flush {
-            self.events_writer.flush_async().await?;
+            self.events_writer.flush().await?;
         }
         Ok(())
     }
 
     /// Write an image summary asynchronously.
-    pub async fn write_image_async(
+    pub async fn write_image(
         &mut self,
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
@@ -111,15 +154,15 @@ where
     ) -> Result<()> {
         let summary = Summary::from_image(tag, image)?;
         let event = event_meta.into().build_with_summary(summary);
-        self.events_writer.send_async(event).await?;
+        self.events_writer.send(event).await?;
         if self.auto_flush {
-            self.events_writer.flush_async().await?;
+            self.events_writer.flush().await?;
         }
         Ok(())
     }
 
     /// Write a summary with multiple images asynchronously.
-    pub async fn write_image_list_async(
+    pub async fn write_image_list(
         &mut self,
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
@@ -127,15 +170,15 @@ where
     ) -> Result<()> {
         let summary = Summary::from_image_list(tag, images)?;
         let event = event_meta.into().build_with_summary(summary);
-        self.events_writer.send_async(event).await?;
+        self.events_writer.send(event).await?;
         if self.auto_flush {
-            self.events_writer.flush_async().await?;
+            self.events_writer.flush().await?;
         }
         Ok(())
     }
 
     /// Write an audio summary asynchronously.
-    pub async fn write_audio_async(
+    pub async fn write_audio(
         &mut self,
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
@@ -143,25 +186,25 @@ where
     ) -> Result<()> {
         let summary = Summary::from_audio(tag, audio)?;
         let event = event_meta.into().build_with_summary(summary);
-        self.events_writer.send_async(event).await?;
+        self.events_writer.send(event).await?;
         if self.auto_flush {
-            self.events_writer.flush_async().await?;
+            self.events_writer.flush().await?;
         }
         Ok(())
     }
 
     /// Write a custom event asynchronously.
-    pub async fn write_event_async(&mut self, event: Event) -> Result<()> {
-        self.events_writer.send_async(event).await?;
+    pub async fn write_event(&mut self, event: Event) -> Result<()> {
+        self.events_writer.send(event).await?;
         if self.auto_flush {
-            self.events_writer.flush_async().await?;
+            self.events_writer.flush().await?;
         }
         Ok(())
     }
 
     /// Flush this output stream asynchronously.
-    pub async fn flush_async(&mut self) -> Result<()> {
-        self.events_writer.flush_async().await?;
+    pub async fn flush(&mut self) -> Result<()> {
+        self.events_writer.flush().await?;
         Ok(())
     }
 }

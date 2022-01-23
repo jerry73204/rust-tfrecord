@@ -7,28 +7,10 @@
 //! The type aliases [ExampleWriter], [RawExampleWriter] and [BytesWriter]
 //! are [RecordWriter] writing specific record types.
 
+#[cfg(feature = "async")]
 mod r#async;
+#[cfg(feature = "async")]
+pub use r#async::*;
+
 mod sync;
-
-use crate::{markers::GenericRecord, protobuf::Example as RawExample, types::Example};
-use std::marker::PhantomData;
-
-/// Alias to [RecordWriter] which input record type is [Vec<u8>](Vec).
-pub type BytesWriter<W> = RecordWriter<Vec<u8>, W>;
-/// Alias to [RecordWriter] which input record type is [RawExample].
-pub type RawExampleWriter<W> = RecordWriter<RawExample, W>;
-/// Alias to [RecordWriter] which input record type is [Example].
-pub type ExampleWriter<W> = RecordWriter<Example, W>;
-
-/// The writer type.
-///
-/// It provides blocing [RecordWriter::send] and analogues [RecordWriter::send_async] methods
-/// to write records.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RecordWriter<T, W>
-where
-    T: GenericRecord,
-{
-    writer: W,
-    _phantom: PhantomData<T>,
-}
+pub use sync::*;

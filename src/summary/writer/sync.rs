@@ -1,4 +1,4 @@
-use super::{EventWriter, EventWriterConfig};
+use super::EventWriterConfig;
 use crate::{
     error::{Error, Result},
     markers::TryInfoImageList,
@@ -20,8 +20,45 @@ use std::{
     string::ToString,
 };
 
+/// The event writer.
+///
+/// It provies `write_scalar`, `write_image` methods, etc.
+///
+/// It can be built from a writer using [from_writer](EventWriter::from_writer), or write a new file
+/// specified by path prefix using [from_writer](EventWriter::from_prefix).
+///
+/// ```rust
+/// # async_std::task::block_on(async move {
+/// use anyhow::Result;
+/// use std::time::SystemTime;
+/// use tch::{kind::FLOAT_CPU, Tensor};
+/// use tfrecord::EventWriter;
+///
+/// let mut writer = EventWriter::from_prefix("log_dir/myprefix-", "", Default::default()).unwrap();
+///
+/// // step = 0, scalar = 3.14
+/// writer.write_scalar("my_scalar", 0, 3.14)?;
+///
+/// // step = 1, specified wall time, histogram of [1, 2, 3, 4]
+/// writer.write_histogram("my_histogram", (1, SystemTime::now()), vec![1, 2, 3, 4])?;
+///
+/// // step = 2, specified raw UNIX time in nanoseconds, random tensor of shape [8, 3, 16, 16]
+/// writer.write_tensor(
+///     "my_tensor",
+///     (2, 1.594449514712264e+18),
+///     Tensor::randn(&[8, 3, 16, 16], FLOAT_CPU),
+/// )?;
+/// # anyhow::Ok(())
+/// # }).unwrap();
+/// ```
+#[derive(Debug, Clone, PartialEq)]
+pub struct EventWriter<W> {
+    auto_flush: bool,
+    events_writer: RecordWriter<Event, W>,
+}
+
 impl EventWriter<BufWriter<File>> {
-    /// Construct an [EventWriter] by creating a file at specified path.
+    /// Build a writer writing events to a file.
     pub fn create<P>(path: P, config: EventWriterConfig) -> Result<Self>
     where
         P: AsRef<Path>,
@@ -30,7 +67,7 @@ impl EventWriter<BufWriter<File>> {
         Self::from_writer(writer, config)
     }
 
-    /// Construct an [EventWriter] with TensorFlow-style path prefix and an optional file name suffix.
+    /// Build a writer writing events to a file, which path is specified by a path prefix and file name suffix.
     pub fn from_prefix<'a, 'b, P, S>(
         prefix: P,
         file_name_suffix: S,
@@ -51,7 +88,7 @@ impl<W> EventWriter<W>
 where
     W: Write,
 {
-    /// Construct an [EventWriter] from a type with [Write] trait.
+    /// Build from a writer with [AsyncWrite] trait.
     pub fn from_writer(writer: W, config: EventWriterConfig) -> Result<Self>
     where
         W: Write,

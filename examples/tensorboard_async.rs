@@ -5,7 +5,7 @@ mod async_example {
     use rand::seq::SliceRandom;
     use rand_distr::{Distribution, Normal};
     use std::{f32::consts::PI, io, path::PathBuf, time::Duration};
-    use tfrecord::EventWriter;
+    use tfrecord::EventAsyncWriter;
 
     lazy_static::lazy_static! {
         pub static ref IMAGE_URLS: &'static [&'static str] = &[
@@ -52,7 +52,7 @@ mod async_example {
 
         // init writer
         let mut writer =
-            EventWriter::from_prefix_async(get_path_prefix(), "", Default::default()).await?;
+            EventAsyncWriter::from_prefix(get_path_prefix(), "", Default::default()).await?;
         let mut rng = rand::thread_rng();
 
         // loop
@@ -62,7 +62,7 @@ mod async_example {
             // scalar
             {
                 let value: f32 = (step as f32 * PI / 8.0).sin();
-                writer.write_scalar_async("scalar", step, value).await?;
+                writer.write_scalar("scalar", step, value).await?;
             }
 
             // histogram
@@ -72,15 +72,13 @@ mod async_example {
                     .sample_iter(&mut rng)
                     .take(1024)
                     .collect::<Vec<f32>>();
-                writer
-                    .write_histogram_async("histogram", step, values)
-                    .await?;
+                writer.write_histogram("histogram", step, values).await?;
             }
 
             // image
             {
                 let image = images.choose(&mut rng).unwrap();
-                writer.write_image_async("image", step, image).await?;
+                writer.write_image("image", step, image).await?;
             }
 
             async_std::task::sleep(Duration::from_millis(100)).await;
