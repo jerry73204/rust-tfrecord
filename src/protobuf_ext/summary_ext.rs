@@ -1,11 +1,11 @@
 use super::IntoHistogram;
 use crate::{
     error::Error,
-    markers::TryInfoImageList,
     protobuf::{
         summary::{value, Audio, Image, Value},
         Summary, TensorProto,
     },
+    protobuf_ext::IntoImageList,
 };
 
 impl Summary {
@@ -73,35 +73,20 @@ impl Summary {
     /// Build a summary with multiple images.
     pub fn from_image_list(
         tag: impl ToString,
-        images: impl TryInfoImageList<Error = impl Into<Error>>,
+        images: impl IntoImageList,
     ) -> Result<Summary, Error> {
-        let image_protos = images.try_into_image_list().map_err(Into::into)?;
+        let image_protos = images.into_image_list()?;
 
-        let values = match image_protos.len() {
-            1 => {
-                let image_proto = image_protos.into_iter().next().unwrap();
-                let values = vec![Value {
-                    node_name: "".into(),
-                    tag: format!("{}/image", tag.to_string()),
-                    metadata: None,
-                    value: Some(value::Value::Image(image_proto)),
-                }];
-                values
-            }
-            _ => {
-                let values: Vec<_> = image_protos
-                    .into_iter()
-                    .enumerate()
-                    .map(|(index, image_proto)| Value {
-                        node_name: "".into(),
-                        tag: format!("{}/image/{}", tag.to_string(), index),
-                        metadata: None,
-                        value: Some(value::Value::Image(image_proto)),
-                    })
-                    .collect();
-                values
-            }
-        };
+        let values: Vec<_> = image_protos
+            .into_iter()
+            .enumerate()
+            .map(|(index, image_proto)| Value {
+                node_name: "".into(),
+                tag: format!("{}/image/{}", tag.to_string(), index),
+                metadata: None,
+                value: Some(value::Value::Image(image_proto)),
+            })
+            .collect();
 
         let summary = Summary { value: values };
         Ok(summary)

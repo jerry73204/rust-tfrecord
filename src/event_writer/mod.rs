@@ -71,5 +71,5 @@ where
     .into_iter()
     .collect();
 
-    Ok((dir.to_owned(), file_name))
+    Ok((dir, file_name))
 }

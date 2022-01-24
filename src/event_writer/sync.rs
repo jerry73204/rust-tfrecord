@@ -2,12 +2,11 @@ use super::EventWriterConfig;
 use crate::{
     error::{Error, Result},
     event::EventMeta,
-    markers::TryInfoImageList,
     protobuf::{
         summary::{Audio, Image},
         Event, Summary, TensorProto,
     },
-    protobuf_ext::IntoHistogram,
+    protobuf_ext::{IntoHistogram, IntoImageList},
     record_writer::RecordWriter,
 };
 use std::{
@@ -170,7 +169,7 @@ where
         &mut self,
         tag: impl ToString,
         event_meta: impl Into<EventMeta>,
-        images: impl TryInfoImageList<Error = impl Into<Error>>,
+        images: impl IntoImageList,
     ) -> Result<()> {
         let summary = Summary::from_image_list(tag, images)?;
         let event = event_meta.into().build_with_summary(summary);

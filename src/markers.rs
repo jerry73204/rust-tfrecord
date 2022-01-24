@@ -2,7 +2,7 @@
 
 use crate::{
     error::Error,
-    protobuf::{summary::Image, Event, Example as RawExample},
+    protobuf::{Event, Example as RawExample},
     types::Example,
 };
 use prost::Message;
@@ -67,11 +67,4 @@ impl GenericRecord for Event {
         Event::encode(&record, &mut bytes)?;
         Ok(bytes)
     }
-}
-
-/// A trait marking if the type can be converted to a list of imgaes.
-pub trait TryInfoImageList {
-    type Error;
-
-    fn try_into_image_list(self) -> Result<Vec<Image>, Self::Error>;
 }

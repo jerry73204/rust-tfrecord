@@ -1,3 +1,8 @@
+use crate::{
+    error::{Error, Result},
+    protobuf::summary::Image,
+};
+
 /// Enumerations of color spaces in [Image](crate::protobuf::summary::Image)'s colorspace field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
@@ -20,6 +25,31 @@ impl ColorSpace {
             ColorSpace::Rgba => 4,
             ColorSpace::DigitalYuv => 3,
             ColorSpace::Bgra => 4,
+        }
+    }
+}
+
+pub use into_image_list::*;
+mod into_image_list {
+    use super::*;
+
+    pub trait IntoImageList {
+        fn into_image_list(self) -> Result<Vec<Image>>;
+    }
+
+    impl<I, T> IntoImageList for I
+    where
+        I: IntoIterator<Item = T>,
+        T: TryInto<Image, Error = Error>,
+    {
+        fn into_image_list(self) -> Result<Vec<Image>> {
+            self.into_iter().map(|image| image.try_into()).collect()
+        }
+    }
+
+    impl IntoImageList for Image {
+        fn into_image_list(self) -> Result<Vec<Image>> {
+            Ok(vec![self])
         }
     }
 }
@@ -163,6 +193,7 @@ mod with_tch {
     use super::*;
     use crate::{error::Error, protobuf::summary::Image};
     use image::{png::PngEncoder, ColorType};
+    use itertools::Itertools as _;
     use std::{io::Cursor, ops::Deref, slice};
     use tch::{Kind, Tensor};
 
@@ -188,120 +219,216 @@ mod with_tch {
         HWC,
     }
 
-    /// Enumeration of owned or borrowed [Tensor].
-    #[derive(Debug, PartialEq)]
-    pub enum TensorRef<'a> {
-        Owned(Tensor),
-        Ref(&'a Tensor),
-    }
+    pub use tensor_ref::*;
+    mod tensor_ref {
+        use super::*;
 
-    impl<'a> Deref for TensorRef<'a> {
-        type Target = Tensor;
+        /// Enumeration of owned or borrowed [Tensor].
+        #[derive(Debug, PartialEq)]
+        pub enum TensorRef<'a> {
+            Owned(Tensor),
+            Ref(&'a Tensor),
+        }
 
-        fn deref(&self) -> &Self::Target {
-            match self {
-                TensorRef::Owned(tensor) => tensor,
-                TensorRef::Ref(tensor) => tensor,
+        impl<'a> Deref for TensorRef<'a> {
+            type Target = Tensor;
+
+            fn deref(&self) -> &Self::Target {
+                match self {
+                    TensorRef::Owned(tensor) => tensor,
+                    TensorRef::Ref(tensor) => tensor,
+                }
+            }
+        }
+
+        impl From<Tensor> for TensorRef<'static> {
+            fn from(from: Tensor) -> Self {
+                Self::Owned(from)
+            }
+        }
+
+        impl<'a> From<&'a Tensor> for TensorRef<'a> {
+            fn from(from: &'a Tensor) -> Self {
+                Self::Ref(from)
             }
         }
     }
 
-    impl From<Tensor> for TensorRef<'static> {
-        fn from(from: Tensor) -> Self {
-            Self::Owned(from)
-        }
-    }
+    pub use tch_tensor_as_image::*;
+    mod tch_tensor_as_image {
+        use super::*;
 
-    impl<'a> From<&'a Tensor> for TensorRef<'a> {
-        fn from(from: &'a Tensor) -> Self {
-            Self::Ref(from)
-        }
-    }
-
-    /// [tch]'s [Tensor] with additional image properties.
-    #[derive(Debug, PartialEq)]
-    pub struct TchTensorAsImage<'a> {
-        color_space: ColorSpace,
-        order: TchChannelOrder,
-        tensor: TensorRef<'a>,
-    }
-
-    impl<'a> TchTensorAsImage<'a> {
-        pub fn new<T>(
+        /// [tch]'s [Tensor] with additional image properties.
+        #[derive(Debug, PartialEq)]
+        pub struct TchTensorAsImage<'a> {
             color_space: ColorSpace,
             order: TchChannelOrder,
-            tensor: T,
-        ) -> Result<Self, Error>
-        where
-            T: Into<TensorRef<'a>>,
-        {
-            let tensor = tensor.into();
-            let (s1, s2, s3) = tensor.size3().map_err(|_| -> Error {
-                todo!();
-            })?;
-            let (sc, _sh, _sw) = match order {
-                TchChannelOrder::CHW => (s1, s2, s3),
-                TchChannelOrder::HWC => (s3, s1, s2),
-            };
+            tensor: TensorRef<'a>,
+        }
 
-            if color_space.num_channels() != sc as usize {
-                todo!();
+        impl<'a> TchTensorAsImage<'a> {
+            pub fn new<T>(
+                color_space: ColorSpace,
+                order: TchChannelOrder,
+                tensor: T,
+            ) -> Result<Self, Error>
+            where
+                T: Into<TensorRef<'a>>,
+            {
+                let tensor = tensor.into();
+                let (s1, s2, s3) = tensor.size3().map_err(|_| -> Error {
+                    todo!();
+                })?;
+                let (sc, _sh, _sw) = match order {
+                    TchChannelOrder::CHW => (s1, s2, s3),
+                    TchChannelOrder::HWC => (s3, s1, s2),
+                };
+
+                if color_space.num_channels() != sc as usize {
+                    todo!();
+                }
+
+                Ok(Self {
+                    color_space,
+                    order,
+                    tensor,
+                })
             }
+        }
 
-            Ok(Self {
-                color_space,
-                order,
-                tensor,
-            })
+        // to Image
+        impl<'a> TryFrom<TchTensorAsImage<'a>> for Image {
+            type Error = Error;
+
+            fn try_from(from: TchTensorAsImage) -> Result<Self, Self::Error> {
+                use TchChannelOrder as O;
+
+                // CHW to HWC
+                let hwc_tensor = match from.order {
+                    O::HWC => from.tensor.shallow_clone(),
+                    O::CHW => from.tensor.f_permute(&[1, 2, 0])?,
+                };
+
+                super::hwc_tensor_to_image(&hwc_tensor, from.color_space)
+            }
         }
     }
 
-    // to Image
-    impl<'a> TryFrom<TchTensorAsImage<'a>> for Image {
-        type Error = Error;
+    pub use tch_tensor_as_image_list::*;
+    mod tch_tensor_as_image_list {
+        use super::*;
 
-        fn try_from(from: TchTensorAsImage) -> Result<Self, Self::Error> {
-            use ColorSpace as S;
-            use TchChannelOrder as O;
+        /// [tch]'s [Tensor] with additional image properties.
+        #[derive(Debug, PartialEq)]
+        pub struct TchTensorAsImageList<'a> {
+            color_space: ColorSpace,
+            order: TchChannelOrder,
+            tensor: TensorRef<'a>,
+        }
 
-            // CHW to HWC
-            let hwc_tensor = match from.order {
-                O::HWC => from.tensor.shallow_clone(),
-                O::CHW => from.tensor.f_permute(&[1, 2, 0])?,
-            };
-            let (nh, nw, _nc) = hwc_tensor.size3().unwrap();
+        impl<'a> TchTensorAsImageList<'a> {
+            pub fn new<T>(
+                color_space: ColorSpace,
+                order: TchChannelOrder,
+                tensor: T,
+            ) -> Result<Self, Error>
+            where
+                T: Into<TensorRef<'a>>,
+            {
+                Ok(Self {
+                    color_space,
+                    order,
+                    tensor: tensor.into(),
+                })
+            }
+        }
 
-            // normalize values to [0, 255]
-            let normalized_tensor = normalized_tensor(&hwc_tensor)?;
+        impl<'a> IntoImageList for TchTensorAsImageList<'a> {
+            fn into_image_list(self) -> Result<Vec<Image>> {
+                use TchChannelOrder as O;
 
-            // encode image
-            let encoded_image_string = {
-                let samples = tensor_to_vec!(normalized_tensor, u8);
-                let color_type = match from.color_space {
-                    S::Luma => ColorType::L8,
-                    S::Rgb => ColorType::Rgb8,
-                    S::Rgba => ColorType::Rgba8,
+                let Self {
+                    tensor,
+                    color_space,
+                    order,
+                } = self;
+
+                let images = match *tensor.size() {
+                    [_, _, _] => {
+                        let image =
+                            TchTensorAsImage::new(color_space, order, tensor)?.try_into()?;
+                        vec![image]
+                    }
+                    [bsize, s1, s2, s3] => {
+                        let (sc, _sh, _sw) = match order {
+                            TchChannelOrder::CHW => (s1, s2, s3),
+                            TchChannelOrder::HWC => (s3, s1, s2),
+                        };
+
+                        if color_space.num_channels() != sc as usize {
+                            todo!();
+                        }
+
+                        let bhwc_tensor = match order {
+                            O::HWC => tensor.shallow_clone(),
+                            O::CHW => tensor.f_permute(&[0, 2, 3, 1])?,
+                        };
+
+                        let images: Vec<Image> = (0..bsize)
+                            .map(|bidx| -> Result<Image> {
+                                let hwc_tensor = bhwc_tensor.f_select(0, bidx)?;
+                                let image = super::hwc_tensor_to_image(&hwc_tensor, color_space)?;
+                                Ok(image)
+                            })
+                            .try_collect()?;
+                        images
+                    }
                     _ => {
                         todo!();
                     }
                 };
-                let mut cursor = Cursor::new(vec![]);
-                PngEncoder::new(&mut cursor)
-                    .encode(&samples, nw as u32, nh as u32, color_type)
-                    .map_err(|err| Error::conversion(format!("{:?}", err)))?;
-                cursor.into_inner()
-            };
 
-            Ok(Image {
-                height: nh as i32,
-                width: nw as i32,
-                colorspace: from.color_space as i32,
-                encoded_image_string,
-            })
+                Ok(images)
+            }
         }
     }
 
-    fn normalized_tensor(tensor: &Tensor) -> Result<Tensor, Error> {
+    fn hwc_tensor_to_image(hwc_tensor: &Tensor, color_space: ColorSpace) -> Result<Image> {
+        use ColorSpace as S;
+
+        debug_assert_eq!(hwc_tensor.dim(), 3);
+        let (nh, nw, _nc) = hwc_tensor.size3().unwrap();
+
+        // normalize values to [0, 255]
+        let normalized_tensor = normalized_tensor(hwc_tensor)?;
+
+        // encode image
+        let encoded_image_string = {
+            let samples = tensor_to_vec!(normalized_tensor, u8);
+            let color_type = match color_space {
+                S::Luma => ColorType::L8,
+                S::Rgb => ColorType::Rgb8,
+                S::Rgba => ColorType::Rgba8,
+                _ => {
+                    todo!();
+                }
+            };
+            let mut cursor = Cursor::new(vec![]);
+            PngEncoder::new(&mut cursor)
+                .encode(&samples, nw as u32, nh as u32, color_type)
+                .map_err(|err| Error::conversion(format!("{:?}", err)))?;
+            cursor.into_inner()
+        };
+
+        Ok(Image {
+            height: nh as i32,
+            width: nw as i32,
+            colorspace: color_space as i32,
+            encoded_image_string,
+        })
+    }
+
+    fn normalized_tensor(tensor: &Tensor) -> Result<Tensor> {
         let kind = tensor.f_kind()?;
 
         let normalized_tensor = match kind {
