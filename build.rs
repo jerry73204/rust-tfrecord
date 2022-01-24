@@ -3,13 +3,11 @@ use std::env;
 
 const PROTOBUF_FILE_W_SERDE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "prebuild_src",
-    "tensorflow_with_serde.rs"
+    "/prebuild_src/tensorflow_with_serde.rs",
 );
 const PROTOBUF_FILE_WO_SERDE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "prebuild_src",
-    "tensorflow_without_serde.rs"
+    "/prebuild_src/tensorflow_without_serde.rs",
 );
 const BUILD_METHOD_ENV: &str = "TFRECORD_BUILD_METHOD";
 
