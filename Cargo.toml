@@ -1,7 +1,7 @@
 [package]
 name = "tfrecord"
 description = "Serialize and deserialize TFRecord data format from TensorFlow"
-version = "0.11.0"
+version = "0.11.1"
 authors = ["Jerry Lin <jerry73204@gmail.com>"]
 edition = "2021"
 categories = ["parsing"]
