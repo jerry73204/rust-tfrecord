@@ -46,7 +46,6 @@
 //! cargo build --release --features generate_protobuf_src
 //! ```
 
-
 // mods
 
 pub mod error;
