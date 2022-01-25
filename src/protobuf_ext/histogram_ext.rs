@@ -1,251 +1,162 @@
-use crate::{error::Error, protobuf::HistogramProto};
+use std::{borrow::Cow, cmp, iter, ops::Neg};
+
+use crate::{
+    ensure_argument,
+    error::{Error, Result},
+    protobuf::HistogramProto,
+};
+use itertools::{chain, izip};
 use noisy_float::prelude::*;
 use num_traits::{NumCast, ToPrimitive};
-use std::sync::atomic::Ordering::*;
 
-pub use concurrent_histogram::*;
-mod concurrent_histogram {
-    use super::*;
-    use noisy_float::types::R64;
-    use std::{
-        iter,
-        ops::Neg,
-        sync::{atomic::AtomicUsize, RwLock},
-    };
+impl HistogramProto {
+    pub fn new<'a, L>(bucket_limit: L) -> Result<Self>
+    where
+        L: Into<Cow<'a, [f64]>>,
+    {
+        let bucket_limit = bucket_limit.into();
 
-    /// Concurrent histogram data structure.
-    ///
-    /// The methods of the histogram can be called concurrently.
-    #[derive(Debug)]
-    pub struct Histogram(pub(crate) RwLock<State>);
+        let is_finite = bucket_limit.iter().all(|&val| val.is_finite());
+        if !is_finite {
+            return Err(Error::invalid_argument(
+                "bucket_limit must be finite numbers",
+            ));
+        }
 
-    #[derive(Debug)]
-    pub(crate) struct State {
-        pub(crate) buckets: Vec<Bucket>,
-        pub(crate) stat: Option<Stat>,
+        let is_ordered =
+            izip!(bucket_limit.as_ref(), &bucket_limit[1..]).all(|(&lhs, &rhs)| lhs < rhs);
+        if !is_ordered {
+            return Err(Error::invalid_argument(
+                "bucket_limit must be monotonically ordered",
+            ));
+        }
+
+        let mut bucket_limit = bucket_limit.into_owned();
+        let is_last_max = bucket_limit.last() == Some(&f64::MAX);
+        if !is_last_max {
+            bucket_limit.push(f64::MAX);
+        }
+
+        Ok(Self {
+            min: f64::MAX,
+            max: f64::MIN,
+            num: 0.0,
+            sum: 0.0,
+            sum_squares: 0.0,
+            bucket: vec![0.0; bucket_limit.len()],
+            bucket_limit,
+        })
     }
 
-    #[derive(Debug)]
-    pub(crate) struct Stat {
-        pub(crate) len: usize,
-        pub(crate) min: f64,
-        pub(crate) max: f64,
-        pub(crate) sum: f64,
-        pub(crate) sum_squares: f64,
+    pub fn tf_default() -> Self {
+        let pos_limits: Vec<_> = iter::successors(Some(1e-12), |prev| {
+            let curr = *prev * 1.1;
+            let ok = curr < 1e20;
+            ok.then(|| curr)
+        })
+        .collect();
+
+        let limits: Vec<_> = chain!(
+            [f64::MIN],
+            pos_limits.iter().cloned().map(Neg::neg).rev(),
+            pos_limits.iter().cloned(),
+            [f64::MAX]
+        )
+        .collect();
+
+        Self::new(limits).unwrap()
     }
 
-    impl Histogram {
-        /// Build a histogram with monotonic value limits.
-        ///
-        /// The values of `limits` must be monotonically increasing.
-        /// Otherwise the method returns `None`.
-        pub fn new(limits: Vec<R64>) -> Option<Self> {
-            // check if the limit values are ordered
-            let (is_ordered, _) = limits.iter().cloned().fold(
-                (true, None),
-                |(is_ordered, prev_limit_opt), curr_limit| {
-                    let is_ordered = is_ordered
-                        && prev_limit_opt
-                            .map(|prev_limit| prev_limit < curr_limit)
-                            .unwrap_or(true);
-                    (is_ordered, Some(curr_limit))
-                },
-            );
-
-            if !is_ordered {
-                return None;
-            }
-
-            let buckets = {
-                let mut buckets = limits
-                    .into_iter()
-                    .map(|limit| Bucket {
-                        limit,
-                        count: AtomicUsize::new(0),
-                    })
-                    .collect::<Vec<_>>();
-
-                // make sure the last bucket has maximum limit
-                if let Some(last) = buckets.last() {
-                    if last.limit.raw() != f64::MAX {
-                        buckets.push(Bucket {
-                            limit: R64::new(f64::MAX),
-                            count: AtomicUsize::new(0),
-                        });
-                    }
-                }
-
-                buckets
-            };
-
-            Some(Self(RwLock::new(State {
-                buckets,
-                stat: None,
-            })))
-        }
-
-        /// Get the observed minimum value.
-        pub fn min(&self) -> Option<f64> {
-            self.0.read().unwrap().stat.as_ref()?.min.into()
-        }
-
-        /// Get the observed maximum value.
-        pub fn max(&self) -> Option<f64> {
-            self.0.read().unwrap().stat.as_ref()?.max.into()
-        }
-
-        /// Get the summation of contained values.
-        pub fn sum(&self) -> f64 {
-            self.0
-                .read()
-                .unwrap()
-                .stat
-                .as_ref()
-                .map(|stat| stat.sum)
-                .unwrap_or(0.0)
-        }
-
-        /// Get the summation of squares of contained values.
-        pub fn sum_squares(&self) -> f64 {
-            self.0
-                .read()
-                .unwrap()
-                .stat
-                .as_ref()
-                .map(|stat| stat.sum_squares)
-                .unwrap_or(0.0)
-        }
-
-        /// Check if there is contained values.
-        pub fn is_empty(&self) -> bool {
-            self.len() == 0
-        }
-
-        /// Get the number of contained values.
-        pub fn len(&self) -> usize {
-            self.0
-                .read()
-                .unwrap()
-                .stat
-                .as_ref()
-                .map(|stat| stat.len)
-                .unwrap_or(0)
-        }
-
-        /// Append a new value.
-        pub fn add(&self, value: R64) {
-            let mut state = self.0.write().unwrap();
-            let index = match state
-                .buckets
-                .binary_search_by_key(&value, |bucket| bucket.limit)
-            {
-                Ok(index) => index,
-                Err(index) => index,
-            };
-
-            state.buckets[index].count.fetch_add(1, SeqCst);
-
-            let value = value.raw();
-
-            let new_stat = state
-                .stat
-                .as_ref()
-                .map(|stat| Stat {
-                    len: stat.len + 1,
-                    min: stat.min.min(value),
-                    max: stat.max.max(value),
-                    sum: stat.sum + value,
-                    sum_squares: stat.sum_squares + value.powi(2),
-                })
-                .unwrap_or_else(|| Stat {
-                    len: 1,
-                    min: value,
-                    max: value,
-                    sum: value,
-                    sum_squares: value.powi(2),
-                });
-            state.stat = Some(new_stat);
-        }
+    pub fn add_one(&mut self, value: f64) {
+        self.try_add_one(value).unwrap()
     }
 
-    impl Default for Histogram {
-        fn default() -> Self {
-            let pos_limits_iter = iter::successors(Some(R64::new(1e-12)), |prev| {
-                let curr = *prev * R64::new(1.1);
-                if curr.raw() < 1e20 {
-                    Some(curr)
-                } else {
-                    None
-                }
-            });
+    pub fn add(&mut self, value: f64, count: f64) {
+        self.try_add(value, count).unwrap()
+    }
 
-            // collect negative limits
-            let neg_limits = {
-                let mut neg_limits = vec![R64::new(f64::MIN)];
-                let mut tmp_limits = pos_limits_iter.clone().map(Neg::neg).collect::<Vec<_>>();
-                tmp_limits.reverse();
-                neg_limits.extend(tmp_limits);
-                neg_limits
-            };
+    pub fn try_add_one(&mut self, value: f64) -> Result<()> {
+        self.try_add(value, 1.0)
+    }
 
-            // add zero
-            let mut limits = neg_limits;
-            limits.push(R64::new(0.0));
+    pub fn try_add(&mut self, value: f64, count: f64) -> Result<()> {
+        ensure_argument!(
+            value.is_finite(),
+            "inserted value must be finite, but get {}",
+            value
+        );
+        ensure_argument!(
+            count.is_finite() && !count.is_sign_negative(),
+            "inserted count must be finite and non-negative, but get {}",
+            count
+        );
+        ensure_argument!(
+            self.bucket_limit.len() == self.bucket.len(),
+            "the lengths of bucket_limit and bucket fields must be equal"
+        );
 
-            // collect positive limits
-            limits.extend(pos_limits_iter);
-            limits.push(R64::new(f64::MAX));
+        let index = match self
+            .bucket_limit
+            .binary_search_by_key(&r64(value), |&limit| r64(limit))
+        {
+            Ok(index) => index,
+            Err(index) => index,
+        };
 
-            Self::new(limits).unwrap()
+        if index == self.bucket_limit.len() {
+            self.bucket_limit.push(f64::MAX);
+            self.bucket.push(count);
+        } else {
+            self.bucket[index] += count;
         }
+
+        self.num += 1.0;
+        self.sum += value;
+        self.sum_squares += value.powi(2);
+        self.min = cmp::min(r64(self.min), r64(value)).raw();
+        self.max = cmp::max(r64(self.max), r64(value)).raw();
+
+        Ok(())
     }
 
-    #[derive(Debug)]
-    pub(crate) struct Bucket {
-        pub(crate) limit: R64,
-        pub(crate) count: AtomicUsize,
+    pub fn try_iter(&self) -> Result<impl Iterator<Item = (f64, f64)> + '_> {
+        ensure_argument!(
+            self.bucket_limit.len() == self.bucket.len(),
+            "the lengths of bucket_limit and bucket fields must be equal"
+        );
+        let iter = izip!(
+            self.bucket_limit.iter().cloned(),
+            self.bucket.iter().cloned(),
+        );
+        Ok(iter)
     }
 
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        use crate::error::Error;
-        use approx::assert_abs_diff_eq;
+    pub fn iter(&self) -> impl Iterator<Item = (f64, f64)> + '_ {
+        self.try_iter().unwrap()
+    }
 
-        #[test]
-        fn simple_histogram() -> Result<(), Error> {
-            let histogram =
-                Histogram::new(vec![R64::new(-10.0), R64::new(0.0), R64::new(10.0)]).unwrap();
-
-            assert_eq!(histogram.len(), 0);
-            assert_eq!(histogram.min(), None);
-            assert_eq!(histogram.max(), None);
-            assert_eq!(histogram.sum(), 0.0);
-            assert_eq!(histogram.sum_squares(), 0.0);
-
-            let values = vec![-11.0, -8.0, -6.0, 15.0, 7.0, 2.0];
-            let expect_len = values.len();
-
-            let (expect_min, expect_max, expect_sum, expect_sum_squares) = values.into_iter().fold(
-                (f64::INFINITY, f64::NEG_INFINITY, 0.0, 0.0),
-                |(min, max, sum, sum_squares), value| {
-                    let min = min.min(value);
-                    let max = max.max(value);
-                    let sum = sum + value;
-                    let sum_squares = sum_squares + value.powi(2);
-                    histogram.add(R64::new(value));
-                    (min, max, sum, sum_squares)
-                },
-            );
-
-            assert_eq!(histogram.len(), expect_len);
-            assert_abs_diff_eq!(histogram.max().unwrap(), expect_max);
-            assert_abs_diff_eq!(histogram.min().unwrap(), expect_min);
-            assert_abs_diff_eq!(histogram.sum(), expect_sum);
-            assert_abs_diff_eq!(histogram.sum_squares(), expect_sum_squares);
-
+    pub fn try_from_iter<T, I>(iter: I) -> Result<Self, Error>
+    where
+        T: ToPrimitive,
+        I: IntoIterator<Item = T>,
+    {
+        let mut histogram = Self::tf_default();
+        iter.into_iter().try_for_each(|value| -> Result<_> {
+            let value = <f64 as NumCast>::from(value)
+                .ok_or_else(|| Error::invalid_argument("invalid value"))?;
+            histogram.try_add_one(value)?;
             Ok(())
-        }
+        })?;
+        Ok(histogram)
+    }
+}
+
+impl<A> FromIterator<A> for HistogramProto
+where
+    A: ToPrimitive,
+{
+    fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
+        Self::try_from_iter(iter).unwrap()
     }
 }
 
@@ -254,26 +165,11 @@ mod into_histogram {
     use super::*;
 
     pub trait IntoHistogram {
-        fn try_into_histogram(self) -> Result<HistogramProto, Error>;
-    }
-
-    impl<T> IntoHistogram for T
-    where
-        HistogramProto: TryFrom<T, Error = Error>,
-    {
-        fn try_into_histogram(self) -> Result<HistogramProto, Error> {
-            self.try_into()
-        }
-    }
-
-    impl IntoHistogram for Histogram {
-        fn try_into_histogram(self) -> Result<HistogramProto, Error> {
-            Ok(self.into())
-        }
+        fn try_into_histogram(self) -> Result<HistogramProto>;
     }
 
     impl IntoHistogram for HistogramProto {
-        fn try_into_histogram(self) -> Result<HistogramProto, Error> {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
             Ok(self)
         }
     }
@@ -282,7 +178,7 @@ mod into_histogram {
     where
         T: Clone + ToPrimitive,
     {
-        fn try_into_histogram(self) -> Result<HistogramProto, Error> {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
             HistogramProto::try_from_iter(self.iter().cloned())
         }
     }
@@ -291,7 +187,7 @@ mod into_histogram {
     where
         T: ToPrimitive,
     {
-        fn try_into_histogram(self) -> Result<HistogramProto, Error> {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
             HistogramProto::try_from_iter(self)
         }
     }
@@ -300,7 +196,7 @@ mod into_histogram {
     where
         T: ToPrimitive,
     {
-        fn try_into_histogram(self) -> Result<HistogramProto, Error> {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
             HistogramProto::try_from_iter(self)
         }
     }
@@ -309,192 +205,71 @@ mod into_histogram {
     where
         T: ToPrimitive + Clone,
     {
-        fn try_into_histogram(self) -> Result<HistogramProto, Error> {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
             HistogramProto::try_from_iter(self.iter().cloned())
         }
-    }
-}
-
-impl From<Histogram> for HistogramProto {
-    fn from(from: Histogram) -> Self {
-        let state = from.0.read().unwrap();
-
-        let counts: Vec<_> = state
-            .buckets
-            .iter()
-            .map(|bucket| bucket.count.load(Acquire) as f64)
-            .collect();
-        let limits: Vec<_> = state
-            .buckets
-            .iter()
-            .map(|bucket| bucket.limit.raw())
-            .collect();
-
-        let min = state
-            .stat
-            .as_ref()
-            .map(|stat| stat.min)
-            .unwrap_or(f64::INFINITY);
-        let max = state
-            .stat
-            .as_ref()
-            .map(|stat| stat.max)
-            .unwrap_or(f64::NEG_INFINITY);
-        let sum = state.stat.as_ref().map(|stat| stat.sum).unwrap_or(0.0);
-        let sum_squares = state
-            .stat
-            .as_ref()
-            .map(|stat| stat.sum_squares)
-            .unwrap_or(0.0);
-        let len = state.stat.as_ref().map(|stat| stat.len).unwrap_or(0);
-
-        Self {
-            min,
-            max,
-            num: len as f64,
-            sum,
-            sum_squares,
-            bucket_limit: limits,
-            bucket: counts,
-        }
-    }
-}
-
-impl HistogramProto {
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_iter<T, I>(iter: I) -> Self
-    where
-        T: ToPrimitive,
-        I: IntoIterator<Item = T>,
-    {
-        Self::try_from_iter(iter).unwrap()
-    }
-
-    pub fn try_from_iter<T, I>(iter: I) -> Result<Self, Error>
-    where
-        T: ToPrimitive,
-        I: IntoIterator<Item = T>,
-    {
-        let histogram = Histogram::default();
-        iter.into_iter()
-            .try_for_each(|value| -> Result<(), Error> {
-                let value = <R64 as NumCast>::from(value)
-                    .ok_or_else(|| Error::conversion("non-finite value found"))?;
-                histogram.add(value);
-                Ok(())
-            })?;
-        Ok(histogram.into())
     }
 }
 
 #[cfg(feature = "with-image")]
 mod with_image {
     use super::*;
-    use crate::error::Error;
     use image::{DynamicImage, ImageBuffer, Pixel};
     use std::ops::Deref;
 
     // DynamicImage to histogram
-
-    impl TryFrom<&DynamicImage> for HistogramProto {
-        type Error = Error;
-
-        fn try_from(from: &DynamicImage) -> Result<Self, Self::Error> {
+    impl IntoHistogram for &DynamicImage {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
             use DynamicImage::*;
-            let histogram = match from {
-                ImageLuma8(buffer) => Self::try_from(buffer)?,
-                ImageLumaA8(buffer) => Self::try_from(buffer)?,
-                ImageRgb8(buffer) => Self::try_from(buffer)?,
-                ImageRgba8(buffer) => Self::try_from(buffer)?,
-                ImageBgr8(buffer) => Self::try_from(buffer)?,
-                ImageBgra8(buffer) => Self::try_from(buffer)?,
-                ImageLuma16(buffer) => Self::try_from(buffer)?,
-                ImageLumaA16(buffer) => Self::try_from(buffer)?,
-                ImageRgb16(buffer) => Self::try_from(buffer)?,
-                ImageRgba16(buffer) => Self::try_from(buffer)?,
+            let histogram = match self {
+                ImageLuma8(buffer) => buffer.try_into_histogram()?,
+                ImageLumaA8(buffer) => buffer.try_into_histogram()?,
+                ImageRgb8(buffer) => buffer.try_into_histogram()?,
+                ImageRgba8(buffer) => buffer.try_into_histogram()?,
+                ImageBgr8(buffer) => buffer.try_into_histogram()?,
+                ImageBgra8(buffer) => buffer.try_into_histogram()?,
+                ImageLuma16(buffer) => buffer.try_into_histogram()?,
+                ImageLumaA16(buffer) => buffer.try_into_histogram()?,
+                ImageRgb16(buffer) => buffer.try_into_histogram()?,
+                ImageRgba16(buffer) => buffer.try_into_histogram()?,
             };
             Ok(histogram)
         }
     }
 
-    impl TryFrom<DynamicImage> for HistogramProto {
-        type Error = Error;
-        fn try_from(from: DynamicImage) -> Result<Self, Self::Error> {
-            Self::try_from(&from)
+    impl IntoHistogram for DynamicImage {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
+            (&self).try_into_histogram()
         }
     }
 
     // ImageBuffer to histogram
-
-    impl<P, C> TryFrom<&ImageBuffer<P, C>> for HistogramProto
+    impl<P, C> IntoHistogram for &ImageBuffer<P, C>
     where
         P: 'static + Pixel,
         P::Subpixel: 'static,
         C: Deref<Target = [P::Subpixel]>,
         P::Subpixel: ToPrimitive,
     {
-        type Error = Error;
-
-        fn try_from(from: &ImageBuffer<P, C>) -> Result<Self, Self::Error> {
-            let components = from
+        fn try_into_histogram(self) -> Result<HistogramProto> {
+            let components = self
                 .pixels()
                 .flat_map(|pixel| pixel.channels().iter().cloned());
-
-            Self::try_from_iter(components)
+            HistogramProto::try_from_iter(components)
         }
     }
 
-    impl<P, C> TryFrom<ImageBuffer<P, C>> for HistogramProto
+    impl<P, C> IntoHistogram for ImageBuffer<P, C>
     where
         P: 'static + Pixel,
         P::Subpixel: 'static,
         C: Deref<Target = [P::Subpixel]>,
         P::Subpixel: ToPrimitive,
     {
-        type Error = Error;
-
-        fn try_from(from: ImageBuffer<P, C>) -> Result<Self, Self::Error> {
-            Self::try_from(&from)
+        fn try_into_histogram(self) -> Result<HistogramProto> {
+            (&self).try_into_histogram()
         }
     }
-
-    // into histogram
-
-    // impl<P, C> IntoHistogram for &ImageBuffer<P, C>
-    // where
-    //     P: 'static + Pixel,
-    //     P::Subpixel: 'static,
-    //     C: Deref<Target = [P::Subpixel]>,
-    //     P::Subpixel: ToPrimitive,
-    // {
-    //     fn try_into_histogram(self) -> Result<HistogramProto, Error> {
-    //         self.try_into()
-    //     }
-    // }
-
-    // impl<P, C> IntoHistogram for ImageBuffer<P, C>
-    // where
-    //     P: 'static + Pixel,
-    //     P::Subpixel: 'static,
-    //     C: Deref<Target = [P::Subpixel]>,
-    //     P::Subpixel: ToPrimitive,
-    // {
-    //     fn try_into_histogram(self) -> Result<HistogramProto, Error> {
-    //         self.try_into()
-    //     }
-    // }
-
-    // impl IntoHistogram for DynamicImage {
-    //     fn try_into_histogram(self) -> Result<HistogramProto, Error> {
-    //         self.try_into()
-    //     }
-    // }
-
-    // impl IntoHistogram for &DynamicImage {
-    //     fn try_into_histogram(self) -> Result<HistogramProto, Error> {
-    //         self.try_into()
-    //     }
-    // }
 }
 
 #[cfg(feature = "with-ndarray")]
@@ -502,38 +277,23 @@ mod with_ndarray {
     use super::*;
     use ndarray::{ArrayBase, Data, Dimension, RawData};
 
-    impl<S, D> TryFrom<&ArrayBase<S, D>> for HistogramProto
+    impl<S, D> IntoHistogram for &ArrayBase<S, D>
     where
         S: RawData<Elem = f64> + Data,
         D: Dimension,
     {
-        type Error = Error;
-
-        fn try_from(from: &ArrayBase<S, D>) -> Result<Self, Self::Error> {
-            let histogram = Histogram::default();
-            let values_iter = from.iter().cloned().map(|value| {
-                R64::try_new(value)
-                    .ok_or_else(|| Error::conversion("non-finite floating value found"))
-            });
-
-            for result in values_iter {
-                let value = result?;
-                histogram.add(value);
-            }
-
-            Ok(histogram.into())
+        fn try_into_histogram(self) -> Result<HistogramProto> {
+            Ok(self.iter().cloned().collect())
         }
     }
 
-    impl<S, D> TryFrom<ArrayBase<S, D>> for HistogramProto
+    impl<S, D> IntoHistogram for ArrayBase<S, D>
     where
         S: RawData<Elem = f64> + Data,
         D: Dimension,
     {
-        type Error = Error;
-
-        fn try_from(from: ArrayBase<S, D>) -> Result<Self, Self::Error> {
-            Self::try_from(&from)
+        fn try_into_histogram(self) -> Result<HistogramProto> {
+            (&self).try_into_histogram()
         }
     }
 }
@@ -571,20 +331,18 @@ mod with_tch {
         }};
     }
 
-    impl TryFrom<&Tensor> for HistogramProto {
-        type Error = Error;
-
-        fn try_from(from: &Tensor) -> Result<Self, Self::Error> {
-            let kind = from.f_kind()?;
+    impl IntoHistogram for &Tensor {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
+            let kind = self.f_kind()?;
             let values = match kind {
-                Kind::Uint8 => tensor_to_r64_vec!(from, u8)?,
-                Kind::Int8 => tensor_to_r64_vec!(from, i8)?,
-                Kind::Int16 => tensor_to_r64_vec!(from, i16)?,
-                Kind::Int => tensor_to_r64_vec!(from, i32)?,
-                Kind::Int64 => tensor_to_r64_vec!(from, i64)?,
-                // Kind::Half => tensor_to_r64_vec!(from, f16)?,
-                Kind::Float => tensor_to_r64_vec!(from, f32)?,
-                Kind::Double => tensor_to_r64_vec!(from, f64)?,
+                Kind::Uint8 => tensor_to_r64_vec!(self, u8)?,
+                Kind::Int8 => tensor_to_r64_vec!(self, i8)?,
+                Kind::Int16 => tensor_to_r64_vec!(self, i16)?,
+                Kind::Int => tensor_to_r64_vec!(self, i32)?,
+                Kind::Int64 => tensor_to_r64_vec!(self, i64)?,
+                // Kind::Half => tensor_to_r64_vec!(self, f16)?,
+                Kind::Float => tensor_to_r64_vec!(self, f32)?,
+                Kind::Double => tensor_to_r64_vec!(self, f64)?,
                 _ => {
                     return Err(Error::conversion(format!(
                         "unsupported tensor kind {:?}",
@@ -593,15 +351,13 @@ mod with_tch {
                 }
             };
 
-            Self::try_from_iter(values)
+            HistogramProto::try_from_iter(values)
         }
     }
 
-    impl TryFrom<Tensor> for HistogramProto {
-        type Error = Error;
-
-        fn try_from(from: Tensor) -> Result<Self, Self::Error> {
-            Self::try_from(&from)
+    impl IntoHistogram for Tensor {
+        fn try_into_histogram(self) -> Result<HistogramProto> {
+            (&self).try_into_histogram()
         }
     }
 }

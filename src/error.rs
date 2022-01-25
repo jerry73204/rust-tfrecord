@@ -67,3 +67,12 @@ impl From<tch::TchError> for Error {
         Self::TchError(error)
     }
 }
+
+macro_rules! ensure_argument {
+    ($cond:expr, $($arg:tt) *) => {
+        if !$cond {
+            return Err(crate::error::Error::invalid_argument(format!( $($arg)* )));
+        }
+    };
+}
+pub(crate) use ensure_argument;
