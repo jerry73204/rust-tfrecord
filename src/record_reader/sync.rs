@@ -1,8 +1,8 @@
 use super::RecordReaderConfig;
 use crate::{
     error::Result,
-    markers::GenericRecord,
     protobuf::{Event, Example},
+    record::Record,
 };
 use std::{
     fs::File,
@@ -18,7 +18,7 @@ pub type EventIter<R> = RecordIter<Event, R>;
 /// Iterator of record `T` from reader `R`.
 pub struct RecordIter<T, R>
 where
-    T: GenericRecord,
+    T: Record,
     R: Read,
 {
     reader: Option<R>,
@@ -28,7 +28,7 @@ where
 
 impl<T, R> RecordIter<T, R>
 where
-    T: GenericRecord,
+    T: Record,
     R: Read,
 {
     /// Read records from a reader implementing [Read](std::io::Read).
@@ -45,7 +45,7 @@ where
 
 impl<T> RecordIter<T, BufReader<File>>
 where
-    T: GenericRecord,
+    T: Record,
 {
     /// Read records from a file.
     pub fn open<P>(path: P, config: RecordReaderConfig) -> Result<Self>
@@ -60,7 +60,7 @@ where
 
 impl<T, R> Iterator for RecordIter<T, R>
 where
-    T: GenericRecord,
+    T: Record,
     R: Read,
 {
     type Item = Result<T>;

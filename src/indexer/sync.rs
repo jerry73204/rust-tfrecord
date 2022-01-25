@@ -1,7 +1,7 @@
 use super::{Position, RecordIndex, RecordIndexerConfig};
 use crate::{
     error::{Error, Result},
-    markers::GenericRecord,
+    record::Record,
     utils,
 };
 use itertools::Itertools as _;
@@ -16,7 +16,7 @@ use std::{
 impl RecordIndex {
     pub fn load<T>(&self) -> Result<T>
     where
-        T: GenericRecord,
+        T: Record,
     {
         let Self {
             ref path,

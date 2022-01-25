@@ -1,4 +1,4 @@
-use crate::{error::Result, markers::GenericRecord, protobuf::Example};
+use crate::{error::Result, protobuf::Example, record::Record};
 use std::{
     fs::File,
     io::{BufWriter, Write},
@@ -16,7 +16,7 @@ pub type ExampleWriter<W> = RecordWriter<Example, W>;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecordWriter<T, W>
 where
-    T: GenericRecord,
+    T: Record,
 {
     writer: W,
     _phantom: PhantomData<T>,
@@ -24,7 +24,7 @@ where
 
 impl<T> RecordWriter<T, BufWriter<File>>
 where
-    T: GenericRecord,
+    T: Record,
 {
     /// Build a writer writing to a new file.
     pub fn create<P>(path: P) -> Result<Self>
@@ -38,7 +38,7 @@ where
 
 impl<T, W> RecordWriter<T, W>
 where
-    T: GenericRecord,
+    T: Record,
     W: Write,
 {
     /// Build a writer from a writer with [Write] trait.

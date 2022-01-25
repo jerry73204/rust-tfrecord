@@ -1,7 +1,7 @@
 use crate::{
     error::{Error, Result},
-    markers::GenericRecord,
     protobuf::Example,
+    record::Record,
 };
 use async_std::{fs::File, io::BufWriter, path::Path};
 use futures::{
@@ -21,7 +21,7 @@ pub type ExampleAsyncWriter<W> = RecordAsyncWriter<Example, W>;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecordAsyncWriter<T, W>
 where
-    T: GenericRecord,
+    T: Record,
 {
     writer: W,
     _phantom: PhantomData<T>,
@@ -29,7 +29,7 @@ where
 
 impl<T> RecordAsyncWriter<T, BufWriter<File>>
 where
-    T: GenericRecord,
+    T: Record,
 {
     /// Build a writer writing to a new file.
     pub async fn create<P>(path: P) -> Result<Self>
@@ -43,7 +43,7 @@ where
 
 impl<T, W> RecordAsyncWriter<T, W>
 where
-    T: GenericRecord,
+    T: Record,
     W: AsyncWrite + Unpin,
 {
     /// Build a writer from a writer with [AsyncWrite] trait.

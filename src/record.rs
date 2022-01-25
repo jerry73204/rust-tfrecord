@@ -4,10 +4,10 @@ use crate::{
     error::Error,
     protobuf::{Event, Example},
 };
-use prost::Message;
+use prost::Message as _;
 
 /// Mark types the is serailized to or deserialized from TFRecord format.
-pub trait GenericRecord
+pub trait Record
 where
     Self: Sized,
 {
@@ -17,7 +17,7 @@ where
     fn to_bytes(record: Self) -> Result<Vec<u8>, Error>;
 }
 
-impl GenericRecord for Vec<u8> {
+impl Record for Vec<u8> {
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
         Ok(bytes)
     }
@@ -27,7 +27,7 @@ impl GenericRecord for Vec<u8> {
     }
 }
 
-impl GenericRecord for Example {
+impl Record for Example {
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
         let example = Example::decode(bytes.as_ref())?;
         Ok(example)
@@ -40,7 +40,7 @@ impl GenericRecord for Example {
     }
 }
 
-impl GenericRecord for Event {
+impl Record for Event {
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
         let example = Event::decode(bytes.as_ref())?;
         Ok(example)

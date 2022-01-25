@@ -1,7 +1,7 @@
 use super::{Position, RecordIndex, RecordIndexerConfig};
 use crate::{
     error::{Error, Result},
-    markers::GenericRecord,
+    record::Record,
     utils,
 };
 use async_std::{
@@ -20,7 +20,7 @@ impl RecordIndex {
     /// Load the record data for the index.
     pub async fn load_async<T>(&self) -> Result<T>
     where
-        T: GenericRecord,
+        T: Record,
     {
         let Self {
             ref path,

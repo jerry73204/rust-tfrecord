@@ -1,8 +1,8 @@
 use super::RecordReaderConfig;
 use crate::{
     error::{Error, Result},
-    markers::GenericRecord,
     protobuf::{Event, Example},
+    record::Record,
 };
 use async_std::{fs::File, io::BufReader, path::Path};
 use futures::{
@@ -24,7 +24,7 @@ pub type EventStream<R> = RecordStream<Event, R>;
 #[pin_project]
 pub struct RecordStream<T, R>
 where
-    T: GenericRecord,
+    T: Record,
     R: AsyncRead,
 {
     #[pin]
@@ -34,7 +34,7 @@ where
 
 impl<T, R> RecordStream<T, R>
 where
-    T: GenericRecord,
+    T: Record,
     R: AsyncRead,
 {
     /// Load records from a reader type with [AsyncRead] trait.
@@ -60,12 +60,12 @@ where
 
 impl<T> RecordStream<T, BufReader<File>>
 where
-    T: GenericRecord,
+    T: Record,
 {
     /// Load records from a file.
     pub async fn open<P>(path: P, config: RecordReaderConfig) -> Result<Self>
     where
-        T: GenericRecord,
+        T: Record,
         P: AsRef<Path>,
     {
         let reader = BufReader::new(File::open(path).await?);
@@ -76,7 +76,7 @@ where
 
 impl<T, R> Stream for RecordStream<T, R>
 where
-    T: GenericRecord,
+    T: Record,
     R: AsyncRead,
 {
     type Item = Result<T>;
