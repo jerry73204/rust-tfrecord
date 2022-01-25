@@ -2,8 +2,7 @@
 
 use crate::{
     error::Error,
-    protobuf::{Event, Example as RawExample},
-    types::Example,
+    protobuf::{Event, Example},
 };
 use prost::Message;
 
@@ -28,30 +27,15 @@ impl GenericRecord for Vec<u8> {
     }
 }
 
-impl GenericRecord for RawExample {
+impl GenericRecord for Example {
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
-        let example = RawExample::decode(bytes.as_ref())?;
+        let example = Example::decode(bytes.as_ref())?;
         Ok(example)
     }
 
     fn to_bytes(record: Self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
-        RawExample::encode(&record, &mut bytes)?;
-        Ok(bytes)
-    }
-}
-
-impl GenericRecord for Example {
-    fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
-        let raw_example = RawExample::decode(bytes.as_ref())?;
-        let example = Example::from(raw_example);
-        Ok(example)
-    }
-
-    fn to_bytes(example: Self) -> Result<Vec<u8>, Error> {
-        let mut bytes = vec![];
-        let raw_example = RawExample::from(example);
-        RawExample::encode(&raw_example, &mut bytes)?;
+        Example::encode(&record, &mut bytes)?;
         Ok(bytes)
     }
 }

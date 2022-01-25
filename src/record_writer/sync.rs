@@ -1,6 +1,4 @@
-use crate::{
-    error::Result, markers::GenericRecord, protobuf::Example as RawExample, types::Example,
-};
+use crate::{error::Result, markers::GenericRecord, protobuf::Example};
 use std::{
     fs::File,
     io::{BufWriter, Write},
@@ -10,9 +8,6 @@ use std::{
 
 /// Alias to [RecordWriter] which input record type [Vec<u8>](Vec).
 pub type BytesWriter<W> = RecordWriter<Vec<u8>, W>;
-
-/// Alias to [RecordWriter] which input record type [RawExample].
-pub type RawExampleWriter<W> = RecordWriter<RawExample, W>;
 
 /// Alias to [RecordWriter] which input record type [Example].
 pub type ExampleWriter<W> = RecordWriter<Example, W>;

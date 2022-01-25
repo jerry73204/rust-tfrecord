@@ -2,8 +2,7 @@ use super::RecordReaderConfig;
 use crate::{
     error::{Error, Result},
     markers::GenericRecord,
-    protobuf::{Event, Example as RawExample},
-    types::Example,
+    protobuf::{Event, Example},
 };
 use async_std::{fs::File, io::BufReader, path::Path};
 use futures::{
@@ -18,7 +17,6 @@ use std::{
 };
 
 pub type BytesStream<R> = RecordStream<Vec<u8>, R>;
-pub type RawExampleStream<R> = RecordStream<RawExample, R>;
 pub type ExampleStream<R> = RecordStream<Example, R>;
 pub type EventStream<R> = RecordStream<Event, R>;
 

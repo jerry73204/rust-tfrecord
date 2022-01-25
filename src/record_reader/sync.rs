@@ -2,8 +2,7 @@ use super::RecordReaderConfig;
 use crate::{
     error::Result,
     markers::GenericRecord,
-    protobuf::{Event, Example as RawExample},
-    types::Example,
+    protobuf::{Event, Example},
 };
 use std::{
     fs::File,
@@ -13,7 +12,6 @@ use std::{
 };
 
 pub type BytesIter<R> = RecordIter<Vec<u8>, R>;
-pub type RawExampleIter<R> = RecordIter<RawExample, R>;
 pub type ExampleIter<R> = RecordIter<Example, R>;
 pub type EventIter<R> = RecordIter<Event, R>;
 

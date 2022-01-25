@@ -58,16 +58,15 @@ pub mod protobuf;
 pub mod protobuf_ext;
 pub mod record_reader;
 pub mod record_writer;
-pub mod types;
 mod utils;
 
 // re-exports
 
-pub use error::{Error, Result};
+pub use error::*;
 pub use event::*;
 pub use event_writer::*;
 pub use markers::GenericRecord;
-pub use protobuf::{Event, Example as RawExample, Summary};
+pub use protobuf::{Event, Example, Feature, Summary};
+pub use protobuf_ext::*;
 pub use record_reader::*;
 pub use record_writer::*;
-pub use types::*;

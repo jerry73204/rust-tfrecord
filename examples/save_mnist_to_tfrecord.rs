@@ -19,13 +19,8 @@ fn main() -> Result<()> {
 
     for (image, label) in izip!(images, labels) {
         // build example
-        let image_feature = Feature::FloatList(
-            image
-                .into_iter()
-                .map(|pixel| pixel as f32)
-                .collect::<Vec<_>>(),
-        );
-        let label_feature = Feature::Int64List(vec![label as i64]);
+        let image_feature = Feature::from_f32_iter(image.into_iter().map(|pixel| pixel as f32));
+        let label_feature = Feature::from_i64_list(vec![label as i64]);
 
         let example = vec![
             ("image".into(), image_feature),

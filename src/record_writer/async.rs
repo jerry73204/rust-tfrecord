@@ -1,8 +1,7 @@
 use crate::{
     error::{Error, Result},
     markers::GenericRecord,
-    protobuf::Example as RawExample,
-    types::Example,
+    protobuf::Example,
 };
 use async_std::{fs::File, io::BufWriter, path::Path};
 use futures::{
@@ -14,9 +13,6 @@ use std::marker::PhantomData;
 
 /// Alias to [RecordAsyncWriter] which input record type [Vec<u8>](Vec).
 pub type BytesAsyncWriter<W> = RecordAsyncWriter<Vec<u8>, W>;
-
-/// Alias to [RecordAsyncWriter] which input record type [RawExample].
-pub type RawExampleAsyncWriter<W> = RecordAsyncWriter<RawExample, W>;
 
 /// Alias to [RecordAsyncWriter] which input record type [Example].
 pub type ExampleAsyncWriter<W> = RecordAsyncWriter<Example, W>;

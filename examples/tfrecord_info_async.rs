@@ -6,7 +6,7 @@ mod async_example {
         io::{self, BufWriter},
         path::PathBuf,
     };
-    use tfrecord::{Error, ExampleStream, Feature};
+    use tfrecord::{Error, ExampleStream, FeatureKind};
 
     lazy_static::lazy_static! {
         pub static ref INPUT_TFRECORD_PATH: PathBuf = {
@@ -46,17 +46,18 @@ mod async_example {
                     for (feature_index, (name, feature)) in example.into_iter().enumerate() {
                         print!("{}\t{}\t{}\t", example_index, feature_index, name);
 
-                        match feature {
-                            Feature::BytesList(list) => {
+                        use FeatureKind as F;
+                        match feature.into_kinds() {
+                            Some(F::Bytes(list)) => {
                                 println!("bytes\t{}", list.len());
                             }
-                            Feature::FloatList(list) => {
+                            Some(F::F32(list)) => {
                                 println!("float\t{}", list.len());
                             }
-                            Feature::Int64List(list) => {
+                            Some(F::I64(list)) => {
                                 println!("int64\t{}", list.len());
                             }
-                            Feature::None => {
+                            None => {
                                 println!("none");
                             }
                         }

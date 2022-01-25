@@ -1,8 +1,7 @@
 mod common;
 
 use common::*;
-use std::{fs::File, io::BufWriter};
-use tfrecord::{BytesIter, Example, ExampleIter, RawExample, RawExampleIter, RecordWriter};
+use tfrecord::{BytesIter, BytesWriter, Example, ExampleIter, ExampleWriter};
 
 #[test]
 fn reader_test() {
@@ -10,12 +9,6 @@ fn reader_test() {
     {
         let reader = BytesIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
         reader.collect::<Result<Vec<Vec<u8>>, _>>().unwrap();
-    }
-
-    // raw examples
-    {
-        let reader = RawExampleIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
-        reader.collect::<Result<Vec<RawExample>, _>>().unwrap();
     }
 
     // examples
@@ -32,8 +25,7 @@ fn writer_test() {
     // bytes
     {
         let reader = BytesIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
-        let mut writer: RecordWriter<Vec<u8>, BufWriter<File>> =
-            RecordWriter::create(&output_path).unwrap();
+        let mut writer = BytesWriter::create(&output_path).unwrap();
 
         for result in reader {
             let bytes = result.unwrap();
@@ -43,27 +35,10 @@ fn writer_test() {
         std::fs::remove_file(&output_path).unwrap();
     }
 
-    // raw examples
-    {
-        let reader = RawExampleIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
-        let mut writer: RecordWriter<RawExample, BufWriter<File>> =
-            RecordWriter::create(&output_path).unwrap();
-
-        for result in reader {
-            let raw_example = result.unwrap();
-            writer.send(raw_example).unwrap();
-        }
-
-        std::fs::remove_file(&output_path).unwrap();
-    }
-
     // examples
     {
         let reader = ExampleIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
-        let mut writer: RecordWriter<
-            std::collections::HashMap<String, tfrecord::Feature>,
-            BufWriter<File>,
-        > = RecordWriter::create(&output_path).unwrap();
+        let mut writer = ExampleWriter::create(&output_path).unwrap();
 
         for result in reader {
             let example = result.unwrap();
@@ -79,27 +54,15 @@ fn writer_test() {
 fn serde_test() {
     use prost::Message as _;
 
-    {
-        use tfrecord::Example;
+    BytesIter::open(&*INPUT_TFRECORD_PATH, Default::default())
+        .unwrap()
+        .try_for_each(|result| -> Result<_> {
+            let bytes = result.unwrap();
+            let example = Example::decode(bytes.as_slice()).unwrap();
+            let _: Example =
+                serde_json::from_str(&serde_json::to_string(&example).unwrap()).unwrap();
 
-        let reader = BytesIter::open(&*INPUT_TFRECORD_PATH, Default::default()).unwrap();
-        reader
-            .map(|result| {
-                let bytes = result.unwrap();
-                let raw_example = RawExample::decode(bytes.as_slice()).unwrap();
-                let example = Example::from(raw_example.clone());
-
-                // assert for RawExample
-                let _: RawExample =
-                    serde_json::from_str(&serde_json::to_string(&raw_example).unwrap()).unwrap();
-
-                // assert for Example
-                let _: Example =
-                    serde_json::from_str(&serde_json::to_string(&example).unwrap()).unwrap();
-
-                Result::Ok(())
-            })
-            .collect::<Result<Vec<_>>>()
-            .unwrap();
-    }
+            Ok(())
+        })
+        .unwrap();
 }

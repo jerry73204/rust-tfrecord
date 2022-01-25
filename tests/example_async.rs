@@ -4,10 +4,7 @@ mod common;
 
 use common::*;
 use futures::stream::TryStreamExt as _;
-use tfrecord::{
-    BytesAsyncWriter, BytesStream, Example, ExampleAsyncWriter, ExampleStream, RawExample,
-    RawExampleAsyncWriter, RawExampleStream,
-};
+use tfrecord::{BytesAsyncWriter, BytesStream, Example, ExampleAsyncWriter, ExampleStream};
 
 #[async_std::test]
 async fn stream_test() {
@@ -17,14 +14,6 @@ async fn stream_test() {
             .await
             .unwrap();
         stream.try_collect::<Vec<Vec<u8>>>().await.unwrap();
-    }
-
-    // raw examples
-    {
-        let stream = RawExampleStream::open(&*INPUT_TFRECORD_PATH, Default::default())
-            .await
-            .unwrap();
-        stream.try_collect::<Vec<RawExample>>().await.unwrap();
     }
 
     // examples
@@ -50,24 +39,6 @@ async fn async_writer_test() {
         stream
             .try_fold(writer, |mut writer, bytes| async {
                 writer.send(bytes).await.unwrap();
-                Ok(writer)
-            })
-            .await
-            .unwrap();
-
-        async_std::fs::remove_file(&output_path).await.unwrap();
-    }
-
-    // raw examples
-    {
-        let stream = RawExampleStream::open(&*INPUT_TFRECORD_PATH, Default::default())
-            .await
-            .unwrap();
-        let writer = RawExampleAsyncWriter::create(&output_path).await.unwrap();
-
-        stream
-            .try_fold(writer, |mut writer, example| async {
-                writer.send(example).await.unwrap();
                 Ok(writer)
             })
             .await

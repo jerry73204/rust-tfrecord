@@ -1,35 +1,32 @@
-use crate::{
-    protobuf::{Example as RawExample, Feature as RawFeature, Features},
-    types::{Example, Feature},
-};
+use crate::protobuf::{Example, Feature, Features};
 use std::collections::HashMap;
 
-impl From<RawExample> for Example {
-    fn from(from: RawExample) -> Self {
-        let features = match from.features {
-            Some(features) => features,
-            None => return HashMap::new(),
-        };
-        features
-            .feature
+impl Example {
+    pub fn into_vec(self) -> Vec<(String, Feature)> {
+        self.into_iter().collect()
+    }
+
+    pub fn into_hash_map(self) -> HashMap<String, Feature> {
+        self.into_iter().collect()
+    }
+
+    pub fn into_iter(self) -> impl Iterator<Item = (String, Feature)> {
+        self.features
             .into_iter()
-            .map(|(name, feature)| (name, Feature::from(feature)))
-            .collect::<HashMap<_, _>>()
+            .flat_map(|features| features.feature)
+    }
+
+    pub fn empty() -> Self {
+        Self { features: None }
     }
 }
 
-impl From<Example> for RawExample {
-    fn from(from: Example) -> Self {
-        let feature = from
-            .into_iter()
-            .map(|(name, feature)| (name, RawFeature::from(feature)))
-            .collect::<HashMap<_, _>>();
-        if feature.is_empty() {
-            RawExample { features: None }
-        } else {
-            RawExample {
-                features: Some(Features { feature }),
-            }
+impl FromIterator<(String, Feature)> for Example {
+    fn from_iter<T: IntoIterator<Item = (String, Feature)>>(iter: T) -> Self {
+        Self {
+            features: Some(Features {
+                feature: iter.into_iter().collect(),
+            }),
         }
     }
 }

@@ -4,7 +4,7 @@ mod common;
 
 use common::*;
 use futures::stream::{StreamExt as _, TryStreamExt as _};
-use tfrecord::{Example, Feature};
+use tfrecord::{Example, FeatureKind};
 
 #[async_std::test]
 async fn indexer_stream_test() -> Result<()> {
@@ -20,18 +20,19 @@ async fn indexer_stream_test() -> Result<()> {
             for (feature_index, (name, feature)) in example.into_iter().enumerate() {
                 print!("{}\t{}\t{}\t", example_index, feature_index, name);
 
-                match feature {
-                    Feature::BytesList(list) => {
-                        println!("bytes\t{}", list.len());
+                use FeatureKind as F;
+                match feature.into_kinds() {
+                    Some(F::Bytes(value)) => {
+                        eprintln!("bytes\t{}", value.len());
                     }
-                    Feature::FloatList(list) => {
-                        println!("float\t{}", list.len());
+                    Some(F::F32(value)) => {
+                        eprintln!("float\t{}", value.len());
                     }
-                    Feature::Int64List(list) => {
-                        println!("int64\t{}", list.len());
+                    Some(F::I64(value)) => {
+                        eprintln!("int64\t{}", value.len());
                     }
-                    Feature::None => {
-                        println!("none");
+                    None => {
+                        eprintln!("none");
                     }
                 }
             }
