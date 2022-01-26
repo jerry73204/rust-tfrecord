@@ -31,11 +31,7 @@ impl HistogramProto {
             ));
         }
 
-        let mut bucket_limit = bucket_limit.into_owned();
-        let is_last_max = bucket_limit.last() == Some(&f64::MAX);
-        if !is_last_max {
-            bucket_limit.push(f64::MAX);
-        }
+        let bucket_limit = bucket_limit.into_owned();
 
         Ok(Self {
             min: f64::MAX,
@@ -57,10 +53,9 @@ impl HistogramProto {
         .collect();
 
         let limits: Vec<_> = chain!(
-            [f64::MIN],
             pos_limits.iter().cloned().map(Neg::neg).rev(),
+            [0.0],
             pos_limits.iter().cloned(),
-            [f64::MAX]
         )
         .collect();
 
@@ -103,18 +98,14 @@ impl HistogramProto {
             Err(index) => index,
         };
 
-        if index == self.bucket_limit.len() {
-            self.bucket_limit.push(f64::MAX);
-            self.bucket.push(count);
-        } else {
+        if index < self.bucket_limit.len() {
             self.bucket[index] += count;
+            self.num += 1.0;
+            self.sum += value;
+            self.sum_squares += value.powi(2);
+            self.min = cmp::min(r64(self.min), r64(value)).raw();
+            self.max = cmp::max(r64(self.max), r64(value)).raw();
         }
-
-        self.num += 1.0;
-        self.sum += value;
-        self.sum_squares += value.powi(2);
-        self.min = cmp::min(r64(self.min), r64(value)).raw();
-        self.max = cmp::max(r64(self.max), r64(value)).raw();
 
         Ok(())
     }
