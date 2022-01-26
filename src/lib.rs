@@ -65,7 +65,7 @@ mod utils;
 pub use error::*;
 pub use event::*;
 pub use event_writer::*;
-pub use protobuf::{Event, Example, Feature, Summary, HistogramProto};
+pub use protobuf::{Event, Example, Feature, HistogramProto, Summary};
 pub use protobuf_ext::*;
 pub use record::*;
 pub use record_reader::*;
