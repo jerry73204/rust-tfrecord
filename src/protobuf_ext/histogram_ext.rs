@@ -10,6 +10,13 @@ use noisy_float::prelude::*;
 use num_traits::{NumCast, ToPrimitive};
 
 impl HistogramProto {
+    /// Create a histogram with bucket limits.
+    ///
+    /// The `bucket_limit` must be an ordered sequence of finite values.
+    /// Otherwise it returns an error. The range of each bucket is defined by
+    ///
+    /// - i == 0:  [f64::MIN]..`limit[0]`
+    /// - i > 0:  `limit[i-1]`..`limit[i]`
     pub fn new<'a, L>(bucket_limit: L) -> Result<Self>
     where
         L: Into<Cow<'a, [f64]>>,
@@ -38,6 +45,7 @@ impl HistogramProto {
         })
     }
 
+    /// Create a histogram with TensorFlow's default bucket limits.
     pub fn tf_default() -> Self {
         let pos_limits: Vec<_> = iter::successors(Some(1e-12), |prev| {
             let curr = *prev * 1.1;
@@ -56,18 +64,33 @@ impl HistogramProto {
         Self::new(limits).unwrap()
     }
 
+    /// Add one count to the bucket containing the value.
+    ///
+    /// # Panics
+    /// It panics if `value` is not finite.
     pub fn add_one(&mut self, value: f64) {
         self.try_add_one(value).unwrap()
     }
 
+    /// Add counts to the bucket containing the value.
+    ///
+    /// # Panics
+    /// It panics if `value` is not finite, or `count` is not finite or not non-negative.
     pub fn add(&mut self, value: f64, count: f64) {
         self.try_add(value, count).unwrap()
     }
 
+    /// Add one count to the bucket containing the value.
+    ///
+    /// `value` must be finite. Otherwise it returns an error.
     pub fn try_add_one(&mut self, value: f64) -> Result<()> {
         self.try_add(value, 1.0)
     }
 
+    /// Add counts to the bucket containing the value.
+    ///
+    /// `value` must be finite, and `count` must be finite and non-negative.
+    /// Otherwise it returns an error.
     pub fn try_add(&mut self, value: f64, count: f64) -> Result<()> {
         ensure_argument!(
             value.is_finite(),
@@ -104,6 +127,9 @@ impl HistogramProto {
         Ok(())
     }
 
+    /// Create an iterator of `(limit, count)`.
+    ///
+    /// If returns an error if the lenghs of `bucket_limit` and `bucket` differ.
     pub fn try_iter(&self) -> Result<impl Iterator<Item = (f64, f64)> + '_> {
         ensure_argument!(
             self.bucket_limit.len() == self.bucket.len(),
@@ -116,10 +142,15 @@ impl HistogramProto {
         Ok(iter)
     }
 
+    /// Create an iterator of `(limit, count)`.
+    ///
+    /// # Panics
+    /// It panics if the lenghs of `bucket_limit` and `bucket` differ.
     pub fn iter(&self) -> impl Iterator<Item = (f64, f64)> + '_ {
         self.try_iter().unwrap()
     }
 
+    /// Create a histogram from an iterator of values, with TensorFlow's default bucket limits.
     pub fn try_from_iter<T, I>(iter: I) -> Result<Self, Error>
     where
         T: ToPrimitive,
@@ -149,6 +180,7 @@ pub use into_histogram::*;
 mod into_histogram {
     use super::*;
 
+    /// Conversion to [HistogramProto]
     pub trait IntoHistogram {
         fn try_into_histogram(self) -> Result<HistogramProto>;
     }
