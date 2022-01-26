@@ -1,4 +1,5 @@
 use crate::{
+    ensure_argument,
     error::Error,
     protobuf::{tensor_shape_proto::Dim, DataType, TensorProto, TensorShapeProto},
 };
@@ -44,9 +45,11 @@ impl TensorProto {
         T: AsRef<[u8]>,
     {
         let dims = shape.to_shape();
-        if numel(&dims) != data.len() {
-            todo!();
-        }
+
+        ensure_argument!(
+            numel(&dims) == data.len(),
+            "the shape and number of elements mismatch"
+        );
         let len_iter = data
             .iter()
             .flat_map(|bytes| (bytes.as_ref().len() as i32).encode_var_vec());

@@ -192,10 +192,13 @@ pub use with_tch::*;
 #[cfg(feature = "with-tch")]
 mod with_tch {
     use super::*;
-    use crate::{error::Error, protobuf::summary::Image};
+    use crate::{
+        error::{ensure_argument, Error},
+        protobuf::summary::Image,
+    };
     use image::{png::PngEncoder, ColorType};
     use itertools::Itertools as _;
-    use std::{io::Cursor, ops::Deref, slice};
+    use std::{io::Cursor, slice};
     use tch::{Kind, Tensor};
 
     macro_rules! tensor_to_vec {
@@ -220,74 +223,41 @@ mod with_tch {
         HWC,
     }
 
-    pub use tensor_ref::*;
-    mod tensor_ref {
-        use super::*;
-
-        /// Enumeration of owned or borrowed [Tensor].
-        #[derive(Debug, PartialEq)]
-        pub enum TensorRef<'a> {
-            Owned(Tensor),
-            Ref(&'a Tensor),
-        }
-
-        impl<'a> Deref for TensorRef<'a> {
-            type Target = Tensor;
-
-            fn deref(&self) -> &Self::Target {
-                match self {
-                    TensorRef::Owned(tensor) => tensor,
-                    TensorRef::Ref(tensor) => tensor,
-                }
-            }
-        }
-
-        impl From<Tensor> for TensorRef<'static> {
-            fn from(from: Tensor) -> Self {
-                Self::Owned(from)
-            }
-        }
-
-        impl<'a> From<&'a Tensor> for TensorRef<'a> {
-            fn from(from: &'a Tensor) -> Self {
-                Self::Ref(from)
-            }
-        }
-    }
-
     pub use tch_tensor_as_image::*;
     mod tch_tensor_as_image {
+        use crate::ensure_argument;
+
         use super::*;
 
         /// [tch]'s [Tensor] with additional image properties.
         #[derive(Debug, PartialEq)]
-        pub struct TchTensorAsImage<'a> {
+        pub struct TchTensorAsImage {
             color_space: ColorSpace,
             order: TchChannelOrder,
-            tensor: TensorRef<'a>,
+            tensor: Tensor,
         }
 
-        impl<'a> TchTensorAsImage<'a> {
-            pub fn new<T>(
+        impl TchTensorAsImage {
+            pub fn new(
                 color_space: ColorSpace,
                 order: TchChannelOrder,
-                tensor: T,
-            ) -> Result<Self, Error>
-            where
-                T: Into<TensorRef<'a>>,
-            {
-                let tensor = tensor.into();
-                let (s1, s2, s3) = tensor.size3().map_err(|_| -> Error {
-                    todo!();
+                tensor: Tensor,
+            ) -> Result<Self, Error> {
+                let (s1, s2, s3) = tensor.size3().map_err(|_| {
+                    Error::invalid_argument(format!(
+                        "expect a 3-dimensional tensor, but get {} dimensions",
+                        tensor.dim()
+                    ))
                 })?;
                 let (sc, _sh, _sw) = match order {
                     TchChannelOrder::CHW => (s1, s2, s3),
                     TchChannelOrder::HWC => (s3, s1, s2),
                 };
 
-                if color_space.num_channels() != sc as usize {
-                    todo!();
-                }
+                ensure_argument!(
+                    color_space.num_channels() == sc as usize,
+                    "the color space and channel size mismatch"
+                );
 
                 Ok(Self {
                     color_space,
@@ -298,7 +268,7 @@ mod with_tch {
         }
 
         // to Image
-        impl<'a> TryFrom<TchTensorAsImage<'a>> for Image {
+        impl TryFrom<TchTensorAsImage> for Image {
             type Error = Error;
 
             fn try_from(from: TchTensorAsImage) -> Result<Self, Self::Error> {
@@ -321,30 +291,27 @@ mod with_tch {
 
         /// [tch]'s [Tensor] with additional image properties.
         #[derive(Debug, PartialEq)]
-        pub struct TchTensorAsImageList<'a> {
+        pub struct TchTensorAsImageList {
             color_space: ColorSpace,
             order: TchChannelOrder,
-            tensor: TensorRef<'a>,
+            tensor: Tensor,
         }
 
-        impl<'a> TchTensorAsImageList<'a> {
-            pub fn new<T>(
+        impl TchTensorAsImageList {
+            pub fn new(
                 color_space: ColorSpace,
                 order: TchChannelOrder,
-                tensor: T,
-            ) -> Result<Self, Error>
-            where
-                T: Into<TensorRef<'a>>,
-            {
+                tensor: Tensor,
+            ) -> Result<Self, Error> {
                 Ok(Self {
                     color_space,
                     order,
-                    tensor: tensor.into(),
+                    tensor,
                 })
             }
         }
 
-        impl<'a> IntoImageList for TchTensorAsImageList<'a> {
+        impl IntoImageList for TchTensorAsImageList {
             fn into_image_list(self) -> Result<Vec<Image>> {
                 use TchChannelOrder as O;
 
@@ -366,9 +333,10 @@ mod with_tch {
                             TchChannelOrder::HWC => (s3, s1, s2),
                         };
 
-                        if color_space.num_channels() != sc as usize {
-                            todo!();
-                        }
+                        ensure_argument!(
+                            color_space.num_channels() == sc as usize,
+                            "the color space and channel size mismatch"
+                        );
 
                         let bhwc_tensor = match order {
                             O::HWC => tensor.shallow_clone(),
@@ -385,7 +353,10 @@ mod with_tch {
                         images
                     }
                     _ => {
-                        todo!();
+                        return Err(Error::invalid_argument(format!(
+                            "expect 3 or 4 dimensions, but get {} dimensions",
+                            tensor.dim()
+                        )));
                     }
                 };
 
@@ -411,7 +382,10 @@ mod with_tch {
                 S::Rgb => ColorType::Rgb8,
                 S::Rgba => ColorType::Rgba8,
                 _ => {
-                    todo!();
+                    return Err(Error::invalid_argument(format!(
+                        "the color space {:?} is not supported",
+                        color_space
+                    )));
                 }
             };
             let mut cursor = Cursor::new(vec![]);
