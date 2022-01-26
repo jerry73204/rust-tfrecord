@@ -1,6 +1,7 @@
 use crate::protobuf::{feature::Kind, BytesList, Feature, FloatList, Int64List};
 use std::borrow::Cow;
 
+/// Enumeration of feature kinds returned from [Feature::into_kinds()]
 #[derive(Debug, Clone, PartialEq)]
 pub enum FeatureKind {
     Bytes(Vec<Vec<u8>>),

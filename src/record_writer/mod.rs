@@ -1,23 +1,21 @@
 //! TFRecord data writer.
 //!
-//! It provides several writers to serialize [GenericRecord](crate::markers::GenericRecord)
+//! It provides several writers to serialize [Record](crate::record::Record)
 //! types.
 //!
 //! | Writer                                     | Record type                     |
 //! | -------------------------------------------|---------------------------------|
 //! | [BytesWriter](sync::BytesWriter)           | [Vec<u8>](Vec)                  |
-//! | [RawExampleWriter](sync::RawExampleWriter) | [RawExample](crate::RawExample) |
 //! | [ExampleWriter](sync::ExampleWriter)       | [Example](crate::Example)       |
-//! | [RecordWriter](sync::RecordWriter)         | Type that implements [GenericRecord](crate::markers::GenericRecord) |
+//! | [RecordWriter](sync::RecordWriter)         | Type that implements [Record](crate::record::Record) |
 //!
 //! The asynchronous counterparts are named in `AsyncWriter` suffix.
 //!
 //! | Writer                                                | Record type                     |
 //! | ------------------------------------------------------|---------------------------------|
 //! | [BytesAsyncWriter](async::BytesAsyncWriter)           | [Vec<u8>](Vec)                  |
-//! | [RawExampleAsyncWriter](async::RawExampleAsyncWriter) | [RawExample](crate::RawExample) |
 //! | [ExampleAsyncWriter](async::ExampleAsyncWriter)       | [Example](crate::Example)       |
-//! | [RecordAsyncWriter](async::RecordAsyncWriter)         | Type that implements [GenericRecord](crate::markers::GenericRecord) |
+//! | [RecordAsyncWriter](async::RecordAsyncWriter)         | Type that implements [Record](crate::record::Record) |
 
 #[cfg(feature = "async")]
 mod r#async;

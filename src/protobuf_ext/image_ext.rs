@@ -33,6 +33,7 @@ pub use into_image_list::*;
 mod into_image_list {
     use super::*;
 
+    /// Conversion to a list of images.
     pub trait IntoImageList {
         fn into_image_list(self) -> Result<Vec<Image>>;
     }
