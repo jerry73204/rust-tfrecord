@@ -5,7 +5,7 @@ mod example {
     use rand::seq::SliceRandom;
     use rand_distr::{Distribution, Normal};
     use std::{f32::consts::PI, io, path::PathBuf, thread, time::Duration};
-    use tfrecord::EventWriter;
+    use tfrecord::{protobuf::HistogramProto, EventWriter};
 
     lazy_static::lazy_static! {
         pub static ref IMAGE_URLS: &'static [&'static str] = &[
@@ -66,11 +66,8 @@ mod example {
 
             // histogram
             {
-                let normal = Normal::new(-20.0, 50.0).unwrap();
-                let values = normal
-                    .sample_iter(&mut rng)
-                    .take(1024)
-                    .collect::<Vec<f32>>();
+                let normal = Normal::new(-20.0f32, 50.0).unwrap();
+                let values: HistogramProto = normal.sample_iter(&mut rng).take(1024).collect();
                 writer.write_histogram("histogram", step, values)?;
             }
 
@@ -94,7 +91,8 @@ mod example {
             .into_string()
             .unwrap();
         println!(
-            r#"Run `tensorboard --logdir '{}'` to watch the output"#,
+            r#"Run this command to start TensorBoard
+tensorboard --logdir '{}'"#,
             log_dir.display()
         );
         prefix
