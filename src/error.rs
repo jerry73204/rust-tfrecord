@@ -28,6 +28,7 @@ pub enum Error {
 }
 
 impl Error {
+    #[allow(dead_code)]
     pub(crate) fn conversion(desc: impl Into<Cow<'static, str>>) -> Self {
         Self::ConversionError { desc: desc.into() }
     }

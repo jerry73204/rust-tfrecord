@@ -10,6 +10,7 @@ impl Example {
         self.into_iter().collect()
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn into_iter(self) -> impl Iterator<Item = (String, Feature)> {
         self.features
             .into_iter()

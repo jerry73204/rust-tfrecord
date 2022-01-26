@@ -1,32 +1,27 @@
+use once_cell::sync::Lazy;
 use std::{
-    fs::File,
-    io::{self, BufWriter},
-    path::PathBuf,
+    fs::{self, File},
+    io::{self, prelude::*, BufWriter},
+    path::{Path, PathBuf},
 };
 use tfrecord::{Error, ExampleIter, FeatureKind};
 
-lazy_static::lazy_static! {
-    pub static ref INPUT_TFRECORD_PATH: PathBuf = {
-        let url = "https://storage.googleapis.com/download.tensorflow.org/data/fsns-20160927/testdata/fsns-00000-of-00001";
-        let file_name = "input.tfrecord";
-
-        let data_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_data");
-        std::fs::create_dir_all(&data_dir).unwrap();
-
-        let out_path = data_dir.join(file_name);
-        io::copy(
-            &mut ureq::get(url).call().unwrap().into_reader(),
-            &mut BufWriter::new(File::create(&out_path).unwrap()),
-        ).unwrap();
-
-        out_path
-    };
-    pub static ref DATA_DIR: PathBuf = {
-        let data_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_data");
-        std::fs::create_dir_all(&data_dir).unwrap();
-        data_dir
-    };
-}
+static INPUT_TFRECORD_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    (move || {
+        let url = include_str!("../tests/tfrecord_link.txt");
+        let path = DATA_DIR.join("input.tfrecord");
+        let mut writer = BufWriter::new(File::create(&path)?);
+        io::copy(&mut ureq::get(url).call()?.into_reader(), &mut writer)?;
+        writer.flush()?;
+        anyhow::Ok(path)
+    })()
+    .unwrap()
+});
+static DATA_DIR: Lazy<&Path> = Lazy::new(|| {
+    let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/test_data"));
+    fs::create_dir_all(path).unwrap();
+    path
+});
 
 fn main() -> Result<(), Error> {
     // use init pattern to construct the tfrecord reader
