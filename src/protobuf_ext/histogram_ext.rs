@@ -16,20 +16,14 @@ impl HistogramProto {
     {
         let bucket_limit = bucket_limit.into();
 
+        ensure_argument!(!bucket_limit.is_empty(), "bucket_limit must be non-empty");
+
         let is_finite = bucket_limit.iter().all(|&val| val.is_finite());
-        if !is_finite {
-            return Err(Error::invalid_argument(
-                "bucket_limit must be finite numbers",
-            ));
-        }
+        ensure_argument!(is_finite, "bucket_limit must contain finite numbers");
 
         let is_ordered =
             izip!(bucket_limit.as_ref(), &bucket_limit[1..]).all(|(&lhs, &rhs)| lhs < rhs);
-        if !is_ordered {
-            return Err(Error::invalid_argument(
-                "bucket_limit must be monotonically ordered",
-            ));
-        }
+        ensure_argument!(is_ordered, "bucket_limit must be monotonically ordered");
 
         let bucket_limit = bucket_limit.into_owned();
 
