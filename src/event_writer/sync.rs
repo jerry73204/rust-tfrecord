@@ -25,31 +25,36 @@ use std::{
 ///
 /// It can be built from a writer using [from_writer](EventWriter::from_writer), or write a new file
 /// specified by path prefix using [from_writer](EventWriter::from_prefix).
-///
-/// ```rust
-/// # async_std::task::block_on(async move {
-/// use anyhow::Result;
-/// use std::time::SystemTime;
-/// use tch::{kind::FLOAT_CPU, Tensor};
-/// use tfrecord::EventWriter;
-///
-/// let mut writer = EventWriter::from_prefix("log_dir/myprefix-", "", Default::default()).unwrap();
-///
-/// // step = 0, scalar = 3.14
-/// writer.write_scalar("my_scalar", 0, 3.14)?;
-///
-/// // step = 1, specified wall time, histogram of [1, 2, 3, 4]
-/// writer.write_histogram("my_histogram", (1, SystemTime::now()), vec![1, 2, 3, 4])?;
-///
-/// // step = 2, specified raw UNIX time in nanoseconds, random tensor of shape [8, 3, 16, 16]
-/// writer.write_tensor(
-///     "my_tensor",
-///     (2, 1.594449514712264e+18),
-///     Tensor::randn(&[8, 3, 16, 16], FLOAT_CPU),
-/// )?;
-/// # anyhow::Ok(())
-/// # }).unwrap();
-/// ```
+
+#[cfg_attr(
+    feature = "tch",
+    doc = r##"
+```rust
+# fn main() -> anyhow::Result<()> {
+use anyhow::Result;
+use std::time::SystemTime;
+use tch::{kind::FLOAT_CPU, Tensor};
+use tfrecord::EventWriter;
+
+let mut writer = EventWriter::from_prefix("log_dir/myprefix-", "", Default::default()).unwrap();
+
+// step = 0, scalar = 3.14
+writer.write_scalar("my_scalar", 0, 3.14)?;
+
+// step = 1, specified wall time, histogram of [1, 2, 3, 4]
+writer.write_histogram("my_histogram", (1, SystemTime::now()), vec![1, 2, 3, 4])?;
+
+// step = 2, specified raw UNIX time in nanoseconds, random tensor of shape [8, 3, 16, 16]
+writer.write_tensor(
+    "my_tensor",
+    (2, 1.594449514712264e+18),
+    Tensor::randn(&[8, 3, 16, 16], FLOAT_CPU),
+)?;
+# anyhow::Ok(())
+# }
+```
+"##
+)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct EventWriter<W> {
     auto_flush: bool,

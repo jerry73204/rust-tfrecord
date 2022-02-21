@@ -72,3 +72,15 @@ with-serde = ["serde"]
 [package.metadata.docs.rs]
 features = ["full", "doc-only"]
 no-default-features = true
+
+[[example]]
+name = "tensorboard"
+required-features = ["image"]
+
+[[example]]
+name = "tensorboard_async"
+required-features = ["async"]
+
+[[example]]
+name = "tfrecord_info_async"
+required-features = ["async"]
