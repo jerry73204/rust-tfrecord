@@ -60,8 +60,8 @@ mod with_image {
     use super::*;
     use crate::{error::Error, protobuf::summary::Image};
     use image::{
-        flat::SampleLayout, png::PngEncoder, ColorType, DynamicImage, FlatSamples, ImageBuffer,
-        Pixel,
+        codecs::png::PngEncoder, flat::SampleLayout, ColorType, DynamicImage, FlatSamples,
+        ImageBuffer, ImageEncoder as _, Pixel,
     };
     use std::{io::Cursor, ops::Deref};
 
@@ -74,7 +74,6 @@ mod with_image {
                 ColorType::La8 => ColorSpace::LumaA,
                 ColorType::Rgb8 => ColorSpace::Rgb,
                 ColorType::Rgba8 => ColorSpace::Rgba,
-                ColorType::Bgra8 => ColorSpace::Bgra,
                 ColorType::L16 => ColorSpace::Luma,
                 ColorType::La16 => ColorSpace::LumaA,
                 ColorType::Rgb16 => ColorSpace::Rgb,
@@ -99,7 +98,6 @@ mod with_image {
                 ImageLumaA8(buffer) => Self::try_from(buffer)?,
                 ImageRgb8(buffer) => Self::try_from(buffer)?,
                 ImageRgba8(buffer) => Self::try_from(buffer)?,
-                ImageBgra8(buffer) => Self::try_from(buffer)?,
                 _ => {
                     return Err(Error::conversion("unsupported image type"));
                 }
@@ -147,7 +145,7 @@ mod with_image {
             let encoded_image_string = {
                 let mut cursor = Cursor::new(vec![]);
                 PngEncoder::new(&mut cursor)
-                    .encode(&samples, width, height, color_type)
+                    .write_image(&samples, width, height, color_type)
                     .map_err(|err| Error::conversion(format!("{:?}", err)))?;
                 cursor.into_inner()
             };
@@ -196,7 +194,7 @@ mod with_tch {
         error::{ensure_argument, Error},
         protobuf::summary::Image,
     };
-    use image::{png::PngEncoder, ColorType};
+    use image::{codecs::png::PngEncoder, ColorType, ImageEncoder as _};
     use itertools::Itertools as _;
     use std::{io::Cursor, slice};
     use tch::{Kind, Tensor};
@@ -390,7 +388,7 @@ mod with_tch {
             };
             let mut cursor = Cursor::new(vec![]);
             PngEncoder::new(&mut cursor)
-                .encode(&samples, nw as u32, nh as u32, color_type)
+                .write_image(&samples, nw as u32, nh as u32, color_type)
                 .map_err(|err| Error::conversion(format!("{:?}", err)))?;
             cursor.into_inner()
         };

@@ -278,12 +278,18 @@ mod with_image {
                 ImageLumaA8(buffer) => Self::try_from(buffer)?,
                 ImageRgb8(buffer) => Self::try_from(buffer)?,
                 ImageRgba8(buffer) => Self::try_from(buffer)?,
-                ImageBgr8(buffer) => Self::try_from(buffer)?,
-                ImageBgra8(buffer) => Self::try_from(buffer)?,
                 ImageLuma16(buffer) => Self::try_from(buffer)?,
                 ImageLumaA16(buffer) => Self::try_from(buffer)?,
                 ImageRgb16(buffer) => Self::try_from(buffer)?,
                 ImageRgba16(buffer) => Self::try_from(buffer)?,
+                ImageRgb32F(buffer) => Self::try_from(buffer)?,
+                ImageRgba32F(buffer) => Self::try_from(buffer)?,
+                _ => {
+                    return Err(Error::conversion(format!(
+                        "the color type {:?} is not supported",
+                        from.color()
+                    )))
+                }
             };
             Ok(tensor)
         }

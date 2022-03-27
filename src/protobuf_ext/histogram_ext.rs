@@ -243,12 +243,18 @@ mod with_image {
                 ImageLumaA8(buffer) => buffer.try_into_histogram()?,
                 ImageRgb8(buffer) => buffer.try_into_histogram()?,
                 ImageRgba8(buffer) => buffer.try_into_histogram()?,
-                ImageBgr8(buffer) => buffer.try_into_histogram()?,
-                ImageBgra8(buffer) => buffer.try_into_histogram()?,
                 ImageLuma16(buffer) => buffer.try_into_histogram()?,
                 ImageLumaA16(buffer) => buffer.try_into_histogram()?,
                 ImageRgb16(buffer) => buffer.try_into_histogram()?,
                 ImageRgba16(buffer) => buffer.try_into_histogram()?,
+                ImageRgb32F(buffer) => buffer.try_into_histogram()?,
+                ImageRgba32F(buffer) => buffer.try_into_histogram()?,
+                _ => {
+                    return Err(Error::conversion(format!(
+                        "the color type {:?} is not supported",
+                        self.color()
+                    )))
+                }
             };
             Ok(histogram)
         }
