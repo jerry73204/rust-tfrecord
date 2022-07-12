@@ -67,6 +67,12 @@ where
         Ok(())
     }
 
+    /// Closes the inner writer.
+    pub async fn close(&mut self) -> Result<()> {
+        self.writer.close().await?;
+        Ok(())
+    }
+
     /// Convert into a [Sink].
     pub fn into_sink(self) -> impl Sink<T, Error = Error> {
         sink::unfold(self, |mut writer, record| async move {
