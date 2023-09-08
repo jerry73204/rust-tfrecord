@@ -410,8 +410,8 @@ mod with_tch {
                 // determine the scale and offset by min/max values
                 let valid_values_mask = tensor.f_isfinite()?;
                 let valid_values = tensor.f_masked_select(&valid_values_mask)?;
-                let min_value = f64::from(valid_values.f_min()?);
-                let max_value = f64::from(valid_values.f_max()?);
+                let min_value = f64::try_from(valid_values.f_min()?)?;
+                let max_value = f64::try_from(valid_values.f_max()?)?;
 
                 let (scale, offset) = if min_value >= 0.0 {
                     let scale = 255.0 / max_value;
