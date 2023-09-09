@@ -1,5 +1,6 @@
 use anyhow::{bail, format_err, Context, Error, Result};
 use flate2::read::GzDecoder;
+use itertools::{chain, Itertools};
 use once_cell::sync::Lazy;
 use std::{
     env::{self, VarError},
@@ -76,10 +77,10 @@ pub fn guess_build_method() -> Result<Option<BuildMethod>> {
 pub fn build_method_error() -> Error {
     format_err!(
         r#"By enabling the "generate_protobuf_src" feature,
-the environment variable "{}" must be set with the following format.
+the environment variable "{BUILD_METHOD_ENV}" must be set with the following format.
 
 - "url://"
-  Download the source from default URL "{}".
+  Download the source from default URL "{DEFAULT_TENSORFLOW_URL}".
 
 - "url://https://github.com/tensorflow/tensorflow/archive/vX.Y.Z.tar.gz"
   Download the source from specified URL.
@@ -93,20 +94,21 @@ the environment variable "{}" must be set with the following format.
 - "install_prefix:///path/to/tensorflow/prefix"
   Specify the installed TensorFlow by install prefix.
 "#,
-        BUILD_METHOD_ENV,
-        &*DEFAULT_TENSORFLOW_URL
     )
 }
 
 pub fn build_by_url(url: &str) -> Result<()> {
     eprintln!("download file {}", url);
-    let src_file = download_tensorflow(url)?;
+    let src_file = download_tensorflow(url).with_context(|| format!("unable to download {url}"))?;
     build_by_src_file(&src_file)
         .with_context(|| format!("remove {} and try again", src_file.display()))?;
     Ok(())
 }
 
-pub fn build_by_src_dir(src_dir: impl AsRef<Path>) -> Result<()> {
+pub fn build_by_src_dir<P>(src_dir: P) -> Result<()>
+where
+    P: AsRef<Path>,
+{
     let src_dir = src_dir.as_ref();
 
     // re-run if the dir changes
@@ -116,7 +118,10 @@ pub fn build_by_src_dir(src_dir: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
-pub fn build_by_src_file(src_file: impl AsRef<Path>) -> Result<()> {
+pub fn build_by_src_file<P>(src_file: P) -> Result<()>
+where
+    P: AsRef<Path>,
+{
     let src_file = src_file.as_ref();
 
     // re-run if the dir changes
@@ -127,15 +132,22 @@ pub fn build_by_src_file(src_file: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
-pub fn build_by_install_prefix(prefix: impl AsRef<Path>) -> Result<()> {
-    compile_protobuf(prefix.as_ref().join("include").join("tensorflow"))?;
+pub fn build_by_install_prefix<P>(prefix: P) -> Result<()>
+where
+    P: AsRef<Path>,
+{
+    let dir = prefix.as_ref().join("include").join("tensorflow");
+    compile_protobuf(dir)?;
     Ok(())
 }
 
-pub fn extract_src_file(src_file: impl AsRef<Path>) -> Result<PathBuf> {
+pub fn extract_src_file<P>(src_file: P) -> Result<PathBuf>
+where
+    P: AsRef<Path>,
+{
     let working_dir = OUT_DIR.join("tensorflow");
     let src_file = src_file.as_ref();
-    let src_dirname = format!("tensorflow-{}", TENSORFLOW_VERSION);
+    let src_dirname = format!("tensorflow-{TENSORFLOW_VERSION}");
     let src_dir = working_dir.join(&src_dirname);
 
     // remove previously extracted dir
@@ -145,10 +157,15 @@ pub fn extract_src_file(src_file: impl AsRef<Path>) -> Result<PathBuf> {
 
     // extract package
     {
-        let file = BufReader::new(File::open(src_file)?);
+        let file = BufReader::new(
+            File::open(src_file)
+                .with_context(|| format!("unable to open {}", src_file.display()))?,
+        );
         let tar = GzDecoder::new(file);
         let mut archive = Archive::new(tar);
-        archive.unpack(&working_dir)?;
+        archive
+            .unpack(&working_dir)
+            .with_context(|| format!("unable to unpack {}", working_dir.display()))?;
 
         if !src_dir.is_dir() {
             bail!(
@@ -161,42 +178,43 @@ pub fn extract_src_file(src_file: impl AsRef<Path>) -> Result<PathBuf> {
     Ok(src_dir)
 }
 
-pub fn compile_protobuf(dir: impl AsRef<Path>) -> Result<()> {
+pub fn compile_protobuf<P>(dir: P) -> Result<()>
+where
+    P: AsRef<Path>,
+{
     let dir = dir.as_ref();
     let include_dir = dir;
     let proto_paths = {
-        let example_iter = glob::glob(
-            dir.join("tensorflow")
-                .join("core")
-                .join("example")
-                .join("*.proto")
-                .to_str()
-                .unwrap(),
-        )?;
-        let framework_iter = glob::glob(
-            dir.join("tensorflow")
-                .join("core")
-                .join("framework")
-                .join("*.proto")
-                .to_str()
-                .unwrap(),
-        )?;
-        let util_iter = std::iter::once(Ok(dir
+        let example_pattern = dir
+            .join("tensorflow")
+            .join("core")
+            .join("example")
+            .join("*.proto");
+        let framework_pattern = dir
+            .join("tensorflow")
+            .join("core")
+            .join("framework")
+            .join("*.proto");
+        let event_proto = dir
             .join("tensorflow")
             .join("core")
             .join("util")
-            .join("event.proto")));
-        example_iter
-            .chain(framework_iter)
-            .chain(util_iter)
-            .collect::<Result<Vec<_>, _>>()?
+            .join("event.proto");
+
+        let example_iter = glob::glob(example_pattern.to_str().unwrap())
+            .with_context(|| format!("unable to find {}", example_pattern.display()))?;
+        let framework_iter = glob::glob(framework_pattern.to_str().unwrap())
+            .with_context(|| format!("unable to find {}", framework_pattern.display()))?;
+        let paths: Vec<_> =
+            chain!(example_iter, framework_iter, [Ok(event_proto)]).try_collect()?;
+        paths
     };
 
     // without serde
     {
         prost_build::compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
         fs::create_dir_all(Path::new(PROTOBUF_FILE_WO_SERDE).parent().unwrap())?;
-        fs::copy(&*GENERATED_PROTOBUF_FILE, &*PROTOBUF_FILE_WO_SERDE)?;
+        fs::copy(&*GENERATED_PROTOBUF_FILE, PROTOBUF_FILE_WO_SERDE)?;
     }
 
     // with serde
@@ -205,7 +223,7 @@ pub fn compile_protobuf(dir: impl AsRef<Path>) -> Result<()> {
             .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
             .compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
         fs::create_dir_all(Path::new(PROTOBUF_FILE_W_SERDE).parent().unwrap())?;
-        fs::copy(&*GENERATED_PROTOBUF_FILE, &*PROTOBUF_FILE_W_SERDE)?;
+        fs::copy(&*GENERATED_PROTOBUF_FILE, PROTOBUF_FILE_W_SERDE)?;
     }
 
     Ok(())
