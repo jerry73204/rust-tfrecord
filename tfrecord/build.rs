@@ -118,7 +118,7 @@ the environment variable "{}" must be set with the following format.
 - "src_dir:///path/to/tensorflow/dir"
   Specify unpacked TensorFlow source directory.
 
-- "src_dir:///path/to/tensorflow/file.tar.gz"
+- "src_file:///path/to/tensorflow/file.tar.gz"
   Specify TensorFlow source package file.
 
 - "install_prefix:///path/to/tensorflow/prefix"
