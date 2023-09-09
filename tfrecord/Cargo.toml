@@ -58,9 +58,10 @@ tar = "0.4.40"
 flate2 = "1.0.27"
 hex = "0.4.3"
 once_cell = "1.18.0"
+tfrecord-codegen = { version = "0.1.0", path = "../tfrecord-codegen", optional = true }
 
 [features]
-generate_protobuf_src = []
+generate_protobuf_src = ["tfrecord-codegen"]
 full = ["async", "with-tch", "with-image", "with-ndarray", "with-serde"]
 async = ["futures", "async-std", "pin-project"]
 doc-only = ["full", "tch/doc-only"]
