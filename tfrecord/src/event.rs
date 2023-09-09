@@ -38,6 +38,7 @@ impl EventMeta {
             wall_time,
             step,
             what: None,
+            source_metadata: None,
         }
     }
 
@@ -48,6 +49,7 @@ impl EventMeta {
             wall_time,
             step,
             what: Some(What::Summary(summary)),
+            source_metadata: None,
         }
     }
 
