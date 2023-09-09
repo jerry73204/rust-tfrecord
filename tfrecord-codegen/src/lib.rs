@@ -10,14 +10,6 @@ use std::{
 };
 use tar::Archive;
 
-const PROTOBUF_FILE_W_SERDE: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/prebuild_src/tensorflow_with_serde.rs",
-);
-const PROTOBUF_FILE_WO_SERDE: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/prebuild_src/tensorflow_without_serde.rs",
-);
 const BUILD_METHOD_ENV: &str = "TFRECORD_BUILD_METHOD";
 
 static OUT_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from(env::var("OUT_DIR").unwrap()));
@@ -97,30 +89,35 @@ the environment variable "{BUILD_METHOD_ENV}" must be set with the following for
     )
 }
 
-pub fn build_by_url(url: &str) -> Result<()> {
+pub fn build_by_url<P>(url: &str, out_dir: P) -> Result<()>
+where
+    P: AsRef<Path>,
+{
     eprintln!("download file {}", url);
     let src_file = download_tensorflow(url).with_context(|| format!("unable to download {url}"))?;
-    build_by_src_file(&src_file)
+    build_by_src_file(&src_file, out_dir)
         .with_context(|| format!("remove {} and try again", src_file.display()))?;
     Ok(())
 }
 
-pub fn build_by_src_dir<P>(src_dir: P) -> Result<()>
+pub fn build_by_src_dir<P, P2>(src_dir: P, out_dir: P2) -> Result<()>
 where
     P: AsRef<Path>,
+    P2: AsRef<Path>,
 {
     let src_dir = src_dir.as_ref();
 
     // re-run if the dir changes
     println!("cargo:rerun-if-changed={}", src_dir.display());
 
-    compile_protobuf(src_dir)?;
+    compile_protobuf(src_dir, out_dir)?;
     Ok(())
 }
 
-pub fn build_by_src_file<P>(src_file: P) -> Result<()>
+pub fn build_by_src_file<P, P2>(src_file: P, out_dir: P2) -> Result<()>
 where
     P: AsRef<Path>,
+    P2: AsRef<Path>,
 {
     let src_file = src_file.as_ref();
 
@@ -128,16 +125,17 @@ where
     println!("cargo:rerun-if-changed={}", src_file.display());
 
     let src_dir = extract_src_file(src_file)?;
-    compile_protobuf(src_dir)?;
+    compile_protobuf(src_dir, out_dir)?;
     Ok(())
 }
 
-pub fn build_by_install_prefix<P>(prefix: P) -> Result<()>
+pub fn build_by_install_prefix<P, P2>(prefix: P, out_dir: P2) -> Result<()>
 where
     P: AsRef<Path>,
+    P2: AsRef<Path>,
 {
     let dir = prefix.as_ref().join("include").join("tensorflow");
-    compile_protobuf(dir)?;
+    compile_protobuf(dir, out_dir)?;
     Ok(())
 }
 
@@ -178,11 +176,12 @@ where
     Ok(src_dir)
 }
 
-pub fn compile_protobuf<P>(dir: P) -> Result<()>
+pub fn compile_protobuf<P1, P2>(src_dir: P1, out_dir: P2) -> Result<()>
 where
-    P: AsRef<Path>,
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
 {
-    let dir = dir.as_ref();
+    let dir = src_dir.as_ref();
     let include_dir = dir;
     let proto_paths = {
         let example_pattern = dir
@@ -210,11 +209,17 @@ where
         paths
     };
 
+    let out_dir = out_dir.as_ref();
+    let prebuild_src_dir = out_dir.join("prebuild_src");
+    let w_serde_path = prebuild_src_dir.join("tensorflow_with_serde.rs");
+    let wo_serde_path = prebuild_src_dir.join("tensorflow_without_serde.rs");
+
+    fs::create_dir_all(prebuild_src_dir)?;
+
     // without serde
     {
         prost_build::compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
-        fs::create_dir_all(Path::new(PROTOBUF_FILE_WO_SERDE).parent().unwrap())?;
-        fs::copy(&*GENERATED_PROTOBUF_FILE, PROTOBUF_FILE_WO_SERDE)?;
+        fs::copy(&*GENERATED_PROTOBUF_FILE, wo_serde_path)?;
     }
 
     // with serde
@@ -222,8 +227,7 @@ where
         prost_build::Config::new()
             .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
             .compile_protos(&proto_paths, &[PathBuf::from(include_dir)])?;
-        fs::create_dir_all(Path::new(PROTOBUF_FILE_W_SERDE).parent().unwrap())?;
-        fs::copy(&*GENERATED_PROTOBUF_FILE, PROTOBUF_FILE_W_SERDE)?;
+        fs::copy(&*GENERATED_PROTOBUF_FILE, w_serde_path)?;
     }
 
     Ok(())

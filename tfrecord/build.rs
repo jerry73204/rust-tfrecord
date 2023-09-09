@@ -1,20 +1,9 @@
 use anyhow::Result;
-use std::env;
 
-const PROTOBUF_FILE_W_SERDE: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/prebuild_src/tensorflow_with_serde.rs",
-);
-const PROTOBUF_FILE_WO_SERDE: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/prebuild_src/tensorflow_without_serde.rs",
-);
 const BUILD_METHOD_ENV: &str = "TFRECORD_BUILD_METHOD";
 
 fn main() -> Result<()> {
     // re-run conditions
-    println!("cargo:rerun-if-changed={}", PROTOBUF_FILE_WO_SERDE);
-    println!("cargo:rerun-if-changed={}", PROTOBUF_FILE_W_SERDE);
     println!("cargo:rerun-if-env-changed={}", BUILD_METHOD_ENV);
 
     #[cfg(feature = "generate_protobuf_src")]
@@ -26,12 +15,16 @@ fn main() -> Result<()> {
 
         let build_method = guess_build_method()?;
 
+        let prebuild_src_dir = env!("CARGO_MANIFEST_DIR");
+
         match build_method {
             None => {}
-            Some(BuildMethod::Url(url)) => build_by_url(&url)?,
-            Some(BuildMethod::SrcDir(dir)) => build_by_src_dir(dir)?,
-            Some(BuildMethod::SrcFile(file)) => build_by_src_file(file)?,
-            Some(BuildMethod::InstallPrefix(prefix)) => build_by_install_prefix(prefix)?,
+            Some(BuildMethod::Url(url)) => build_by_url(&url, prebuild_src_dir)?,
+            Some(BuildMethod::SrcDir(dir)) => build_by_src_dir(dir, prebuild_src_dir)?,
+            Some(BuildMethod::SrcFile(file)) => build_by_src_file(file, prebuild_src_dir)?,
+            Some(BuildMethod::InstallPrefix(prefix)) => {
+                build_by_install_prefix(prefix, prebuild_src_dir)?
+            }
         }
     }
 
